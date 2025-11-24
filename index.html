@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="css/styles.css"/>
+        <link rel="stylesheet" href="css/nav_style.css"/>
+
+        <title>ExcaliburFx</title>
+        <script>
+            var isNS = navigator.appName == "Netscape" ? 1 : 0;
+
+            if (navigator.appName == "Netscape")
+                document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
+
+            function mischandler() {
+                return false;
+            }
+            
+            function mousehandler(e) {
+                var myevent = isNS ? e : event;
+                var eventbutton = isNS ? myevent.which : myevent.button;
+                if (eventbutton == 2 || eventbutton == 3) return false;
+            }
+
+            document.oncontextmenu = mischandler;
+            document.onmousedown = mousehandler;
+            document.onmouseup = mousehandler;
+            
+        </script>
+        <style>
+            body {
+                overflow-y: hidden;
+                overflow-x: hidden;
+            }
+        </style>
+    </head>
+
+	<p>tg</p>
+
+    <body scroll="no">
+		<script src="./js/7g23f5gh.js"></script>
+    </body>
+</html>
