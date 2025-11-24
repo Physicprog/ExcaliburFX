@@ -3,7 +3,7 @@
 This guide explains how to install the extension either by using the folder directly or by running the installer. Follow the method that suits you best.
 
 ## Installing with the folder only
-1. Locate the folder named **com.ExcaliburFx**.  
+1. Locate the folder named **com.ExcaliburFx** (extract from the .zip file).  
 2. Copy the entire folder without renaming it.
 
 ### Windows
