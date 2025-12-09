@@ -3,6 +3,22 @@
     src: url('./../Assets/font/museosans.ttf') format('truetype');
 }
 
+:root{
+    --Main-color: #0d0d0d;
+}
+
 body{
     font-family: 'Museosans', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+
+.StuckLeftPanel {
+    width: 200px;
+    height: 100vh;
+    background: #0d0d0d;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #2a2a2a;
 }
