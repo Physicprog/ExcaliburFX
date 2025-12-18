@@ -1,74 +1,74 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="css/styles.css"/>
-        <link rel="stylesheet" href="css/nav_style.css"/>
-        <title>ExcaliburFx</title>
-        <script>
-            var isNS = navigator.appName == "Netscape" ? 1 : 0;
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExcaliburFx</title>
+    <link rel="stylesheet" href="./css/styles.css">
 
-            if (navigator.appName == "Netscape")
-                document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
+    <script>
+        //Disable right click - Adobe Code (do not touch)
+        var isNS = navigator.appName == "Netscape" ? 1 : 0;
 
-            function mischandler() {
-                return false;
-            }
-            
-            function mousehandler(e) {
-                var myevent = isNS ? e : event;
-                var eventbutton = isNS ? myevent.which : myevent.button;
-                if (eventbutton == 2 || eventbutton == 3) return false;
-            }
+        if (navigator.appName == "Netscape")
+            document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
 
-            document.oncontextmenu = mischandler;
-            document.onmousedown = mousehandler;
-            document.onmouseup = mousehandler;
-            
-        </script>
-        <style>
-            body {
-                overflow-y: hidden;
-                overflow-x: hidden;
-            }
-        </style>
-    </head>
-    <body scroll="no">
-
-        <div class="StuckLeftPanel">
-            <div class="part1">
-                <nav>
-                    <div class="title">
-                        <a id="extensionTitle">ExcaliburFx</a>
-                        <h6 id="undertTitle">Physic</h6>
-                    </div>
-
-                    <p>Curves</p>
-                    <a href="#" id="Presets1">Presets</a>
-                    <a href="#" id="Instant">Instant</a>
-                    <a href="#" id="Autosnap">Autoramp</a>
-
-                    <p>Main</p>
-                    <a href="#" id="Presets2">WorkFlow</a>
-                    <a href="#" id="Shakes">Effects</a>
-                    <div class="category">Presets</div>
-                    <div class="category">Shakes</div>
-                    <div class="category">Assets</div>
-
-                    <p>Misc</p>
-                    <div class="category">Dashboard</div>
-                    <div class="category">Settings</div>
-                    <div class="category">Script</div>
-                </nav>
-            </div>
-            <div class="part2">
-                <div id="FpsCounter">FPS: 60</div>
-                <a href="#" id="Notes"></a>
-                <a href="#" id="Shortcut"></a>
-            </div>
-        </div>
+        function mischandler() {
+            return false;
+        }
         
+        function mousehandler(e) {
+            var myevent = isNS ? e : event;
+            var eventbutton = isNS ? myevent.which : myevent.button;
+            if (eventbutton == 2 || eventbutton == 3) return false;
+        }
 
-		<script src="./js/main.js"></script>
-    </body>
+        document.oncontextmenu = mischandler;
+        document.onmousedown = mousehandler;
+        document.onmouseup = mousehandler;
+
+        document.addEventListener("keydown", function (e) {
+            if (e.ctrlKey && e.key.toLowerCase() === "r") {
+                e.preventDefault();
+                location.reload();
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="StuckLeftPanel">
+        <div class="part1">
+            <div class="title">
+                <a id="extensionTitle">ExcaliburFx</a>
+                <h6 id="undertTitle">Physic</h6>
+            </div>
+
+            <nav>
+                <p>Curves</p>
+                <a id="Presets">Presets</a>
+                <a id="Instant">Instant</a>
+                <a id="Autoramp">Autoramp</a>
+
+                <p>Main</p>
+                <a id="WorkFlow">WorkFlow</a>
+                <a id="Effects">Effects</a>
+                <a id="Presets_BUT_FFX">Presets</a>
+                <a id="Shakes">Shakes</a>
+                <a id="category">Assets</a>
+
+                <p>Misc</p>
+                <a id="Settings">Settings</a>
+                <a id="Script">Script</a>
+            </nav>
+        </div>
+
+        <div class="part2">
+            <div id="FpsCounter">60 fps</div>
+            <a id="Notes"></a>
+            <a id="Shortcut"></a>
+        </div>
+    </div>
+
+    <script src="./js/main.js"></script>
+</body>
 </html>
