@@ -27,16 +27,15 @@
         document.onmousedown = mousehandler;
         document.onmouseup = mousehandler;
 
-        document.addEventListener("keydown", function (e) {
-            if (e.ctrlKey && e.key.toLowerCase() === "r") {
-                e.preventDefault();
-                location.reload();
-            }
-        });
     </script>
 </head>
 <body>
-    <div class="StuckLeftPanel">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+    
+    <div class="StuckLeftPanel content">
         <div class="part1">
             <div class="title">
                 <a id="extensionTitle">ExcaliburFx</a>
@@ -69,6 +68,7 @@
         </div>
     </div>
 
+    <script src="./js/libs/CSInterface.js"></script>
     <script src="./js/main.js"></script>
 </body>
 </html>
