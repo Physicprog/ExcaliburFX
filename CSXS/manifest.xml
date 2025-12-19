@@ -3,7 +3,7 @@
 	Version="5.0"
 	ExtensionBundleId="com.excaliburfx"
 	ExtensionBundleVersion="1.0.0"
-	ExtensionBundleName="ExcaliburFx"
+	ExtensionBundleName="Extension Testing"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<ExtensionList>
@@ -12,7 +12,7 @@
 
 	<ExecutionEnvironment>
 		<HostList>
-			<Host Name="AEFT" Version="13.0" />
+			<Host Name="AEFT" Version="12.0" />
 		</HostList>
 
 	<LocaleList>
@@ -32,12 +32,11 @@
 				<MainPath>./index.html</MainPath>
 				<ScriptPath>./jsx/aftereffects.jsx</ScriptPath>
 				<CEFCommandLine>
-					<Parameter>--enable-nodejs</Parameter>
-					<Parameter>--allow-file-access-from-files</Parameter>
-					<Parameter>--allow-file-access</Parameter>
-					<Parameter>--mixed-context</Parameter>
-				</CEFCommandLine>
-				
+	   			<Parameter>--enable-nodejs</Parameter>
+				<Parameter>--mixed-context</Parameter>
+				<Parameter>--allow-file-access</Parameter>
+				<Parameter>--allow-file-access-from-files</Parameter>
+	 			</CEFCommandLine>
 			</Resources>
 
 			<Lifecycle>
@@ -47,7 +46,7 @@
 			<UI>
 
 				<Type>Panel</Type>
-				<Menu>ExcaliburFx</Menu>
+				<Menu>excaliburFx</Menu>
 
 				<Geometry>
 					<Size>
@@ -57,12 +56,9 @@
 				
 					
 				</Geometry>
+
 			</UI>
 		</DispatchInfo>
-		<Permissions>
-			<Permission>CEF_CLIPBOARD_READ</Permission>
-			<Permission>CEF_CLIPBOARD_WRITE</Permission>
-		</Permissions>
 	</Extension>
 </DispatchInfoList>
 </ExtensionManifest>

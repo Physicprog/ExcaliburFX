@@ -1,5 +1,5 @@
-@import url('./../css/utils/navbar.css');
-@import url('./../css/utils/loader.css');
+@import url('./utils/navbar.css');
+@import url('./utils/loader.css');
 
 @font-face {
     font-family: 'Museosans';
@@ -26,4 +26,177 @@ body {
     overflow: hidden;
     user-select: none;
     height: 100vh;
+}
+
+
+/*---------------------------------------------------- NAVBAR -----------------------------------------------------------------*/
+.StuckLeftPanel {
+    color: white;
+    text-decoration: none;
+    width: 200px;
+    height: 100vh;
+    background: #0d0d0d;
+    background: var(--Main-color);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+}
+
+.part1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.part1::-webkit-scrollbar {
+    width: 6px;
+}
+
+.part1::-webkit-scrollbar-track {
+    background: var(--Main-color);
+}
+
+.part1::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.StuckLeftPanel #extensionTitle {
+    color: white;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.title {
+    margin: 0;
+    padding: 3vh 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2em;
+    flex-direction: column;
+    border-right: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#undertTitle {
+    margin: 5px 0 0 0;
+    font-size: 0.7em;
+    color: var(--text-secondary);
+}
+
+.part2 {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2vh 10px;
+    gap: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+/*---------------------------------------------------- NAVBAR ELEMENTS -----------------------------------------------------------------*/
+.StuckLeftPanel nav {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1vh 0;
+}
+
+.StuckLeftPanel nav p {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    margin: 2vh 0 0.5vh 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.StuckLeftPanel nav a {
+    color: white;
+    text-decoration: none;
+    padding: 1vh 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95em;
+}
+
+.StuckLeftPanel nav a:hover {
+    background: var(--hover-color);
+}
+
+
+#FpsCounter {
+    color: var(--text-secondary);
+    font-size: 1em;
+    flex: 1;
+}
+
+#Notes {
+    background-image: url('./../../Assets/img/note.png');
+}
+
+#Shortcut {
+    background-image: url('./../../Assets/img/note.png');
+}
+
+
+#Notes,
+#Shortcut {
+    width: 24px;
+    height: 24px;
+    background: var(--button-bg);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#Notes:hover,
+#Shortcut:hover {
+    background: var(--button-hover);
+}
+
+
+/* Full-screen overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Spinner animation */
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Keyframes for spinner animation */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Hide content initially */
+.content {
+    display: none;
 }

@@ -1,74 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExcaliburFx</title>
-    <link rel="stylesheet" href="./css/styles.css">
+<meta charset="utf-8">
+<link rel="stylesheet" href="css/styles.css"/>
+	<title>ExcaliburFx</title>
+	<script>
+    var isNS = (navigator.appName == "Netscape") ? 1 : 0;
 
-    <script>
-        //Disable right click - Adobe Code (do not touch)
-        var isNS = navigator.appName == "Netscape" ? 1 : 0;
+    if(navigator.appName == "Netscape") document.captureEvents(Event.MOUSEDOWN||Event.MOUSEUP);
 
-        if (navigator.appName == "Netscape")
-            document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
+    function mischandler(){
+    return false;
+    }
 
-        function mischandler() {
-            return false;
-        }
-        
-        function mousehandler(e) {
-            var myevent = isNS ? e : event;
-            var eventbutton = isNS ? myevent.which : myevent.button;
-            if (eventbutton == 2 || eventbutton == 3) return false;
-        }
+    function mousehandler(e){
+    var myevent = (isNS) ? e : event;
+    var eventbutton = (isNS) ? myevent.which : myevent.button;
+    if((eventbutton==2)||(eventbutton==3)) return false;
+    }
+    document.oncontextmenu = mischandler;
+    document.onmousedown = mousehandler;
+    document.onmouseup = mousehandler;
 
-        document.oncontextmenu = mischandler;
-        document.onmousedown = mousehandler;
-        document.onmouseup = mousehandler;
 
-    </script>
+</script>
 </head>
-<body>
+<body scroll="no">
+
+
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
 </div>
     
-    <div class="StuckLeftPanel content">
-        <div class="part1">
-            <div class="title">
-                <a id="extensionTitle">ExcaliburFx</a>
-                <h6 id="undertTitle">Physic</h6>
-            </div>
-
-            <nav>
-                <p>Curves</p>
-                <a id="Presets">Presets</a>
-                <a id="Instant">Instant</a>
-                <a id="Autoramp">Autoramp</a>
-
-                <p>Main</p>
-                <a id="WorkFlow">WorkFlow</a>
-                <a id="Effects">Effects</a>
-                <a id="Presets_BUT_FFX">Presets</a>
-                <a id="Shakes">Shakes</a>
-                <a id="category">Assets</a>
-
-                <p>Misc</p>
-                <a id="Settings">Settings</a>
-                <a id="Script">Script</a>
-            </nav>
+<div class="StuckLeftPanel content">
+    <div class="part1">
+        <div class="title">
+            <a id="extensionTitle">ExcaliburFx</a>
+            <h6 id="undertTitle">Physic</h6>
         </div>
 
-        <div class="part2">
-            <div id="FpsCounter">60 fps</div>
-            <a id="Notes"></a>
-            <a id="Shortcut"></a>
-        </div>
+        <nav>
+            <p>Curves</p>
+            <a id="Presets" href="#">Presets</a>
+            <a id="Instant" href="#">Instant</a>
+            <a id="Autoramp" href="#">Autoramp</a>
+
+            <p>Main</p>
+            <a id="WorkFlow" href="#">WorkFlow</a>
+            <a id="Effects" href="#">Effects</a>
+            <a id="Presets_BUT_FFX" href="#">Presets</a>
+            <a id="Shakes" href="#">Shakes</a>
+            <a id="category" href="#">Assets</a>
+
+            <p>Misc</p>
+            <a id="Settings" href="#">Settings</a>
+            <a id="Script" href="#">Script</a>
+        </nav>
     </div>
 
-    <script src="./js/libs/CSInterface.js"></script>
-    <script src="./js/main.js"></script>
+    <div class="part2">
+        <div id="FpsCounter">60 fps</div>
+        <a id="Notes" href="#"></a>
+        <a id="Shortcut" href="#"></a>
+    </div>
+	
+
+
+</div>
+	<script src="js/libs/CSInterface.js"></script>
+	<script src="js/main.js"></script>
 </body>
 </html>

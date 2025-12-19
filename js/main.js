@@ -1,42 +1,47 @@
 (function () {
 	'use strict';
-	window.cs = new CSInterface();
-	var extPath = cs.getSystemPath(SystemPath.EXTENSION);
-
-	cs.evalScript('$.evalFile("' + extPath + '/jsx/aftereffects.jsx")', function (result) {
-		const loadingOverlay = document.getElementById("loadingOverlay");
-		const content = document.querySelector(".content");
-
-		// Fade out the loading overlay
-		loadingOverlay.style.opacity = "0";
-		loadingOverlay.style.transition = "opacity 0.5s ease";
-
-		// Show the content after the overlay fades out
-		setTimeout(() => {
-			loadingOverlay.style.display = "none";
-			content.style.display = "block";
-		}, 500); // Match the transition duration
-	});
+	var extPath;
+	extPath = location.href;
+	if (getOS() == "MAC") {
+		extPath = extPath.substring(7, extPath.length - 11);
+	}
+	if (getOS() == "WIN") {
+		extPath = extPath.substring(8, extPath.length - 11);
+	}
 
 	console.log("Start");
 	console.log(extPath);
+
 }());
 
-// Fonction raccourcie pour appeler JSX
-function E(script) {
-	cs.evalScript(script);
+function goIntoJSX() {
+
 }
 
-// recharge l'extension After Effects
-function reloadPanel() {
-	cs.reloadExtension();
-}
+function getOS() {
+	var userAgent = window.navigator.userAgent,
+		platform = window.navigator.platform,
+		macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+		windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+		os = null;
 
-
-
-document.addEventListener("keydown", function (e) {
-	if (e.ctrlKey && e.key.toLowerCase() === "r") {
-		e.preventDefault();
-		location.reload();
+	if (macosPlatforms.indexOf(platform) != -1) {
+		os = "MAC";
+	} else if (windowsPlatforms.indexOf(platform) != -1) {
+		os = "WIN";
 	}
+	return os;
+}
+
+
+/* ----------------------------- Utils ----------------------------- */
+
+window.addEventListener('load', () => {
+	const loader = document.getElementById('loader');
+	loader.style.opacity = '0';
+	loader.style.transition = 'opacity 0.5s ease';
+
+	setTimeout(() => {
+		loader.style.display = 'none';
+	}, 500);
 });
