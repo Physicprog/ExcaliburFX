@@ -1,0 +1,114 @@
+#tab_2 {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#tab_3 {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    position: relative;
+}
+
+.tabContent {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.section-square {
+    position: relative;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(124, 58, 237, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.section-square:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 50px rgba(124, 58, 237, 0.6);
+}
+
+
+
+.square-content {
+    text-align: center;
+    padding: 40px;
+    color: #fff;
+}
+
+.square-content h2 {
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.square-content p {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    opacity: 0.9;
+}
+
+
+.canvas-container {
+    width: 70vmin;
+    height: 70vmin;
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.controls-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 0 20px 40px;
+}
+
+.buttons-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Museosans', Arial, sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary {
+    background: #3a3a3a;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background: #4a4a4a;
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: #7c3aed;
+    color: #fff;
+    font-weight: bold;
+}
+
+.btn-primary:hover {
+    background: #6d28d9;
+    transform: translateY(-1px);
+}

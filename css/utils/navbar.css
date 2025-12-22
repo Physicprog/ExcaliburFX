@@ -1,21 +1,28 @@
-/*---------------------------------------------------- NAVBAR -----------------------------------------------------------------*/
 .StuckLeftPanel {
-    color: white;
-    text-decoration: none;
-    width: 200px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 160px;
     height: 100vh;
-    background: #0d0d0d;
-    background: var(--Main-color);
-    display: flex;
+    background: var(--Main-color, #0d0d0d);
+    color: white;
+    display: none;
     flex-direction: column;
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color, #2a2a2a);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 100;
+}
+
+.StuckLeftPanel.show {
+    display: flex;
+    opacity: 1;
 }
 
 .part1 {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
     overflow-y: auto;
 }
 
@@ -24,40 +31,118 @@
 }
 
 .part1::-webkit-scrollbar-track {
-    background: var(--Main-color);
+    background: var(--Main-color, #0d0d0d);
 }
 
 .part1::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+    background: var(--border-color, #2a2a2a);
     border-radius: 3px;
 }
 
-.StuckLeftPanel #extensionTitle {
-    color: white;
+#extensionTitle {
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    text-decoration: none;
     cursor: pointer;
 }
 
+.logo span {
+    display: inline-block;
+    color: #fff;
+    animation: glow-wave 3s ease-in-out infinite;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover span {
+    animation-play-state: paused;
+    transform: scale(1.25);
+}
+
+.logo span:nth-of-type(1) {
+    animation-delay: 0s;
+}
+
+.logo span:nth-of-type(2) {
+    animation-delay: 0.1s;
+}
+
+.logo span:nth-of-type(3) {
+    animation-delay: 0.2s;
+}
+
+.logo span:nth-of-type(4) {
+    animation-delay: 0.3s;
+}
+
+.logo span:nth-of-type(5) {
+    animation-delay: 0.4s;
+}
+
+.logo span:nth-of-type(6) {
+    animation-delay: 0.5s;
+}
+
+.logo span:nth-of-type(7) {
+    animation-delay: 0.6s;
+}
+
+.logo span:nth-of-type(8) {
+    animation-delay: 0.7s;
+}
+
+.logo span:nth-of-type(9) {
+    animation-delay: 0.8s;
+}
+
+.logo span:nth-of-type(10) {
+    animation-delay: 0.9s;
+    color: #7c3aed;
+}
+
+.logo span:nth-of-type(11) {
+    animation-delay: 1s;
+    color: #7c3aed;
+}
+
+
 .title {
     margin: 0;
-    padding: 3vh 10px;
+    padding: 2.2vh 10px 1.6vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
     font-size: 1.2em;
-    flex-direction: column;
     border-right: 1px solid #2a2a2a;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, #2a2a2a);
 }
 
 #undertTitle {
-    margin: 5px 0 0 0;
+    margin: 4px 0 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.7em;
-    color: var(--text-secondary);
+    line-height: 1;
+    color: var(--text-secondary, #888);
+}
+
+#undertTitle:empty::before,
+#undertTitle:empty::after {
+    display: none;
+}
+
+#undertTitle::before,
+#undertTitle::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgb(118, 97, 255);
+    box-shadow: 0 0 8px #6f00ff57;
+    opacity: 0.8;
+    margin: 0 8px;
 }
 
 .part2 {
@@ -66,10 +151,9 @@
     align-items: center;
     padding: 2vh 10px;
     gap: 10px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color, #2a2a2a);
 }
 
-/*---------------------------------------------------- NAVBAR ELEMENTS -----------------------------------------------------------------*/
 .StuckLeftPanel nav {
     display: flex;
     flex-direction: column;
@@ -78,7 +162,7 @@
 }
 
 .StuckLeftPanel nav p {
-    color: var(--text-secondary);
+    color: var(--text-secondary, #888);
     font-size: 0.85em;
     margin: 2vh 0 0.5vh 15px;
     text-transform: uppercase;
@@ -92,17 +176,34 @@
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 10px;
+    background: var(--button-bg, #3a3a3a);
+    border-radius: 4px;
+    height: 42px;
 }
 
 .StuckLeftPanel nav a:hover {
-    background: var(--hover-color);
+    background: var(--button-hover, #4a4a4a);
 }
 
-
 #FpsCounter {
-    color: var(--text-secondary);
+    color: var(--text-secondary, #888);
     font-size: 1em;
     flex: 1;
+}
+
+#Notes,
+#Shortcut {
+    width: 18px;
+    height: 18px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 #Notes {
@@ -110,21 +211,10 @@
 }
 
 #Shortcut {
-    background-image: url('./../../Assets/img/note.png');
-}
-
-
-#Notes,
-#Shortcut {
-    width: 24px;
-    height: 24px;
-    background: var(--button-bg);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
+    background-image: url('./../../Assets/img/Preset2.png');
 }
 
 #Notes:hover,
 #Shortcut:hover {
-    background: var(--button-hover);
+    backdrop-filter: exposure(0.1);
 }

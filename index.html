@@ -1,77 +1,158 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="css/styles.css"/>
-	<title>ExcaliburFx</title>
-	<script>
-    var isNS = (navigator.appName == "Netscape") ? 1 : 0;
-
-    if(navigator.appName == "Netscape") document.captureEvents(Event.MOUSEDOWN||Event.MOUSEUP);
-
-    function mischandler(){
-    return false;
-    }
-
-    function mousehandler(e){
-    var myevent = (isNS) ? e : event;
-    var eventbutton = (isNS) ? myevent.which : myevent.button;
-    if((eventbutton==2)||(eventbutton==3)) return false;
-    }
-    document.oncontextmenu = mischandler;
-    document.onmousedown = mousehandler;
-    document.onmouseup = mousehandler;
-
-
-</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css"/>
+    <title>ExcaliburFx</title>
 </head>
-<body scroll="no">
+<body>
 
-    <form class="formUsername">
-        <input type="text" id="usernameInput" placeholder="Enter your username"/>
-        <button type="submit" id="saveUsernameButton">Save</button>
-    </form>
-
-    <div id="loader">
-        <div class="spinner"></div>
+<div class="main-content">
+    <div id="loginPage">
+        <main class="login-box">
+            <form id="loginForm">
+                <h1 class="login-title">ExcaliburFx</h1>
+                <div class="form-group">
+                    <input type="text" name="username" id="username" placeholder="Your username..." class="text-area" required>
+                </div>
+                <p class="info-text">Your information will be stored securely. Nothing will be shared with third parties.</p>
+                <div>
+                    <input type="submit" value="Entry" class="button">
+                </div>
+            </form>
+        </main>
     </div>
-    
-<div class="StuckLeftPanel content">
+</div>
+
+
+<div id="loader">
+  <div class="loader-content">
+    <div class="gif-wrapper">
+      <div class="spinner"></div>
+      <div class="loader-gif"></div>
+    </div>
+    <p class="welcome-text">Bienvenue sur ExcaliburFx !</p>
+    <div class="progress-bar">
+      <div class="progress"></div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<div id="notification">
+    <div id="theNotification"></div>
+</div>
+
+<div class="StuckLeftPanel">
     <div class="part1">
         <div class="title">
-            <a id="extensionTitle">ExcaliburFx</a>
+        <a id="extensionTitle" aria-label="Shortcut" class="logo is-animetion" data-tab="tab_1">
+            <span>E</span><span>x</span><span>c</span><span>a</span><span>l</span><span>i</span><span>b</span><span>u</span><span>r</span><span>F</span><span>x</span>
+        </a>
+
+
             <h6 id="undertTitle"></h6>
         </div>
 
         <nav>
             <p>Curves</p>
-            <a id="Presets" href="#">Presets</a>
-            <a id="Instant" href="#">Instant</a>
-            <a id="Autoramp" href="#">Autoramp</a>
+            <a id="Presets" href="#" data-tab="tab_2">Presets</a>
+            <a id="Instant" href="#" data-tab="tab_3">Instant</a>
+            <a id="Autoramp" href="#" data-tab="tab_4">Autoramp</a>
 
             <p>Main</p>
-            <a id="WorkFlow" href="#">WorkFlow</a>
-            <a id="Effects" href="#">Effects</a>
-            <a id="Presets_BUT_FFX" href="#">Presets</a>
-            <a id="Shakes" href="#">Shakes</a>
-            <a id="category" href="#">Assets</a>
+            <a id="WorkFlow" href="#" data-tab="tab_5">WorkFlow</a>
+            <a id="Effects" href="#" data-tab="tab_6">Effects</a>
+            <a id="Presets_BUT_FFX" href="#" data-tab="tab_7">Presets</a>
+            <a id="Shakes" href="#" data-tab="tab_8">Shakes</a>
+            <a id="category" href="#" data-tab="tab_9">Assets</a>
 
             <p>Misc</p>
-            <a id="Settings" href="#">Settings</a>
-            <a id="Script" href="#">Script</a>
+            <a id="Settings" href="#" data-tab="tab_10">Settings</a>
+            <a id="Script" href="#" data-tab="tab_11">Script</a>
         </nav>
     </div>
 
     <div class="part2">
         <div id="FpsCounter">60 fps</div>
-        <a id="Notes" href="#"></a>
-        <a id="Shortcut" href="#"></a>
+        <a id="Notes" href="#" aria-label="Notes" data-tab="tab_12"></a>
+        <a id="Shortcut" href="#" aria-label="Shortcut" data-tab="tab_13"></a>
     </div>
-	
-
-
 </div>
-	<script src="js/libs/CSInterface.js"></script>
-	<script src="js/main.js"></script>
+
+<div id="dashboardBackdrop"></div>
+    <div id="contentArea">
+    <div id="tab_1" class="tabContent active">
+        <h1>Welcome back, Khylian!</h1>
+    </div>
+
+    <div id="tab_2" class="tabContent">
+        <h1>Presets Tab</h1>
+        <p>Content for Presets Tab</p>
+    </div>
+
+    <div id="tab_3" class="tabContent">
+        <h1>Instant Tab</h1>
+        <p>Content for Instant Tab</p>
+    </div>
+
+    <div id="tab_4" class="tabContent">
+        <h1>Autoramp Tab</h1>
+        <p>Content for Autoramp Tab</p>
+    </div>
+
+    <div id="tab_5" class="tabContent">
+        <h1>WorkFlow Tab</h1>
+        <p>Content for WorkFlow Tab</p>
+    </div>
+
+    <div id="tab_6" class="tabContent">
+        <h1>Effects Tab</h1>
+        <p>Content for Effects Tab</p>
+    </div>
+
+    <div id="tab_7" class="tabContent">
+        <h1>Presets FFX Tab</h1>
+        <p>Content for Presets FFX Tab</p>
+    </div>
+
+    <div id="tab_8" class="tabContent">
+        <h1>Shakes Tab</h1>
+        <p>Content for Shakes Tab</p>
+    </div>
+
+    <div id="tab_9" class="tabContent">
+        <h1>Assets Tab</h1>
+        <p>Content for Assets Tab</p>
+    </div>
+
+    <div id="tab_10" class="tabContent">
+        <h1>Settings Tab</h1>
+        <p>Content for Settings Tab</p>
+    </div>
+
+    <div id="tab_11" class="tabContent">
+        <h1>Script Tab</h1>
+        <p>Content for Script Tab</p>
+    </div>
+
+    <div id="tab_12" class="tabContent">
+        <h1>Notes Tab</h1>
+        <p>Content for Notes Tab</p>
+    </div>
+
+    <div id="tab_13" class="tabContent">
+        <h1>Shortcut Tab</h1>
+        <p>Content for Shortcut Tab</p>
+    </div>
+</div>
+
+
+<script src="js/libs/CSInterface.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
