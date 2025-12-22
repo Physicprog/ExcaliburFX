@@ -5,6 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/styles.css"/>
     <title>ExcaliburFx</title>
+            <script>
+            var isNS = navigator.appName == "Netscape" ? 1 : 0;
+
+            if (navigator.appName == "Netscape")
+                document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
+
+            function mischandler() {
+                return false;
+            }
+            
+            function mousehandler(e) {
+                var myevent = isNS ? e : event;
+                var eventbutton = isNS ? myevent.which : myevent.button;
+                if (eventbutton == 2 || eventbutton == 3) return false;
+            }
+
+            document.oncontextmenu = mischandler;
+            document.onmousedown = mousehandler;
+            document.onmouseup = mousehandler;
+            
+        </script>
+        <style>
+            body {
+                overflow-y: hidden;
+                overflow-x: hidden;
+            }
+        </style>
+        
+        <script type="text/javascript">
+            function downloadJSAtOnload() {
+                setTimeout(() => {
+                    var elementlib = document.createElement("script");
+                    elementlib.src = "js/libs/CSInterface.js";
+                    document.body.appendChild(elementlib);
+
+                    setTimeout(() => {
+                        var element = document.createElement("script");
+                        element.src = "js/main.js";
+                        document.body.appendChild(element);
+                    }, 20); 
+                }, 20); 
+            }
+
+            window.addEventListener("load", downloadJSAtOnload);
+        </script>
 </head>
 <body>
 
