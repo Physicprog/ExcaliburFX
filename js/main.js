@@ -104,8 +104,6 @@ function saveUserToFile(username) {
 		if (!existingUser) {
 			usersData.push({
 				username: username,
-				firstLogin: new Date().toISOString(),
-				lastLogin: new Date().toISOString()
 			});
 		} else {
 			existingUser.lastLogin = new Date().toISOString();
@@ -416,7 +414,7 @@ function initLogin() {
 					}
 
 					if (undertTitle) {
-						undertTitle.textContent = 'Welcome, ' + username + '!';
+						undertTitle.textContent = username;
 					}
 
 					sendNotification(isExisting ? "Welcome back!" : "User registered!", true);
