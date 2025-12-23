@@ -1,7 +1,7 @@
 # ExcaliburFX
 
-ExcaliburFX est une extension After Effects conçue pour simplifier et accélérer le workflow des créateurs.  
-Elle propose des outils puissants pour automatiser certaines tâches, optimiser la gestion des compositions et enrichir les animations, tout en restant intuitive et légère.
+ExcaliburFX is an After Effects extension designed to simplify and speed up the workflow for creators.  
+It provides powerful tools to automate tasks, optimize composition management, and enhance animations, while remaining intuitive and lightweight.
 
 ---
 
@@ -56,28 +56,26 @@ Elle propose des outils puissants pour automatiser certaines tâches, optimiser 
 
 ## Technologies
 
-- JavaScript / JSX pour After Effects  
-- Extendscript  
-- Panel HTML/CSS pour interface utilisateur  
-- JSON pour gestion des presets et configurations  
+- JavaScript / JSX for After Effects  
+- ExtendScript  
+- HTML/CSS panel for user interface  
+- JSON for managing presets and configurations  
 
 ---
 
 ## Contributing
 
-Contributions et suggestions sont les bienvenues.  
+Contributions and suggestions are welcome.  
 
-- **Bug Reports:** Ouvrez un issue avec une description claire et étapes pour reproduire.  
-- **Feature Requests:** Déposez un issue en détaillant l’usage et l’intérêt.  
-- **Pull Requests:** Forkez le dépôt, appliquez vos modifications et soumettez un PR une fois testé.  
+- **Bug Reports:** Open an issue with a clear description and reproduction steps.  
+- **Feature Requests:** Open an issue with a detailed use case and description.  
+- **Pull Requests:** Fork the repository, apply your changes, and submit a PR once tested and clean.  
 
 ---
 
 ## License
 
-ExcaliburFX est distribué sous licence [GNU General Public License v3.0 (GPLv3)](LICENSE).  
-Vous êtes libre d’utiliser, modifier et redistribuer l’extension selon les termes de cette licence.  
-
----
-
-*Note:* Certains aspects ont été optimisés à l’aide d’assistance AI, mais toutes les décisions et codes ont été validés manuellement.
+ExcaliburFX is distributed under a **custom license**.  
+You are free to use and modify the extension for personal use only.  
+Any commercial use or resale is strictly prohibited.  
+All rights remain with the original author.
