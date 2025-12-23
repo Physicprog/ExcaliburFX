@@ -79,3 +79,8 @@ ExcaliburFX is distributed under a **custom license**.
 You are free to use and modify the extension for personal use only.  
 Any commercial use or resale is strictly prohibited.  
 All rights remain with the original author.
+
+## Documentation
+
+- [FAQ](FAQ.md)
+- [Changelog](CHANGELOG.md)
