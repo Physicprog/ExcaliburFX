@@ -1,24 +1,24 @@
-﻿function getLayerNames(arg) {
-    var layerNames = [];
-    var comp = app.project.activeItem;
-    for (var i = 1; i <= comp.numLayers; i++) {
-        layerNames.push(comp.layer(i).name);
-    }
+﻿function SendJSX_SCRIPT_ALERT_ERROR(message) {
+    var errorTitle = "ExcaliburFx ERROR";
+    var errorMSG = errorTitle + ":\n\n" + message;
 
-    return JSON.stringify(layerNames);
+    var win = new Window("dialog", errorTitle);
+    win.alignChildren = ["fill", "top"];
+
+    var msgText = win.add("statictext", undefined, errorMSG, { multiline: true });
+    msgText.alignment = ["fill", "fill"];
+
+    var okBtn = win.add("button", undefined, "OK");
+    okBtn.onClick = function () {
+        win.close();
+    };
+
+    win.show();
 }
 
-function osCheck() {
-    var os = $.os;
-    var match = os.indexOf("Windows");
-    if (match != (-1)) {
-        var userOS = "PC";
-    } else {
-        var userOS = "MAC";
-    }
-    return userOS;
+function NotInACompERROR() {
+    SendJSX_SCRIPT_ALERT_ERROR("Please select a composition.");
 }
-
 
 
 function PurgeThatShit() {
@@ -28,4 +28,3 @@ function PurgeThatShit() {
 function GetMeOutHereAsap() {
     app.quit();
 }
-

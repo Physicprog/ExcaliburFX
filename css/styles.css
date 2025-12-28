@@ -1,195 +1,31 @@
 @import url('./utils/navbar.css');
-@import url('./utils/loader.css');
-@import url('./utils/notifs.css');
-@import url('./utils/login.css');
-@import url('./utils/bezier.css');
-@import url('./utils/animation.css');
 
 @font-face {
     font-family: 'Museosans';
-    src: url('./../Assets/font/museosans.ttf') format('truetype');
+    src: url('../Assets/font/museosans.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    color: #0000007e;
 }
 
-:root {
-    --Main-color: #0d0d0d;
-    --border-color: #2a2a2a;
-    --hover-color: #1a1a1a;
-    --text-secondary: #888;
-    --button-bg: #2a2a2a;
-    --button-hover: #3a3a3a;
+@font-face {
+    font-family: 'Varela';
+    src: url('../Assets/font/VarelaRound.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
 }
 
 * {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Museosans', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -o-user-select: none;
-    user-select: none;
-    height: 100vh;
-    background: #1e1e1e;
-    position: relative;
-}
-
-.main-content {
-    display: block;
-    width: 100%;
-    height: 100vh;
-    display: block;
-}
-
-.StuckLeftPanel {
-    display: none;
-}
-
-
-#contentArea {
-    position: fixed;
-    top: 0;
-    left: 160px;
-    right: 0;
-    bottom: 0;
-    background: #1e1e1e;
-    display: none;
-    overflow: hidden;
-}
-
-#contentArea.show {
-    display: block;
-}
-
-.tabContent {
-    position: absolute;
-    inset: 0;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    opacity: 1;
-    will-change: transform;
-}
-
-.tabContent.active {
-    display: flex;
-}
-
-.tabContent.slide-in-up {
-    display: flex !important;
-    animation: slideInUp 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    pointer-events: auto;
-}
-
-.tabContent.slide-in-down {
-    display: flex !important;
-    animation: slideInDown 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    pointer-events: auto;
-}
-
-.tabContent.slide-out-up {
-    display: flex !important;
-    animation: slideOutUp 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    pointer-events: none;
-}
-
-.tabContent.slide-out-down {
-    display: flex !important;
-    animation: slideOutDown 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-    pointer-events: none;
-}
-
-
-#tab_1 {
-    height: 100vh;
-    background: #1e1e1e;
-}
-
-#tab_2 {
-    height: 100vh;
-    background: #1e1e1e;
-}
-
-#tab_3 {
-    height: 100%;
-    gap: 20px;
-    background: #1e1e1e;
-}
-
-#tab_4,
-#tab_5,
-#tab_6,
-#tab_7,
-#tab_8,
-#tab_9,
-#tab_10,
-#tab_11,
-#tab_12,
-#tab_13 {
-    padding: 40px;
-    background: #1e1e1e;
-}
-
-
-
-
-.tabContent h1 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-    color: #e0e0e0;
-    font-weight: 600;
-    text-align: center;
-}
-
-.tabContent p {
-    font-size: 1.1rem;
-    color: #b0b0b0;
-    line-height: 1.6;
-    text-align: center;
-    max-width: 600px;
-}
-
-
-
-
-
-
-
-#dashboardBackdrop {
-    position: fixed;
-    top: 0;
-    left: 160px;
-    right: 0;
-    bottom: 0;
-    z-index: 10;
-}
-
-#dashboardBackdrop {
-    position: fixed;
-    top: 0;
-    left: 160px;
-    right: 0;
-    bottom: 0;
-
-
-    display: none;
-    opacity: 0;
-    transition: opacity .45s cubic-bezier(0.4, 0, 0.2, 1);
-
-    z-index: 5;
-}
-
-#dashboardBackdrop.show {
-    display: block;
-    opacity: 1;
-}
-
-#contentArea {
-    z-index: 10;
+    padding: 0px;
+    margin: 0px;
+    font-family: 'Museosans', sans-serif;
+    font-optical-sizing: auto;
+    /*plus lisible avec les petites tailles*/
+    font-style: normal;
+    color: white;
+    transform-style: flat;
+    image-rendering: crisp-edges;
+    /* plus net */
+    shape-rendering: crispEdges;
+    text-shadow: 0.25vh 0.25vh 0.5vh rgba(0, 0, 0, 0.5);
 }

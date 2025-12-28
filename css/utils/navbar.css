@@ -1,220 +1,381 @@
-.StuckLeftPanel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 160px;
-    height: 100vh;
-    background: var(--Main-color, #0d0d0d);
-    color: white;
-    display: none;
-    flex-direction: column;
-    border-right: 1px solid var(--border-color, #2a2a2a);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    z-index: 100;
+min:root {
+    --buttonOpacity: 50%;
+    --nsd8sguhudfgdfg: 1.5;
+    --titleHight: calc(2.4vw + 5px + 3%);
+    --NavBarCal: calc(95vh - (7vh + 2.4vw));
 }
 
-.StuckLeftPanel.show {
-    display: flex;
-    opacity: 1;
-}
-
-.part1 {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
-
-.part1::-webkit-scrollbar {
-    width: 6px;
-}
-
-.part1::-webkit-scrollbar-track {
-    background: var(--Main-color, #0d0d0d);
-}
-
-.part1::-webkit-scrollbar-thumb {
-    background: var(--border-color, #2a2a2a);
-    border-radius: 3px;
-}
-
-#extensionTitle {
-    width: 100%;
-    display: flex;
-    justify-content: center;
+#navTitle {
+    margin: 1vh 0px;
+    height: calc(3.25vw + 20px);
     align-items: center;
-    cursor: pointer;
+    display: flex;
 }
 
-.logo span {
+#alineContent {
+    cursor: pointer;
+    margin: 0px auto;
+    /* transition: tranform 100ms ease-in-out; */
+}
+
+/* #alineContent:active{    transform: scale(0.95);    transition: tranform 10ms ease-in-out;} */
+header {
+    /* background-color: rgb(26, 26, 26); */
+    background-color: #0C0C0C;
+    height: calc(100vh);
+    position: relative;
+    border-right: 1px solid #525252;
+    color: #6243e06b;
+    user-select: none;
+}
+
+header h1 {
+    width: 200%;
+    margin-left: -50%;
+    margin-top: -4px;
+    text-align: center;
+    text-shadow: 0px 0px 20px rgba(9, 7, 7, 0.356);
+}
+
+header h1 span {
+    font-family: 'Varela', sans-serif;
+    margin: 0px -5px;
+    font-size: 2.25vw;
+    font-weight: 600;
+    text-shadow: 0px 0px 6vh rgb(255, 255, 255);
+    position: relative;
     display: inline-block;
     color: #fff;
-    animation: glow-wave 3s ease-in-out infinite;
-    transition: transform 0.3s ease;
+    animation: waviy 6s infinite;
+    animation-delay: calc(.075s * var(--i));
 }
 
-.logo:hover span {
-    animation-play-state: paused;
-    transform: scale(1.25);
+@keyframes waviy {
+
+    0%,
+    8%,
+    100% {
+        transform: translateY(0);
+        color: white;
+        text-shadow: 0px 0px 1.2vw rgba(255, 255, 255, 0.75);
+        text-decoration: none;
+    }
+
+    4% {
+        transform: translateY(-2vh);
+        color: rgb(118, 97, 255);
+        text-shadow: 0px 0px 2vw #6f00ff57;
+        text-decoration: underline;
+    }
 }
 
-.logo span:nth-of-type(1) {
-    animation-delay: 0s;
+/*#nav_Splitline1{    height: 0.45vw;    width: 110%;    margin-left: -5%;    border-radius: 0.25vh;    background-color: rgb(118, 97, 255);    box-shadow: 0px 0px 15px #6f00ff57;}*/
+header img {
+    margin: 3px 0px;
+    width: 17px;
 }
 
-.logo span:nth-of-type(2) {
-    animation-delay: 0.1s;
-}
-
-.logo span:nth-of-type(3) {
-    animation-delay: 0.2s;
-}
-
-.logo span:nth-of-type(4) {
-    animation-delay: 0.3s;
-}
-
-.logo span:nth-of-type(5) {
-    animation-delay: 0.4s;
-}
-
-.logo span:nth-of-type(6) {
-    animation-delay: 0.5s;
-}
-
-.logo span:nth-of-type(7) {
-    animation-delay: 0.6s;
-}
-
-.logo span:nth-of-type(8) {
-    animation-delay: 0.7s;
-}
-
-.logo span:nth-of-type(9) {
-    animation-delay: 0.8s;
-}
-
-.logo span:nth-of-type(10) {
-    animation-delay: 0.9s;
-    color: #7c3aed;
-}
-
-.logo span:nth-of-type(11) {
-    animation-delay: 1s;
-    color: #7c3aed;
-}
-
-
-.title {
-    margin: 0;
-    padding: 2.2vh 10px 1.6vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 1.2em;
-    border-right: 1px solid #2a2a2a;
-    border-bottom: 1px solid var(--border-color, #2a2a2a);
-}
-
-#undertTitle {
-    margin: 4px 0 0;
-    padding: 0;
+header nav {
     width: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 0.7em;
-    line-height: 1;
-    color: var(--text-secondary, #888);
+    height: calc(98vh - (3.25vw + 20px));
+    margin-top: -5px;
 }
 
-#undertTitle:empty::before,
-#undertTitle:empty::after {
-    display: none;
+header nav ul {
+    width: 100%;
+    margin-top: -1.35vh;
+    height: calc(94vh - (3.25vw + 4px) - 4vw);
+    /* background-color: red; */
+    /* overflow-y: hidden;    overflow-x: visible; */
+    z-index: 1;
 }
 
-#undertTitle::before,
-#undertTitle::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: rgb(118, 97, 255);
-    box-shadow: 0 0 8px #6f00ff57;
-    opacity: 0.8;
-    margin: 0 8px;
-}
-
-.part2 {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 2vh 10px;
-    gap: 10px;
-    border-top: 1px solid var(--border-color, #2a2a2a);
-}
-
-.StuckLeftPanel nav {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 1vh 0;
-}
-
-.StuckLeftPanel nav p {
-    color: var(--text-secondary, #888);
-    font-size: 0.85em;
-    margin: 2vh 0 0.5vh 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.StuckLeftPanel nav a {
-    color: white;
-    text-decoration: none;
-    padding: 1vh 20px;
+header nav ul li {
+    list-style: none;
+    width: 100%;
+    height: 18%;
+    margin-top: calc((94vh -3.25vw + 4px - 4vw) * 0.015);
+    margin-bottom: calc((94vh -3.25vw + 4px - 4vw) * 0.015);
+    text-align: center;
+    opacity: 100%;
+    color: transparent;
+    transform: scale(1);
     cursor: pointer;
-    transition: background 0.2s;
-    font-size: 0.95em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 4px 10px;
-    background: var(--button-bg, #3a3a3a);
-    border-radius: 4px;
-    height: 42px;
+    transition: opacity 125ms;
+    z-index: 1;
 }
 
-.StuckLeftPanel nav a:hover {
-    background: var(--button-hover, #4a4a4a);
-}
-
-#FpsCounter {
-    color: var(--text-secondary, #888);
-    font-size: 1em;
-    flex: 1;
-}
-
-#Notes,
-#Shortcut {
-    width: 18px;
-    height: 18px;
-    background-size: cover;
+header nav ul li::before {
+    list-style: none;
+    background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+header nav ul li::before:hover {
+    opacity: 80%;
+    transition: opacity 25ms;
+}
+
+.CurveICONActive,
+.MainICONActive,
+.EffectICONActive,
+.SettingsICONActive,
+.static_CurveICONActive,
+.static_MainICONActive,
+.static_EffectICONActive,
+.static_SettingsICONActive {
+    outline: 2px solid rgba(255, 255, 255, 0.15);
+    outline-offset: -1px;
+}
+
+/* ANIMATED ICONS */
+/*     ICON PREDEF     Non active*/
+.CurveICON,
+.MainICON,
+.EffectICON,
+.SettingsICON {
+    position: relative;
+    padding: 2vh 0px;
+    padding-right: 1px;
+    border-top: 1px solid transparent;
+    border-bottom: 1px solid transparent;
+}
+
+.CurveICON::before,
+.MainICON::before,
+.EffectICON::before,
+.SettingsICON::before {
+    content: '';
+    position: absolute;
+    top: 2vh;
+    right: 1px;
+    left: 0px;
+    bottom: 2vh;
+    opacity: 100%;
+}
+
+.CurveICON:hover:before,
+.MainICON:hover:before,
+.EffectICON:hover:before,
+.SettingsICON:hover:before {
+    opacity: var(--buttonOpacity);
+}
+
+/*     ICON PREDEF     Active*/
+.CurveICONActive,
+.MainICONActive,
+.EffectICONActive,
+.SettingsICONActive,
+.static_CurveICONActive,
+.static_MainICONActive,
+.static_EffectICONActive,
+.static_SettingsICONActive {
+    position: relative;
+    /*background-color: #131313;*/
+    background-position: 100vw 100vw;
+    background-image: url("./../../Assets/img/bgpattern.png");
+    background-size: 30px;
+    padding: 2vh 0px;
+    padding-right: 1px;
+    border-top: 1px solid #525252;
+    border-bottom: 1px solid #525252;
+}
+
+
+.CurveICONActive::before,
+.MainICONActive::before,
+.EffectICONActive::before,
+.SettingsICONActive::before {
+    content: '';
+    position: absolute;
+    top: 2vh;
+    right: 1px;
+    left: 0px;
+    bottom: 2vh;
+}
+
+/* Set Icon */
+.CurveICON::before {
+    background-image: url("./../../Assets/img/curves.gif");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.CurveICONActive::before {
+    background-image: url("./../../Assets/img/curves.gif");
+    opacity: 100%;
+}
+
+.MainICON::before {
+    background-image: url("./../../Assets/img/main.gif");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.MainICONActive::before {
+    background-image: url("./../../Assets/img/main.gif");
+    opacity: 100%;
+}
+
+.EffectICON::before {
+    background-image: url("./../../Assets/img/effects.gif");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.EffectICONActive::before {
+    background-image: url("./../../Assets/img/effects.gif");
+    opacity: 100%;
+}
+
+.SettingsICON::before {
+    background-image: url("./../../Assets/img/settings.gif");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.SettingsICONActive::before {
+    background-image: url("./../../Assets/img/settings.gif");
+    opacity: 100%;
+}
+
+/* STATIC ICONS */
+/*     ICON PREDEF     Non active*/
+.static_CurveICON,
+.static_MainICON,
+.static_EffectICON,
+.static_SettingsICON {
+    position: relative;
+    padding: 2vh 0px;
+    padding-right: 1px;
+    border-top: 1px solid transparent;
+    border-bottom: 1px solid transparent;
+}
+
+.static_CurveICON::before,
+.static_MainICON::before,
+.static_EffectICON::before,
+.static_SettingsICON::before {
+    content: '';
+    position: absolute;
+    top: 2vh;
+    right: 1px;
+    left: 0px;
+    bottom: 2vh;
+    opacity: 100%;
+}
+
+.static_CurveICON:hover:before,
+.static_MainICON:hover:before,
+.static_EffectICON:hover:before,
+.static_SettingsICON:hover:before {
+    opacity: var(--buttonOpacity);
+}
+
+/*     ICON PREDEF     Active*/
+.static_CurveICONActive::before,
+.static_MainICONActive::before,
+.static_EffectICONActive::before,
+.static_SettingsICONActive::before {
+    content: '';
+    position: absolute;
+    top: 2vh;
+    right: 1px;
+    left: 0px;
+    bottom: 2vh;
+}
+
+/* Set Icon */
+.static_CurveICON::before {
+    background-image: url("./../../Assets/img/curves.png");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.static_CurveICONActive::before {
+    background-image: url("./../../Assets/img/curves.png");
+    opacity: 100%;
+}
+
+.static_MainICON::before {
+    background-image: url("./../../Assets/img/main.png");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.static_MainICONActive::before {
+    background-image: url("./../../Assets/img/main.png");
+    opacity: 100%;
+}
+
+.static_EffectICON::before {
+    background-image: url("./../../Assets/img/effects.png");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.static_EffectICONActive::before {
+    background-image: url("./../../Assets/img/effects.png");
+    opacity: 100%;
+}
+
+.static_SettingsICON::before {
+    background-image: url("./../../Assets/img/settings.png");
+    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
+}
+
+.static_SettingsICONActive::before {
+    background-image: url("./../../Assets/img/settings.png");
+    opacity: 100%;
+}
+
+/* End of the icons */
+#navFooter {
+    height: 5vw;
+    position: fixed;
+    top: calc(100vh - 3.5vw);
+    width: calc(15vw - 1px);
+    align-items: center;
+}
+
+#navFooter p {
+    margin-top: 0px;
+    width: calc(15vw - 1px);
+    text-align: left;
+    font-size: 2vw;
+    opacity: 100%;
+    margin-left: 4.75vw;
+}
+
+#NoteButton {
+    position: absolute;
+    background-image: url("./../../Assets/img/note.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    top: calc(100vh - 3.75vw);
+    left: 1.625vw;
+    width: 2.5vw;
+    height: 2.5vw;
     cursor: pointer;
-    transition: background 0.2s;
 }
 
-#Notes {
-    background-image: url('./../../Assets/img/note.png');
+#NoteButton:hover {
+    opacity: 70%;
 }
 
-#Shortcut {
-    background-image: url('./../../Assets/img/Preset2.png');
+.eff_active {
+    background-color: #191919;
+    border-bottom: 0.5vh solid #6843ff;
 }
 
-#Notes:hover,
-#Shortcut:hover {
-    backdrop-filter: exposure(0.1);
+.eff_active:hover {
+    border-bottom: 0.5vh solid #a58fff;
+    background-color: #6843ff;
+}
+
+.not_eff_active {
+    border-bottom: 0.5vh solid #00000000;
+    background-color: #191919;
+}
+
+.not_eff_active:hover {
+    border-bottom: 0.5vh solid #a58fff;
+    background-color: #6843ff;
 }
