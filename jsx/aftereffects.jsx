@@ -28,3 +28,12 @@ function PurgeThatShit() {
 function GetMeOutHereAsap() {
     app.quit();
 }
+
+function AE_VersionButDumCuzAdobeIsFuckingStupid() {
+    var version = 0;
+    version = Number(app.version.substr(0, 2));
+    if (version < 20) {
+        version += 3;
+    }
+    return version;
+}

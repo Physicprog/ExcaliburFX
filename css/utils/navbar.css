@@ -1,4 +1,4 @@
-min:root {
+:root {
     --buttonOpacity: 50%;
     --nsd8sguhudfgdfg: 1.5;
     --titleHight: calc(2.4vw + 5px + 3%);
@@ -15,12 +15,9 @@ min:root {
 #alineContent {
     cursor: pointer;
     margin: 0px auto;
-    /* transition: tranform 100ms ease-in-out; */
 }
 
-/* #alineContent:active{    transform: scale(0.95);    transition: tranform 10ms ease-in-out;} */
 header {
-    /* background-color: rgb(26, 26, 26); */
     background-color: #0C0C0C;
     height: calc(100vh);
     position: relative;
@@ -69,7 +66,6 @@ header h1 span {
     }
 }
 
-/*#nav_Splitline1{    height: 0.45vw;    width: 110%;    margin-left: -5%;    border-radius: 0.25vh;    background-color: rgb(118, 97, 255);    box-shadow: 0px 0px 15px #6f00ff57;}*/
 header img {
     margin: 3px 0px;
     width: 17px;
@@ -86,246 +82,74 @@ header nav {
 header nav ul {
     width: 100%;
     margin-top: -1.35vh;
-    height: calc(94vh - (3.25vw + 4px) - 4vw);
-    /* background-color: red; */
-    /* overflow-y: hidden;    overflow-x: visible; */
+    height: calc(94vh - (3.25vw + 4px) - 8vw);
     z-index: 1;
 }
 
 header nav ul li {
     list-style: none;
     width: 100%;
-    height: 18%;
-    margin-top: calc((94vh -3.25vw + 4px - 4vw) * 0.015);
-    margin-bottom: calc((94vh -3.25vw + 4px - 4vw) * 0.015);
+    height: 10%;
+    margin-top: 0.5vh;
+    margin-bottom: 0.5vh;
     text-align: center;
     opacity: 100%;
-    color: transparent;
+    color: rgba(255, 255, 255, 0.95);
     transform: scale(1);
     cursor: pointer;
-    transition: opacity 125ms;
+    transition: opacity 125ms, color 125ms;
     z-index: 1;
-}
-
-header nav ul li::before {
-    list-style: none;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-header nav ul li::before:hover {
-    opacity: 80%;
-    transition: opacity 25ms;
-}
-
-.CurveICONActive,
-.MainICONActive,
-.EffectICONActive,
-.SettingsICONActive,
-.static_CurveICONActive,
-.static_MainICONActive,
-.static_EffectICONActive,
-.static_SettingsICONActive {
-    outline: 2px solid rgba(255, 255, 255, 0.15);
-    outline-offset: -1px;
-}
-
-/* ANIMATED ICONS */
-/*     ICON PREDEF     Non active*/
-.CurveICON,
-.MainICON,
-.EffectICON,
-.SettingsICON {
-    position: relative;
-    padding: 2vh 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65vw;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 1.5vh 0px;
     padding-right: 1px;
     border-top: 1px solid transparent;
     border-bottom: 1px solid transparent;
-}
-
-.CurveICON::before,
-.MainICON::before,
-.EffectICON::before,
-.SettingsICON::before {
-    content: '';
-    position: absolute;
-    top: 2vh;
-    right: 1px;
-    left: 0px;
-    bottom: 2vh;
-    opacity: 100%;
-}
-
-.CurveICON:hover:before,
-.MainICON:hover:before,
-.EffectICON:hover:before,
-.SettingsICON:hover:before {
-    opacity: var(--buttonOpacity);
-}
-
-/*     ICON PREDEF     Active*/
-.CurveICONActive,
-.MainICONActive,
-.EffectICONActive,
-.SettingsICONActive,
-.static_CurveICONActive,
-.static_MainICONActive,
-.static_EffectICONActive,
-.static_SettingsICONActive {
     position: relative;
-    /*background-color: #131313;*/
+}
+
+header nav ul li:hover {
+    color: rgba(255, 255, 255, 1);
+    transition: opacity 25ms, color 125ms;
+}
+
+/* États actifs - avec le pattern background */
+.CurveActive,
+.ScriptActive,
+.ShortcutActive,
+.EffectActive,
+.ShakesActive,
+.SoundActive,
+.SettingsActive {
+    outline: 2px solid rgba(255, 255, 255, 0.15);
+    outline-offset: -1px;
     background-position: 100vw 100vw;
     background-image: url("./../../Assets/img/bgpattern.png");
     background-size: 30px;
-    padding: 2vh 0px;
-    padding-right: 1px;
-    border-top: 1px solid #525252;
-    border-bottom: 1px solid #525252;
+    border-top: 1px solid #525252 !important;
+    border-bottom: 1px solid #525252 !important;
+    color: rgb(118, 97, 255) !important;
+    text-shadow: 0px 0px 1vw #6f00ff57;
+    opacity: 100% !important;
 }
 
-
-.CurveICONActive::before,
-.MainICONActive::before,
-.EffectICONActive::before,
-.SettingsICONActive::before {
-    content: '';
-    position: absolute;
-    top: 2vh;
-    right: 1px;
-    left: 0px;
-    bottom: 2vh;
+/* États non actifs */
+.Curve,
+.Script,
+.Shortcut,
+.Effect,
+.Shakes,
+.Sound,
+.Settings {
+    color: rgba(255, 255, 255, 0.85);
 }
 
-/* Set Icon */
-.CurveICON::before {
-    background-image: url("./../../Assets/img/curves.gif");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.CurveICONActive::before {
-    background-image: url("./../../Assets/img/curves.gif");
-    opacity: 100%;
-}
-
-.MainICON::before {
-    background-image: url("./../../Assets/img/main.gif");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.MainICONActive::before {
-    background-image: url("./../../Assets/img/main.gif");
-    opacity: 100%;
-}
-
-.EffectICON::before {
-    background-image: url("./../../Assets/img/effects.gif");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.EffectICONActive::before {
-    background-image: url("./../../Assets/img/effects.gif");
-    opacity: 100%;
-}
-
-.SettingsICON::before {
-    background-image: url("./../../Assets/img/settings.gif");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.SettingsICONActive::before {
-    background-image: url("./../../Assets/img/settings.gif");
-    opacity: 100%;
-}
-
-/* STATIC ICONS */
-/*     ICON PREDEF     Non active*/
-.static_CurveICON,
-.static_MainICON,
-.static_EffectICON,
-.static_SettingsICON {
-    position: relative;
-    padding: 2vh 0px;
-    padding-right: 1px;
-    border-top: 1px solid transparent;
-    border-bottom: 1px solid transparent;
-}
-
-.static_CurveICON::before,
-.static_MainICON::before,
-.static_EffectICON::before,
-.static_SettingsICON::before {
-    content: '';
-    position: absolute;
-    top: 2vh;
-    right: 1px;
-    left: 0px;
-    bottom: 2vh;
-    opacity: 100%;
-}
-
-.static_CurveICON:hover:before,
-.static_MainICON:hover:before,
-.static_EffectICON:hover:before,
-.static_SettingsICON:hover:before {
-    opacity: var(--buttonOpacity);
-}
-
-/*     ICON PREDEF     Active*/
-.static_CurveICONActive::before,
-.static_MainICONActive::before,
-.static_EffectICONActive::before,
-.static_SettingsICONActive::before {
-    content: '';
-    position: absolute;
-    top: 2vh;
-    right: 1px;
-    left: 0px;
-    bottom: 2vh;
-}
-
-/* Set Icon */
-.static_CurveICON::before {
-    background-image: url("./../../Assets/img/curves.png");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.static_CurveICONActive::before {
-    background-image: url("./../../Assets/img/curves.png");
-    opacity: 100%;
-}
-
-.static_MainICON::before {
-    background-image: url("./../../Assets/img/main.png");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.static_MainICONActive::before {
-    background-image: url("./../../Assets/img/main.png");
-    opacity: 100%;
-}
-
-.static_EffectICON::before {
-    background-image: url("./../../Assets/img/effects.png");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.static_EffectICONActive::before {
-    background-image: url("./../../Assets/img/effects.png");
-    opacity: 100%;
-}
-
-.static_SettingsICON::before {
-    background-image: url("./../../Assets/img/settings.png");
-    filter: saturate(0%) brightness(var(--nsd8sguhudfgdfg));
-}
-
-.static_SettingsICONActive::before {
-    background-image: url("./../../Assets/img/settings.png");
-    opacity: 100%;
-}
-
-/* End of the icons */
+/* Footer */
 #navFooter {
     height: 5vw;
     position: fixed;
@@ -360,6 +184,7 @@ header nav ul li::before:hover {
     opacity: 70%;
 }
 
+/* tabs visibility */
 .eff_active {
     background-color: #191919;
     border-bottom: 0.5vh solid #6843ff;
