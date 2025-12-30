@@ -37,3 +37,9 @@ function AE_VersionButDumCuzAdobeIsFuckingStupid() {
     }
     return version;
 }
+
+
+
+
+
+

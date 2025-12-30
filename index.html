@@ -1,297 +1,270 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="css/styles.css"/>
-        <title>ExcaliburFx</title>
-        <script>
-            var isNS = navigator.appName == "Netscape" ? 1 : 0;
-
-            if (navigator.appName == "Netscape")
-                document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
-
-            function mischandler() {
-                return false;
-            }
-            
-            function mousehandler(e) {
-                var myevent = isNS ? e : event;
-                var eventbutton = isNS ? myevent.which : myevent.button;
-                if (eventbutton == 2 || eventbutton == 3) return false;
-            }
-
-            document.oncontextmenu = mischandler;
-            document.onmousedown = mousehandler;
-            document.onmouseup = mousehandler;
-        </script>
-        <style>
-            body {
-                overflow-y: hidden;
-                overflow-x: hidden;
-            }
-        </style>
-        
-        <script type="text/javascript">
-            function downloadJSAtOnload() {
-                setTimeout(() => {
-                    var elementlib = document.createElement("script");
-                    elementlib.src = "js/libs/CSInterface.js";
-                    document.body.appendChild(elementlib);
-                }, 20);
-                
-                setTimeout(() => {
-                    var element = document.createElement("script");
-                    element.src = "js/main.js";
-                    document.body.appendChild(element);
-                }, 40);
-            }
-            if (window.addEventListener)
-                window.addEventListener("load", downloadJSAtOnload, false);
-            else if (window.attachEvent)
-                window.attachEvent("onload", downloadJSAtOnload);
-            else window.onload = downloadJSAtOnload;
-        </script>
-    </head>
-    <body scroll="no">
-        <div id="FixedLayout">
-            <header id="cc1">
-                <div id="navTitle">
-                    <div id="alineContent">
-                        <h1>
-                            <span style="--i:1">E</span>
-                            <span style="--i:2">x</span>
-                            <span style="--i:3">c</span>
-                            <span style="--i:4">a</span>
-                            <span style="--i:5">l</span>
-                            <span style="--i:6">i</span>
-                            <span style="--i:7">b</span>
-                            <span style="--i:8">u</span>
-                            <span style="--i:9">r</span>
-                            <span style="--i:10">F</span>
-                            <span style="--i:11">x</span>
-                        </h1>
-                    </div>
-                </div>
-                <nav>
-                    <ul>
-                        <li id="tabButton1" class="CurveActive">Curves</li>
-                        <li id="tabButton2" class="Sound">Sound</li>
-                        <li id="tabButton3" class="Effect">Effects</li>
-                        <li id="tabButton4" class="Shakes">Shakes</li>
-                        <li id="tabButton5" class="Script">Script</li>
-                        <li id="tabButton6" class="Shortcut">Shortcut</li>
-                        <li id="tabButton7" class="Settings">Settings</li>
-                    </ul>
-                </nav>
-                <div id="navFooter">
-                    <p id="FPSCOUNTER">FPS: 0</p>
-                </div>
-            </header>
-
-            <main id="theOneAndOnlyMain"> <!--Pour créer -->
-                <div id="create_curve">
-                    <div id="curveWrapper">
-                        <div id="CurvePreview"></div>
-    
-                        <div id="doubleNav2">
-                            <input id="Curve_Name" type="text" value="" maxlength="20" placeholder="Name the curve">
-                        </div>
-                        
-                        <div id="doubleNav">
-                            <input id="Curve_Val" type="text" value="0, 0, 1, 1" readonly>
-                            <button id="CopyCurve">Copy</button>
-                            <button id="PasteCurve">Paste</button>
-                        </div>
-    
-                        <div id="trippleNav">
-                            <button id="Curve_Remove">Remove</button>
-                            <button id="Curve_GoBack">Back</button>
-                            <button id="Curve_Apply">Apply</button>
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-
-            <div id="tab_1"> <!-- les presets-->
-                <div id="set_curve_pos">
-                    <div class="curve_prefix" id="custom_1">Add Custom</div>
-                    <div class="curve_prefix" id="custom_2">Add Custom</div>
-                    <div class="curve_prefix" id="custom_3">Add Custom</div>
-                    <div class="curve_prefix" id="custom_4">Add Custom</div>
-                    <div class="curve_prefix" id="custom_5">Add Custom</div>
-                    
-                    <div class="curve_prefix" id="custom_6">Add Custom</div>
-                    <div class="curve_prefix" id="custom_7">Add Custom</div>
-                    <div class="curve_prefix" id="custom_8">Add Custom</div>
-                    <div class="curve_prefix" id="custom_9">Add Custom</div>
-                    <div class="curve_prefix" id="custom_10">Add Custom</div>
-                    
-                    <div class="curve_prefix" id="custom_11">Add Custom</div>
-                    <div class="curve_prefix" id="custom_12">Add Custom</div>
-                    <div class="curve_prefix" id="custom_13">Add Custom</div>
-                    <div class="curve_prefix" id="custom_14">Add Custom</div>
-                    <div class="curve_prefix" id="custom_15">Add Custom</div>
-                    
-                    <div class="curve_prefix" id="custom_16">Add Custom</div>
-                    <div class="curve_prefix" id="custom_17">Add Custom</div>
-                    <div class="curve_prefix" id="custom_18">Add Custom</div>
-                    <div class="curve_prefix" id="custom_19">Add Custom</div>
-                    <div class="curve_prefix" id="custom_20">Add Custom</div>
-                    
-                    <div class="curve_prefix" id="CUR_In_Preset">In</div>
-                    <div class="curve_prefix" id="CUR_Out_Preset">Out</div>
-                    <div class="curve_prefix" id="CUR_SpeedRamp_Preset">Speedramp</div>
-                    <div class="curve_prefix" id="CUR_S_Preset">S</div>
-                    <div class="curve_prefix" id="CUR_Reset">None</div>
-                    <h3 id="CurvePreset">Curves Presets</h3>
-                    <button id="SpeedrampSwitcher">Speedramps Curve -></button>
-                </div>
-                
-                <div id="liveCurves"> <!-- Curves instants-->
-                    <h3 id="LiveCurve">Instant Curve</h3>
-                    <div id="CurvePreview_Live"></div>
-                    <div id="doubleNav_live">
-                        <input id="Curve_Val_live" type="text" value="0, 0, 1, 1" readonly>
-                        <button id="CopyCurve_live">Copy</button>
-                        <button id="PasteCurve_live">Paste</button>
-                    </div>
-
-                    <button id="Apply_LiveCurve">Apply Curve</button>
-                    <button id="CurvePresetSwitcher"><- Curve Presets</button>
-                </div>
-                
-                <!-- faire les speedramps -->
-                <div id="speedrampSection">
-                    <h3 id="SpeedrampTitle">Speedramps</h3>
-                    
-                    <div class="speedramp-controls">
-                        <div class="speedramp-slider-container">
-                            <label for="speedramp-speed-slider">Speed</label>
-                            <input type="range" id="speedramp-speed-slider" class="speedramp-slider" min="10" max="300" value="100">
-                            <div class="speedramp-value-display" id="speed-value">100%</div>
-                        </div>
-                        
-                        <div class="speedramp-slider-container">
-                            <label for="speedramp-duration-slider">Durations (% Around the clip(s) selected)</label>
-                            <input type="range" id="speedramp-duration-slider" class="speedramp-slider" min="5" max="60" value="20">
-                            <div class="speedramp-value-display" id="duration-value">20</div>
-                        </div>
-                    </div>
-                    
-                    <div class="speedramp-divider"></div>
-                    
-                    <div class="speedramp-presets">
-                        <button class="speedramp-preset-btn" id="preset-boomerang">Boomerang</button>
-                        <button class="speedramp-preset-btn" id="preset-fast-slow-fast">Classique</button>
-                        <button class="speedramp-preset-btn" id="preset-slow-fast-slow">S-Ramp</button>
-                        <button class="speedramp-preset-btn" id="preset-drift">Drift Entry</button>
-                        <button class="speedramp-preset-btn" id="preset-impact">Impact Freeze</button>
-                        <button class="speedramp-preset-btn" id="preset-chase">Chase Acceleration</button>
-                        <button class="speedramp-preset-btn" id="preset-reveal">Smooth Reveal</button>
-                        <button class="speedramp-preset-btn" id="preset-turbo">Turbo Boost</button>
-                    </div>
-                    
-                    <div class="speedramp-divider"></div>
-                    
-                    <div class="speedramp-sequence-display">
-                        <h3>Actual Sequence :</h3>
-                        <div class="speedramp-sequence-text" id="sequence-display">
-                            Select a preset or configure manually
-                        </div>
-                    </div>
-                    
-                    <div class="speedramp-actions">
-                        <button class="speedramp-action-btn" id="speedramp-clear">Remove</button>
-                        <button class="speedramp-action-btn" id="speedramp-apply">Apply</button>
-                    </div>
-                    
-                    <button id="CurvePresetBackSwitcher"><- Curve Presets</button>
-                </div>
+   <head>
+      <meta charset="utf-8" />
+      <link rel="stylesheet" href="css/styles.css"/>
+      <title>ExcaliburFx</title>
+      <script>
+         var isNS = navigator.appName == "Netscape" ? 1 : 0;
+         
+         if (navigator.appName == "Netscape")
+             document.captureEvents(Event.MOUSEDOWN || Event.MOUSEUP);
+         
+         function mischandler() {
+             return false;
+         }
+         
+         function mousehandler(e) {
+             var myevent = isNS ? e : event;
+             var eventbutton = isNS ? myevent.which : myevent.button;
+             if (eventbutton == 2 || eventbutton == 3) return false;
+         }
+         
+         document.oncontextmenu = mischandler;
+         document.onmousedown = mousehandler;
+         document.onmouseup = mousehandler;
+      </script>
+      <style>
+         body {
+         overflow-y: hidden;
+         overflow-x: hidden;
+         }
+      </style>
+      <script type="text/javascript"> //charge plus viteeeeeeeeeeeeee au debut (-5 sec)
+         function downloadJSAtOnload() {
+             setTimeout(() => {
+                 var elementlib = document.createElement("script");
+                 elementlib.src = "js/libs/CSInterface.js";
+                 document.body.appendChild(elementlib);
+             }, 20);
+             
+             setTimeout(() => {
+                 var element = document.createElement("script");
+                 element.src = "js/main.js";
+                 document.body.appendChild(element);
+             }, 40);
+         }
+         if (window.addEventListener)
+             window.addEventListener("load", downloadJSAtOnload, false);
+         else if (window.attachEvent)
+             window.attachEvent("onload", downloadJSAtOnload);
+         else window.onload = downloadJSAtOnload;
+      </script>
+   </head>
+   <body scroll="no">
+      <div id="FixedLayout">
+      <header id="cc1">
+         <div id="navTitle">
+            <div id="alineContent">
+               <h1>
+                  <span style="--i:1">E</span>
+                  <span style="--i:2">x</span>
+                  <span style="--i:3">c</span>
+                  <span style="--i:4">a</span>
+                  <span style="--i:5">l</span>
+                  <span style="--i:6">i</span>
+                  <span style="--i:7">b</span>
+                  <span style="--i:8">u</span>
+                  <span style="--i:9">r</span>
+                  <span style="--i:10">F</span>
+                  <span style="--i:11">x</span>
+               </h1>
             </div>
-
-                <div id="tab_2">
-                    <div id="tab_inside2">
-                        <h1>SFX Content</h1>
-                    </div>
-                </div>
-
-                <div id="tab_3">
-                    <div id="tab_inside3">
-                        <h1>Effects Content</h1>
-                    </div>
-                </div>
-
-                <div id="tab_4">
-                    <div id="tab_inside4">
-                        <h1>Shakes Content</h1>
-                    </div>
-                </div>
-
-                <div id="tab_5">
-                    <div id="tab_inside5">
-                        <h1>Script Content</h1>
-                    </div>
-                </div>
-
-                <div id="tab_6">
-                    <div id="tab_inside6">
-                        <h1>Shortcut Content</h1>
-                    </div>
-                </div>
-
-                <div id="tab_7">
-                    <div id="tab_inside7">
-                        <h1>Settings Content</h1>
-                    </div>
-                </div>
-
-        <div id="QuickNoteSection">
-            <div id="NoteContainer">
-                <div id="lineNumber">1</div>
-                <div id="hightlightLine"></div>
-                <textarea name="QuickNotes" id="QuickNotes" cols="" rows="" placeholder="Write what you want here idk..."></textarea>
-                <div id="FixCorner"></div>
+         </div>
+         <nav>
+            <ul>
+               <li id="tabButton1" class="CurveActive">Curves</li>
+               <li id="tabButton2" class="Sound">Sound</li>
+               <li id="tabButton3" class="Effect">Effects</li>
+               <li id="tabButton4" class="Shakes">Shakes</li>
+               <li id="tabButton5" class="Script">Script</li>
+               <li id="tabButton6" class="Shortcut">Shortcut</li>
+               <li id="tabButton7" class="Settings">Settings</li>
+            </ul>
+         </nav>
+         <div id="navFooter">
+            <p id="FPSCOUNTER">FPS: 0</p>
+         </div>
+      </header>
+      <main id="theOneAndOnlyMain">
+      <!--Pour créer -->
+      <div id="create_curve">
+         <div id="curveWrapper">
+            <div id="CurvePreview"></div>
+            <div id="doubleNav2">
+               <input id="Curve_Name" type="text" value="" maxlength="20" placeholder="Name the curve">
             </div>
-        </div>
-
-        <div id="BluredBG"></div>
-        <div id="Loading">
-            <div id="dancingDuck"></div>
-            <h1>Welcome to ExcaliburFx</h1>
-            <h3 id="WhatIsLoading">All files can only be loaded in After effects</h3>
-            <h4 id="x1111293"></h4>
-            <div id="StartLoadingbar">
-                <div id="StartLoadingbarProgress"></div>
+            <div id="doubleNav">
+               <input id="Curve_Val" type="text" value="0, 0, 1, 1" readonly>
+               <button id="CopyCurve">Copy</button>
+               <button id="PasteCurve">Paste</button>
             </div>
-        </div>
-
-
-        <div id="NewVersionRelease">
-            <div class="CenterUpdate">
-                <h1>Please update your <span>ExcaliburFx</span> to the latest version.</h1>
-                <p id="CopyLinkWebsite">Click the text to copy the link (Download)</p>
+            <div id="trippleNav">
+               <button id="Curve_Remove">Remove</button>
+               <button id="Curve_GoBack">Back</button>
+               <button id="Curve_Apply">Apply</button>
             </div>
-        </div>
+         </div>
+      </div>
+      <div id="tab_1">
+         <!-- les presets-->
+         <div id="set_curve_pos">
+            <div class="curve_prefix" id="custom_1">Add Custom</div>
+            <div class="curve_prefix" id="custom_2">Add Custom</div>
+            <div class="curve_prefix" id="custom_3">Add Custom</div>
+            <div class="curve_prefix" id="custom_4">Add Custom</div>
+            <div class="curve_prefix" id="custom_5">Add Custom</div>
+            <div class="curve_prefix" id="custom_6">Add Custom</div>
+            <div class="curve_prefix" id="custom_7">Add Custom</div>
+            <div class="curve_prefix" id="custom_8">Add Custom</div>
+            <div class="curve_prefix" id="custom_9">Add Custom</div>
+            <div class="curve_prefix" id="custom_10">Add Custom</div>
+            <div class="curve_prefix" id="custom_11">Add Custom</div>
+            <div class="curve_prefix" id="custom_12">Add Custom</div>
+            <div class="curve_prefix" id="custom_13">Add Custom</div>
+            <div class="curve_prefix" id="custom_14">Add Custom</div>
+            <div class="curve_prefix" id="custom_15">Add Custom</div>
+            <div class="curve_prefix" id="custom_16">Add Custom</div>
+            <div class="curve_prefix" id="custom_17">Add Custom</div>
+            <div class="curve_prefix" id="custom_18">Add Custom</div>
+            <div class="curve_prefix" id="custom_19">Add Custom</div>
+            <div class="curve_prefix" id="custom_20">Add Custom</div>
+            <div class="curve_prefix" id="CUR_In_Preset">In</div>
+            <div class="curve_prefix" id="CUR_Out_Preset">Out</div>
+            <div class="curve_prefix" id="CUR_SpeedRamp_Preset">Speedramp</div>
+            <div class="curve_prefix" id="CUR_S_Preset">S</div>
+            <div class="curve_prefix" id="CUR_Reset">None</div>
+            <h3 id="CurvePreset">Curves Presets</h3>
+            <button id="SpeedrampSwitcher">Speedramps Curve -></button>
+         </div>
+         <div id="liveCurves">
+            <!-- Curves instants-->
+            <h3 id="LiveCurve">Instant Curve</h3>
+            <div id="CurvePreview_Live"></div>
+            <div id="doubleNav_live">
+               <input id="Curve_Val_live" type="text" value="0, 0, 1, 1" readonly>
+               <button id="CopyCurve_live">Copy</button>
+               <button id="PasteCurve_live">Paste</button>
+            </div>
+            <button id="Apply_LiveCurve">Apply Curve</button>
+            <button id="CurvePresetSwitcher" class="InstatCurveSwitcher"><- Curve Presets</button>
+         </div>
+         <!-- faire les speedramps -->
+         <div id="speedrampSection">
+            <h3 id="SpeedrampTitle">Speedramps</h3>
+            <div class="speedramp-layout">
+               <div class="speedramp-left">
+                  <div class="speedramp-controls">
+                     <div class="speedramp-slider-container">
+                        <label>In</label>
+                        <input type="range" class="speedramp-slider" value="100">
+                        <div class="speedramp-value-display">val</div>
+                     </div>
+                     <div class="speedramp-slider-container">
+                        <label>Mid 1</label>
+                        <input type="range" class="speedramp-slider" value="20">
+                        <div class="speedramp-value-display">val</div>
+                     </div>
+                     <div class="speedramp-slider-container">
+                        <label>Mid 2</label>
+                        <input type="range" class="speedramp-slider" value="50">
+                        <div class="speedramp-value-display">val</div>
+                     </div>
+                     <div class="speedramp-slider-container">
+                        <label>Out</label>
+                        <input type="range" class="speedramp-slider" value="50">
+                        <div class="speedramp-value-display">val</div>
+                     </div>
+                  </div>
+                  <div class="speedramp-checkbox-container">
+                     <label>
+                     <input type="checkbox"> Enable Reverse</label>
+                  </div>
+                  <div class="speedramp-divider"></div>
+                  <div class="speedramp-presets">
+                     <button class="speedramp-preset-btn">Boomerang</button>
+                     <button class="speedramp-preset-btn">Classique</button>
+                     <button class="speedramp-preset-btn">S-Ramp</button>
+                     <button class="speedramp-preset-btn">Drift Entry</button>
+                  </div>
+                  <div class="speedramp-actions">
+                     <button class="speedramp-action-btn" id="speedramp-clear">Remove</button>
+                     <button class="speedramp-action-btn" id="speedramp-apply">Apply</button>
+                  </div>
+                  <button id="CurvePresetBackSwitcher"><- Curve Presets</button>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div id="tab_2">
+         <div id="tab_inside2">
+            <h1>SFX Content</h1>
+         </div>
+      </div>
+      <div id="tab_3">
+         <div id="tab_inside3">
+            <h1>Effects Content</h1>
+         </div>
+      </div>
+      <div id="tab_4">
+         <div id="tab_inside4">
+            <h1>Shakes Content</h1>
+         </div>
+      </div>
+      <div id="tab_5">
+         <div id="tab_inside5">
+            <h1>Script Content</h1>
+         </div>
+      </div>
+      <div id="tab_6">
+         <div id="tab_inside6">
+            <h1>Shortcut Content</h1>
+         </div>
+      </div>
+      <div id="tab_7">
+         <div id="tab_inside7">
+            <h1>Settings Content</h1>
+         </div>
+      </div>
+      <div id="QuickNoteSection">
+         <div id="NoteContainer">
+            <div id="lineNumber">1</div>
+            <div id="hightlightLine"></div>
+            <textarea name="QuickNotes" id="QuickNotes" cols="" rows="" placeholder="Write what you want here idk..."></textarea>
+            <div id="FixCorner"></div>
+         </div>
+      </div>
 
-        <div id="dashboard">
-            <h1>Dashboard</h1>
-        </div>
+      <--<div id="BluredBG"></div>
+      <div id="Loading">
+         <div id="dancingDuck"></div>
+         <h1>Welcome to ExcaliburFx</h1>
+         <h3 id="WhatIsLoading">All files can only be loaded in After effects</h3>
+         <h4 id="x1111293"></h4>
+         <div id="StartLoadingbar">
+            <div id="StartLoadingbarProgress"></div>
+         </div>
+      </div>
 
-        <div id="OfflineScreen">
-            <h1>You are offline, <span>connect ExcaliburFx to the Internet</span> in preferences (Scripts → Allow).</h1>
-        </div>
 
-        <div id="HowToUsePanel">
-            <h1>How to use</h1>
-        </div>
-
-        <div id="notification">
-            <h1 id="theNotification">Bruh</h1>
-        </div>
-
-        <div id="NoteButton"></div>
-    </body>
+      <div id="NewVersionRelease">
+         <div class="CenterUpdate">
+            <h1>Please update your <span>ExcaliburFx</span> to the latest version.</h1>
+            <p id="CopyLinkWebsite">Click the text to copy the link (Download)</p>
+         </div>
+      </div>
+      <div id="dashboard">
+         <h1>Dashboard</h1>
+      </div>
+      <div id="OfflineScreen">
+         <h1>You are offline, <span>connect ExcaliburFx to the Internet</span> in preferences (Scripts → Allow).</h1>
+      </div>
+      <div id="HowToUsePanel">
+         <h1>How to use</h1>
+      </div>
+      <div id="notification">
+         <h1 id="theNotification">Bruh</h1>
+      </div>
+      <div id="NoteButton"></div>
+   </body>
 </html>

@@ -1,26 +1,19 @@
 var NotePadOpen = false;
 var HelloIamRetarted = false;
 var isDashboardOpenOnStart = true;
-
 var panelAnimation = 'cubic-bezier(.7,0,.3,1)';
-
-
 const waitForAnim = 200;
 const opacityTimerIN = "opacity 300ms cubic-bezier(.7,0,.3,1)";
 const opacityTimerOUT = "opacity 200ms cubic-bezier(.7,0,.3,1)";
 const topTimerIN = "top 300ms cubic-bezier(.7,0,.3,1)";
 const topTimerOUT = "top 200ms cubic-bezier(.7,0,.3,1)";
-
+var margin_time_min = "margin 300ms cubic-bezier(.7,0,.3,1)";
+var opacity_time = "opacity 300ms cubic-bezier(.7,0,.3,1)";
+var top_time_min = "top 300ms cubic-bezier(.7,0,.3,1)";
 var MenuTimeOut;
 var MenuTimeOut2;
 var MenuTimeOut3;
-
 let NotetimeoutIDs = [];
-
-function adjustAnimationLength() {
-    const sliderHue = getElementById("HueSlider");
-
-}
 
 function E(script) {
     new CSInterface().evalScript(script);
@@ -77,13 +70,9 @@ function SendNotification(noti, returnit = true, color_green = true, center_to_M
 
 function Restarter() {
     clearALLNoteTimeouts();
-
-    //optionnel
-    // sessionStorage.clear();
-    // localStorage.clear();
-
     location.reload();
 }
+
 
 document.addEventListener('keydown', function (event) {
     if (event.key === "F5" || (event.ctrlKey && event.key.toLowerCase() === 'r')) {
@@ -91,6 +80,7 @@ document.addEventListener('keydown', function (event) {
         Restarter();
     }
 });
+
 
 function CloseDashBoard() {
     var dashboard = document.getElementById("dashboard");
@@ -157,291 +147,6 @@ function newTabAnims(newTab) {
     }
 }
 
-function newEffectsTabAnims(newTab) {
-    clearTimeout(MenuTimeOut2);
-    var tabAddCustomShake = document.getElementById("AddCustomShakeTab");
-    var tabSetPreset = document.getElementById("SaveNewPresetTab");
-    var tabPresets = document.getElementById("PresetsTab");
-    var tabEffect = document.getElementById("EffectTab");
-    var tabShakes = document.getElementById("ShakeTab");
-    var tabOverlays = document.getElementById("OverlaysTab");
-
-    var animHeight = "5vh";
-    var SlideOutAnim = opacityTimerOUT + ", " + topTimerOUT;
-
-    switch (newTab) {
-        case 0:
-            ToggleOFFPreset();
-            LoadPresetEffects(false);
-            const cShakePreview0 = document.getElementById('cShakePreview');
-            if (cShakePreview0) {
-                cShakePreview0.removeAttribute('src');
-                cShakePreview0.load();
-            }
-
-            GlobalsEffectCurrentTab = 0;
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-            if (tabAddCustomShake) tabAddCustomShake.style.transition = SlideOutAnim;
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabPresets) {
-                    tabPresets.style.top = '0vh';
-                    tabPresets.style.opacity = "100%";
-                    tabPresets.style.zIndex = "1";
-                }
-            }, waitForAnim);
-
-            if (tabSetPreset) {
-                tabSetPreset.style.top = animHeight;
-                tabSetPreset.style.opacity = "0%";
-                tabSetPreset.style.zIndex = "0";
-            }
-            if (tabEffect) {
-                tabEffect.style.top = animHeight;
-                tabEffect.style.opacity = "0%";
-                tabEffect.style.zIndex = "0";
-            }
-            if (tabShakes) {
-                tabShakes.style.top = animHeight;
-                tabShakes.style.opacity = "0%";
-                tabShakes.style.zIndex = "0";
-            }
-            if (tabOverlays) {
-                tabOverlays.style.top = animHeight;
-                tabOverlays.style.opacity = "0%";
-                tabOverlays.style.zIndex = "0";
-            }
-            if (tabAddCustomShake) {
-                tabAddCustomShake.style.top = animHeight;
-                tabAddCustomShake.style.opacity = "0%";
-                tabAddCustomShake.style.zIndex = "0";
-            }
-            break;
-        case 1:
-            ToggleOFFPreset();
-            LoadPresetEffects(false);
-            const cShakePreview1 = document.getElementById('cShakePreview');
-            if (cShakePreview1) {
-                cShakePreview1.removeAttribute('src');
-                cShakePreview1.load();
-            }
-
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-            if (tabAddCustomShake) tabAddCustomShake.style.transition = SlideOutAnim;
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabEffect) {
-                    tabEffect.style.top = '0vh';
-                    tabEffect.style.opacity = "100%";
-                    tabEffect.style.zIndex = "1";
-                }
-            }, waitForAnim);
-
-            if (tabSetPreset) {
-                tabSetPreset.style.top = animHeight;
-                tabSetPreset.style.opacity = "0%";
-                tabSetPreset.style.zIndex = "0";
-            }
-            if (tabPresets) {
-                tabPresets.style.top = animHeight;
-                tabPresets.style.opacity = "0%";
-                tabPresets.style.zIndex = "0";
-            }
-            if (tabShakes) {
-                tabShakes.style.top = animHeight;
-                tabShakes.style.opacity = "0%";
-                tabShakes.style.zIndex = "0";
-            }
-            if (tabOverlays) {
-                tabOverlays.style.top = animHeight;
-                tabOverlays.style.opacity = "0%";
-                tabOverlays.style.zIndex = "0";
-            }
-            if (tabAddCustomShake) {
-                tabAddCustomShake.style.top = animHeight;
-                tabAddCustomShake.style.opacity = "0%";
-                tabAddCustomShake.style.zIndex = "0";
-            }
-            break;
-        case 2:
-            GlobalsEffectCurrentTab = 2;
-            ToggleOFFPreset();
-            LoadPresetEffects(false);
-            const cShakePreview2 = document.getElementById('cShakePreview');
-            if (cShakePreview2) {
-                cShakePreview2.removeAttribute('src');
-                cShakePreview2.load();
-            }
-
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-            if (tabAddCustomShake) tabAddCustomShake.style.transition = SlideOutAnim;
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabShakes) {
-                    tabShakes.style.top = '0vh';
-                    tabShakes.style.opacity = "100%";
-                    tabShakes.style.zIndex = "1";
-                }
-            }, waitForAnim);
-
-            if (tabSetPreset) {
-                tabSetPreset.style.top = animHeight;
-                tabSetPreset.style.opacity = "0%";
-                tabSetPreset.style.zIndex = "0";
-            }
-            if (tabPresets) {
-                tabPresets.style.top = animHeight;
-                tabPresets.style.opacity = "0%";
-                tabPresets.style.zIndex = "0";
-            }
-            if (tabEffect) {
-                tabEffect.style.top = animHeight;
-                tabEffect.style.opacity = "0%";
-                tabEffect.style.zIndex = "0";
-            }
-            if (tabOverlays) {
-                tabOverlays.style.top = animHeight;
-                tabOverlays.style.opacity = "0%";
-                tabOverlays.style.zIndex = "0";
-            }
-            if (tabAddCustomShake) {
-                tabAddCustomShake.style.top = animHeight;
-                tabAddCustomShake.style.opacity = "0%";
-                tabAddCustomShake.style.zIndex = "0";
-            }
-            break;
-        case 3:
-            ToggleOFFPreset();
-            LoadPresetEffects(false);
-            const cShakePreview3 = document.getElementById('cShakePreview');
-            if (cShakePreview3) {
-                cShakePreview3.removeAttribute('src');
-                cShakePreview3.load();
-            }
-
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-
-            if (tabSetPreset) {
-                tabSetPreset.style.top = animHeight;
-                tabSetPreset.style.opacity = "0%";
-                tabSetPreset.style.zIndex = "0";
-            }
-            if (tabPresets) {
-                tabPresets.style.top = animHeight;
-                tabPresets.style.opacity = "0%";
-                tabPresets.style.zIndex = "0";
-            }
-            if (tabEffect) {
-                tabEffect.style.top = animHeight;
-                tabEffect.style.opacity = "0%";
-                tabEffect.style.zIndex = "0";
-            }
-            if (tabShakes) {
-                tabShakes.style.top = animHeight;
-                tabShakes.style.opacity = "0%";
-                tabShakes.style.zIndex = "0";
-            }
-            if (tabAddCustomShake) {
-                tabAddCustomShake.style.top = animHeight;
-                tabAddCustomShake.style.opacity = "0%";
-                tabAddCustomShake.style.zIndex = "0";
-            }
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabOverlays) {
-                    tabOverlays.style.top = '0vh';
-                    tabOverlays.style.opacity = "100%";
-                    tabOverlays.style.zIndex = "1";
-                }
-            }, waitForAnim);
-            break;
-        case 4:
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-
-            if (tabPresets) {
-                tabPresets.style.top = animHeight;
-                tabPresets.style.opacity = "0%";
-                tabPresets.style.zIndex = "0";
-            }
-            if (tabEffect) {
-                tabEffect.style.top = animHeight;
-                tabEffect.style.opacity = "0%";
-                tabEffect.style.zIndex = "0";
-            }
-            if (tabShakes) {
-                tabShakes.style.top = animHeight;
-                tabShakes.style.opacity = "0%";
-                tabShakes.style.zIndex = "0";
-            }
-            if (tabAddCustomShake) {
-                tabAddCustomShake.style.top = animHeight;
-                tabAddCustomShake.style.opacity = "0%";
-                tabAddCustomShake.style.zIndex = "0";
-            }
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabSetPreset) {
-                    tabSetPreset.style.top = '0vh';
-                    tabSetPreset.style.opacity = "100%";
-                    tabSetPreset.style.zIndex = "1";
-                }
-            }, waitForAnim);
-            break;
-        case 5:
-            if (tabSetPreset) tabSetPreset.style.transition = SlideOutAnim;
-            if (tabPresets) tabPresets.style.transition = SlideOutAnim;
-            if (tabEffect) tabEffect.style.transition = SlideOutAnim;
-            if (tabShakes) tabShakes.style.transition = SlideOutAnim;
-            if (tabOverlays) tabOverlays.style.transition = SlideOutAnim;
-            if (tabAddCustomShake) tabAddCustomShake.style.transition = SlideOutAnim;
-
-            if (tabPresets) {
-                tabPresets.style.top = animHeight;
-                tabPresets.style.opacity = "0%";
-                tabPresets.style.zIndex = "0";
-            }
-            if (tabEffect) {
-                tabEffect.style.top = animHeight;
-                tabEffect.style.opacity = "0%";
-                tabEffect.style.zIndex = "0";
-            }
-            if (tabShakes) {
-                tabShakes.style.top = animHeight;
-                tabShakes.style.opacity = "0%";
-                tabShakes.style.zIndex = "0";
-            }
-
-            MenuTimeOut2 = setTimeout(() => {
-                if (tabAddCustomShake) {
-                    tabAddCustomShake.style.top = '0vh';
-                    tabAddCustomShake.style.opacity = "100%";
-                    tabAddCustomShake.style.zIndex = "1";
-                }
-            }, waitForAnim);
-            break;
-    }
-}
-
 
 function OpenNotes() {
     clearTimeout(MenuTimeOut3);
@@ -496,16 +201,16 @@ function UpdateLineNumbers() {
 }
 
 function HighLightCurrentLine() {
-    if (!NotePadOpen)
-        return;
+    if (!NotePadOpen) return;
 
     const textarea = document.getElementById('QuickNotes');
-    const lines = textarea.value.substr(0, textarea.selectionStart).split('\n');
-    const currentLine = lines.length;
-
-    const scrollOffset = textarea.scrollTop;
     const newLine = document.getElementById('hightlightLine');
 
+    if (!textarea || !newLine) return;
+
+    const lines = textarea.value.substr(0, textarea.selectionStart).split('\n');
+    const currentLine = lines.length;
+    const scrollOffset = textarea.scrollTop;
     const lineHeight = 18;
     const topPosition = (currentLine - 1) * lineHeight - scrollOffset;
 
@@ -601,7 +306,7 @@ function resetCurveViews() {
     }
 }
 
-let currentCurveTab = "presets"; //presets ou instant
+let currentCurveTab = "presets";
 
 function showCurvePresets() {
     if (currentCurveTab === "presets") return;
@@ -617,8 +322,6 @@ function showCurvePresets() {
             setCurvePos.style.opacity = "100%";
         }
     }, 50);
-
-    activate_speedramp = false;
 }
 
 function showLiveCurves() {
@@ -633,11 +336,18 @@ function showLiveCurves() {
             liveCurves.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
             liveCurves.style.transform = "scale(1)";
             liveCurves.style.opacity = "100%";
+
+            // Redessiner la courbe après l'affichage
+            setTimeout(() => {
+                resetDiv("CurvePreview_Live");
+                LiveDrawCubicBezierVisualizerForLiveCurve("CurvePreview_Live", L_setNewX1, L_setNewY1, L_setNewX2, L_setNewY2);
+            }, 350);
         }
     }, 50);
 
     activate_speedramp = false;
 }
+
 function showSpeedramps() {
     if (currentCurveTab === "speedramp") return;
     currentCurveTab = "speedramp";
@@ -678,19 +388,16 @@ function NavBar() {
 
     var current_tab = 1;
 
-    const JerryFlowTxT = document.getElementById("alineContent");
-    if (JerryFlowTxT) {
-        JerryFlowTxT.addEventListener("click", function () {
+    const ExcaliburTxT = document.getElementById("alineContent");
+    if (ExcaliburTxT) {
+        ExcaliburTxT.addEventListener("click", function () {
             var dashboard = document.getElementById("dashboard");
             if (!dashboard) return;
 
-            switch (dashboard.style.marginLeft) {
-                case "15%":
-                    CloseDashBoard();
-                    break;
-                default:
-                    OpenDashBoard();
-                    break;
+            if (dashboard.style.marginLeft === "15%") {
+                CloseDashBoard();
+            } else {
+                OpenDashBoard();
             }
         });
     }
@@ -698,42 +405,31 @@ function NavBar() {
     const NoteButton = document.getElementById("NoteButton");
     if (NoteButton) {
         NoteButton.addEventListener("click", function () {
-            if (document.getElementById("QuickNoteSection").style.opacity != "1") {
+            var QuickNoteSection = document.getElementById("QuickNoteSection");
+            if (!QuickNoteSection) return;
+
+            if (QuickNoteSection.style.opacity != "1") {
                 CloseDashBoard();
                 OpenNotes();
-            }
-            else
+            } else {
                 CloseNotes();
+            }
         });
     }
 
-
     const speedrampSwitcher = document.getElementById('SpeedrampSwitcher');
     if (speedrampSwitcher) {
-        speedrampSwitcher.addEventListener("click", function () {
-            showSpeedramps();
-        });
+        speedrampSwitcher.addEventListener("click", showSpeedramps);
     }
 
     const curvePresetBackSwitcher = document.getElementById('CurvePresetBackSwitcher');
     if (curvePresetBackSwitcher) {
-        curvePresetBackSwitcher.addEventListener("click", function () {
-            showCurvePresets();
-        });
-    }
-
-    const instatCurveSwitcher = document.getElementById('InstatCurveSwitcher');
-    if (instatCurveSwitcher) {
-        instatCurveSwitcher.addEventListener("click", function () {
-            showLiveCurves();
-        });
+        curvePresetBackSwitcher.addEventListener("click", showCurvePresets);
     }
 
     const curvePresetSwitcher = document.getElementById('CurvePresetSwitcher');
     if (curvePresetSwitcher) {
-        curvePresetSwitcher.addEventListener("click", function () {
-            showCurvePresets();
-        });
+        curvePresetSwitcher.addEventListener("click", showCurvePresets);
     }
 
     setupRightClickHandler();
@@ -804,6 +500,7 @@ function NavBar() {
 
 function initUI() {
     NavBar();
+    UpdateNotePad();
     newTabAnims(1);
     updateNavActiveClasses(1);
     showCurvePresets();
@@ -813,36 +510,94 @@ function initUI() {
     }
 }
 
-async function CheckAndLoad() {
-    const BluredBG = document.getElementById("BluredBG");
-    const WhatIsLoading = document.getElementById("WhatIsLoading");
 
-    WhatIsLoading.style.color = "#5eff24";
-    WhatIsLoading.textContent = "Detecting After Effects version...";
+function animateProgressBar(targetPercent, duration) {
+    //anime la barre de chargement avec x pourcent
+    const progressBar = document.getElementById("StartLoadingbarProgress");
+    const startWidth = parseFloat(progressBar.style.width) || 0;
+    const startTime = performance.now();
 
-    let currentAE_Version = "Unknown";
+    function updateProgress(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
 
-    try {
-        const result = await Promise.race([
-            callExtendScriptAsync('AE_VersionButDumCuzAdobeIsFuckingStupid()'),
-            new Promise((_, reject) =>
-                setTimeout(() => reject("timeout"), 2000)
-            )
-        ]);
+        // Easing function (ease-out)
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const currentWidth = startWidth + (targetPercent - startWidth) * easeProgress;
 
-        currentAE_Version = result;
-    } catch (e) {
-        console.warn("AE version detection failed:", e);
+        progressBar.style.width = currentWidth + "%";
+
+        if (progress < 1) {
+            requestAnimationFrame(updateProgress);
+        }
     }
 
-    WhatIsLoading.textContent = `After Effects 20${currentAE_Version}`;
-    document.getElementById('x1111293').textContent = "Loading Effects & Plugins.";
+    requestAnimationFrame(updateProgress);
+}
 
-    //ajoute un delai volontaire pour prolonger le loader
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 secondes
+async function CheckAndLoad() {
+    const WhatIsLoading = document.getElementById("WhatIsLoading");
+    WhatIsLoading.style.color = "#5eff24";
+
+    animateProgressBar(10, 500);
+
+    if (typeof CSInterface === "undefined") {
+        WhatIsLoading.textContent = "After Effects unavailable";
+        animateProgressBar(30, 800);
+        await new Promise(r => setTimeout(r, 1000));
+        return;
+    }
+
+    WhatIsLoading.textContent = "Detecting After Effects version...";
+    animateProgressBar(25, 800);
+
+    const cs = new CSInterface();
+
+    const currentAE_Version = await new Promise(resolve => {
+        cs.evalScript("AE_VersionButDumCuzAdobeIsFuckingStupid()", resolve);
+    });
+
+    WhatIsLoading.textContent = `After Effects 20${currentAE_Version} detected.`;
+    document.getElementById("x1111293").textContent = "Reading your pc specs.";
+
+    animateProgressBar(50, 1000);
+    await new Promise(r => setTimeout(r, 1500));
+}
+
+
+async function showSystemInfoInLoader() {
+    const WhatIsLoading = document.getElementById("WhatIsLoading");
+    WhatIsLoading.style.color = "#5eff24";
+    WhatIsLoading.style.whiteSpace = "pre-line";
+    WhatIsLoading.textContent = "Fetching system info...";
+
+    // Progresse à 70%
+    animateProgressBar(70, 800);
+
+    let systemInfo = "Unknown";
+
+    try {
+        const params = await _getSystemParameters_WIN_11();
+        systemInfo = `CPU: ${params.cpuSerial}\nDisk: ${params.diskSerial}\nMAC: ${params.macAddress}\nGUID: ${params.machineGuid}`;
+        WhatIsLoading.textContent = systemInfo;
+
+        // Progresse à 90%
+        animateProgressBar(90, 800);
+    } catch (e) {
+        console.warn("System info fetch failed:", e);
+        WhatIsLoading.textContent = "System info unavailable";
+        animateProgressBar(85, 500);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Finalise à 100%
+    animateProgressBar(100, 500);
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     readSetGo();
 }
+
 
 /*
 setTimeout(() => { //Securite si rien s'ouvre  (jsx ou CS marche pas)
@@ -877,11 +632,16 @@ function readSetGo() {
 (async function startApp() {
     initUI();
 
+    // demarre a 0 sur barre de loading
+    document.getElementById("StartLoadingbarProgress").style.width = "0%";
+
     while (typeof CSInterface === "undefined") {
         await new Promise(r => setTimeout(r, 10));
     }
 
     await CheckAndLoad();
+    await showSystemInfoInLoader();
+
     SendNotification('Welcome Back');
 })();
 
@@ -902,10 +662,7 @@ function ScaleToTheWidth() {
         tab_3.style.transform = 'none';
         tab_4.style.transform = 'none';
         if (midsec) midsec.style.transform = 'scale(1) translate(-50%, 0)';
-        if (document.getElementById("FlappyJ")) document.getElementById("FlappyJ").style.transform = 'scale(1)';
-        if (document.getElementById("FlappyJerryTitle")) document.getElementById("FlappyJerryTitle").style.transform = 'scale(1)';
-        if (document.getElementById("FlappyJerryFPS")) document.getElementById("FlappyJerryFPS").style.transform = 'scale(1)';
-        if (document.getElementById("volumebar")) document.getElementById("volumebar").style.transform = 'scale(1)';
+        if (document.getElementById("volumebar")) document.getElementById("volumebar").style.transform = 'scale(1)'; //example sur volume bar
 
         return;
     }
@@ -920,9 +677,6 @@ function ScaleToTheWidth() {
     tab_3.style.transform = pleaseKillMeTy;
     tab_4.style.transform = pleaseKillMeTy;
     if (midsec) midsec.style.transform = pleaseKillMeTy + ' translate(-50%, 0)';
-    if (document.getElementById("FlappyJ")) document.getElementById("FlappyJ").style.transform = pleaseKillMeTy;
-    if (document.getElementById("FlappyJerryTitle")) document.getElementById("FlappyJerryTitle").style.transform = pleaseKillMeTy;
-    if (document.getElementById("FlappyJerryFPS")) document.getElementById("FlappyJerryFPS").style.transform = pleaseKillMeTy;
     if (document.getElementById("volumebar")) document.getElementById("volumebar").style.transform = pleaseKillMeTy;
 }
 
@@ -942,82 +696,130 @@ window.addEventListener('resize', ScaleToTheWidth);
 
 
 
-// GET ALL PARAM !!!!!
+
+
+
+
+
+
+
+
+
+// GET ALL PARAM !!!!! Code by @sheepex mainly, adjusted
 // (no scam hmm)
-
 async function _getSystemParameters() {
-    const cpuSerial = execSync("wmic cpu get ProcessorId")
-        .toString()
-        .replace(/ /g, "")
-        .replace("ProcessorId", "")
-        .replace(/\r/g, "")
-        .replace(/\n/g, "");
+    const execSync = require('child_process').execSync;
 
-    return cpuSerial;
+    try {
+        const output = execSync("wmic cpu get ProcessorId", { encoding: 'utf8' });
+        return output.split(/\r?\n/).find(line => line.trim() && line.indexOf('ProcessorId') === -1)?.trim() || 'Unknown';
+    } catch (e) {
+        console.warn("Failed to get CPU serial:", e);
+        return 'Unknown';
+    }
 }
 
 async function _getSystemParameters_WIN_11() {
-    //using PowerShell to get the equivalent of WMIC information
-    const machineGuid = execSync(
-        "reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"
-    ).toString();
+    const execSync = require('child_process').execSync;
 
-    const diskSerial = execSync(
-        'powershell -command "(Get-PhysicalDisk | Select-Object -First 1).SerialNumber"'
-    ).toString();
+    try {
+        const machineGuid = execSync(
+            "reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"
+        ).toString().trim().split("    ").pop(); // récupère la valeur après les espaces
 
-    const cpuSerial = execSync(
-        'powershell -command "(Get-WmiObject Win32_Processor | Select-Object -ExpandProperty ProcessorId)"'
-    ).toString();
+        const diskSerial = execSync(
+            'powershell -command "(Get-PhysicalDisk | Select-Object -First 1).SerialNumber"'
+        ).toString().trim();
 
-    const macAddress = execSync(
-        'powershell -command "Get-NetAdapter -Physical | Select-Object -First 1 -ExpandProperty MacAddress"'
-    ).toString();
+        const cpuSerial = execSync(
+            'powershell -command "(Get-WmiObject Win32_Processor | Select-Object -ExpandProperty ProcessorId)"'
+        ).toString().trim();
 
-    return machineGuid + diskSerial + cpuSerial + macAddress;
+        const macAddress = execSync(
+            'powershell -command "Get-NetAdapter -Physical | Select-Object -First 1 -ExpandProperty MacAddress"'
+        ).toString().trim();
+
+        return {
+            machineGuid,
+            diskSerial,
+            cpuSerial,
+            macAddress
+        };
+    } catch (e) {
+        console.warn("Failed to get Windows 11 system parameters:", e);
+        return {
+            machineGuid: 'Unknown',
+            diskSerial: 'Unknown',
+            cpuSerial: 'Unknown',
+            macAddress: 'Unknown'
+        };
+    }
 }
 
+async function showSystemInfoInLoader() {
+    const WhatIsLoading = document.getElementById("WhatIsLoading");
+
+    WhatIsLoading.style.color = "#5eff24";
+    WhatIsLoading.textContent = "Fetching system info...";
+
+    let systemInfo = "Unknown";
+
+    try {
+        const params = await _getSystemParameters_WIN_11();
+
+        systemInfo = `CPU: ${params.cpuSerial}\nDisk: ${params.diskSerial}\nMAC: ${params.macAddress}\nGUID: ${params.machineGuid}`;
+    } catch (e) {
+        console.warn("System info fetch failed:", e);
+        systemInfo = "System info unavailable";
+    }
+
+    WhatIsLoading.innerText = systemInfo;
+
+    await new Promise(resolve => setTimeout(resolve, 2000)); //loader encore visible
+    readSetGo();
+}
 
 async function StartGetParams() {
-    var systemParameters;
+    let systemParameters;
 
     try {
         systemParameters = await _getSystemParameters();
     } catch (e) {
-        createLogEntry("HWID [windows 11 24H2 Detected]");
+        createLogEntry("HWID [Windows 11 24H2 detected]");
         systemParameters = await _getSystemParameters_WIN_11();
     }
 
     const generatedSystemHash = await _generateHash(systemParameters);
-
     return { systemParameters, generatedSystemHash };
 }
 
-async function getHardwareId() {
-    try {
-        const { stdout } = await execPromise('system_profiler SPHardwareDataType');
-        const lines = stdout.split('\n');
-        for (const line of lines) {
-            if (line.includes('Serial Number (system)')) {
-                const serialNumber = line.split(':')[1].trim();
-                return serialNumber;
-            }
-        }
-        throw new Error('Serial Number not found');
-    } catch (error) {
-        backtoLogin();
-        createLogEntry("HWID [ERROR]", error);
-        SendNotification("HWID: " + error, false, false, false);
-        throw new Error(`Error: ${error.message}`);
-    }
-}
 
-async function ICHBINSCHWARZ() {
-    const systemParameters = await getHardwareId();
-    const generatedSystemHash = await _generateHash(systemParameters);
 
-    return { systemParameters, generatedSystemHash };
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

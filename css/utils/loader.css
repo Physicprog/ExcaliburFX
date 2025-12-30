@@ -1,0 +1,101 @@
+#Loading {
+    /* display: none; */
+    position: absolute;
+    height: 100vh;
+    width: 100%;
+    margin-top: 0vh;
+    background-color: #171717a8;
+    backdrop-filter: blur(8px);
+    top: 0px;
+    left: 0px;
+    z-index: 99999999999;
+    user-select: none;
+}
+
+#BluredBG {
+    /* display: none; */
+    position: absolute;
+    height: 100vh;
+    width: 100%;
+    margin-top: 0vh;
+    background-color: rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(8px);
+    top: 0px;
+    left: 0px;
+    opacity: 100%;
+    z-index: 99999999999;
+    user-select: none;
+    transition: opacity 500ms ease-in-out;
+}
+
+#dancingDuck {
+    margin-top: 25vh;
+    height: 18vh;
+    width: 100%;
+    background-image: url("../resources/duck.gif");
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+#Loading h1 {
+    margin-top: 5vh;
+    width: 100%;
+    text-align: center;
+    font-size: 5vh;
+    text-shadow: 2px 2px 2vh rgba(255, 255, 255, 0.275);
+}
+
+#Loading h3,
+#Loading h2 {
+    margin-top: 4vh;
+    font-size: 3vh;
+    width: 100%;
+    text-align: center;
+    text-shadow: 2px 2px 2vh rgba(255, 255, 255, 0.275);
+}
+
+#Loading h4 {
+    margin-top: 3vh;
+    font-size: 2vh;
+    width: 100%;
+    text-align: center;
+    text-shadow: 2px 2px 2vh rgba(255, 255, 255, 0.275);
+    color: rgb(143, 143, 143);
+}
+
+#StartLoadingbar {
+    background-color: #131313;
+    border: 1px solid rgb(65, 65, 65);
+    border-radius: 0.6vh;
+    width: 80%;
+    margin-left: 10%;
+    margin-top: 3vh;
+    height: 2vh;
+}
+
+#StartLoadingbarProgress {
+    background-color: #8060ff;
+    box-shadow: 0px 0px 6vh #a690ff;
+    height: 2vh;
+    width: 0%;
+}
+
+#progress {
+    height: 6px;
+    background-color: rgb(15, 15, 15);
+    margin: 3vh auto;
+    width: 70%;
+    border-left: 0px solid #6b48f5;
+    border-radius: 0.3vh;
+}
+
+#theProgress {
+    border-radius: 4px;
+    height: 6px;
+    background-color: rgb(107, 72, 245);
+    margin-left: 0px;
+    width: 0%;
+    border-left: 0px solid #6b48f5;
+    transition: width 500ms ease-in-out;
+}
