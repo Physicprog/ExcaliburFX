@@ -10,19 +10,56 @@ const topTimerOUT = "top 200ms cubic-bezier(.7,0,.3,1)";
 var margin_time_min = "margin 300ms cubic-bezier(.7,0,.3,1)";
 var opacity_time = "opacity 300ms cubic-bezier(.7,0,.3,1)";
 var top_time_min = "top 300ms cubic-bezier(.7,0,.3,1)";
+
 var MenuTimeOut;
 var MenuTimeOut2;
 var MenuTimeOut3;
 let NotetimeoutIDs = [];
+
+const fs = require('fs');
+const path = require('path');
+
+var setNewX1 = 0.2;
+var setNewY1 = 0.8;
+var setNewX2 = 0.8;
+var setNewY2 = 0.2;
+var L_setNewX1 = 0.2;
+var L_setNewY1 = 0.8;
+var L_setNewX2 = 0.8;
+var L_setNewY2 = 0.2;
+var hasCopyValue = false;
+var copy_x1 = 0;
+var copy_y1 = 0;
+var copy_x2 = 0;
+var copy_y2 = 0;
+var GlobalsCurrentTab = 1;
+let currentCurveTab = "instant";
+var activate_speedramp = false;
+var GetARandomCurvePreset = 0;
+var lastNoteLineUsed = 0;
+let drawCurve_live_Inverval;
+let drawCurve_live2_Inverval;
+let currentEditingSlot = null;
+let isEditMode = false;
+
+
+function getCSSVar(varName) {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue(varName).trim();
+}
 
 function E(script) {
     new CSInterface().evalScript(script);
 }
 
 function clearALLNoteTimeouts() {
-    NotetimeoutIDs.forEach(NotetimeoutIDs => clearTimeout(NotetimeoutIDs));
+    //enleve les timeouts
+    for (let id of NotetimeoutIDs) {
+        clearTimeout(id);
+    }
     NotetimeoutIDs = [];
 }
+
 
 function SendNotification(noti, returnit = true, color_green = true, center_to_Main = true) {
     var notification = document.getElementById("notification");
@@ -157,6 +194,8 @@ function OpenNotes() {
     QuickNoteSection.style.opacity = '100%';
     QuickNoteSection.style.top = '0vh';
     QuickNoteSection.style.zIndex = '9999998';
+    QuickNoteSection.style.visibility = 'visible';
+    QuickNoteSection.style.pointerEvents = 'auto';
     NotePadOpen = true;
 }
 
@@ -171,8 +210,10 @@ function CloseNotes() {
 
     MenuTimeOut3 = setTimeout(() => {
         QuickNoteSection.style.zIndex = '-100';
+        QuickNoteSection.style.visibility = 'hidden';
+        QuickNoteSection.style.pointerEvents = 'none';
     }, waitForAnim);
-    NotePadOpen = true;
+    NotePadOpen = false;
 }
 
 var lastNoteLineUsed = 0;
@@ -293,20 +334,22 @@ function resetCurveViews() {
         setCurvePos.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
         setCurvePos.style.transform = "scale(0)";
         setCurvePos.style.opacity = "0%";
+        setCurvePos.style.zIndex = "0";
     }
     if (liveCurves) {
         liveCurves.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-        liveCurves.style.transform = "scale(0)";
+        liveCurves.style.transform = "translateX(-50%) scale(0)";
         liveCurves.style.opacity = "0%";
+        liveCurves.style.zIndex = "0";
     }
     if (speedrampSection) {
         speedrampSection.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-        speedrampSection.style.transform = "scale(0)";
+        speedrampSection.style.transform = "translateX(-50%) scale(0)";
         speedrampSection.style.opacity = "0%";
+        speedrampSection.style.zIndex = "0";
     }
 }
 
-let currentCurveTab = "presets";
 
 function showCurvePresets() {
     if (currentCurveTab === "presets") return;
@@ -320,32 +363,59 @@ function showCurvePresets() {
             setCurvePos.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
             setCurvePos.style.transform = "scale(1)";
             setCurvePos.style.opacity = "100%";
+            setCurvePos.style.zIndex = "1";
+
+            // AJOUTEZ CES LIGNES - Redessiner après l'animation avec un délai plus long
+            setTimeout(() => {
+                forceRedrawAllPresets();
+            }, 350); // Après la transition
         }
     }, 50);
-}
 
+    activate_speedramp = false;
+}
 function showLiveCurves() {
     if (currentCurveTab === "instant") return;
     currentCurveTab = "instant";
 
     resetCurveViews();
 
-    setTimeout(() => {
-        const liveCurves = document.getElementById("liveCurves");
-        if (liveCurves) {
-            liveCurves.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-            liveCurves.style.transform = "scale(1)";
-            liveCurves.style.opacity = "100%";
+    const liveCurves = document.getElementById("liveCurves");
+    if (!liveCurves) return;
 
-            // Redessiner la courbe après l'affichage
-            setTimeout(() => {
-                resetDiv("CurvePreview_Live");
-                LiveDrawCubicBezierVisualizerForLiveCurve("CurvePreview_Live", L_setNewX1, L_setNewY1, L_setNewX2, L_setNewY2);
-            }, 350);
-        }
-    }, 50);
+    liveCurves.style.transition =
+        "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
+
+    requestAnimationFrame(() => {
+        liveCurves.style.transform = "scale(1)";
+        liveCurves.style.opacity = "1";
+    });
 
     activate_speedramp = false;
+
+    liveCurves.addEventListener(
+        "transitionend",
+        () => {
+            try {
+                clearInterval(drawCurve_live_Inverval);
+                resetDiv("CurvePreview_Live");
+
+                // Vérifier que la fonction existe avant de l'appeler
+                if (typeof LiveDrawCubicBezierVisualizerForLiveCurve === "function") {
+                    LiveDrawCubicBezierVisualizerForLiveCurve(
+                        "CurvePreview_Live",
+                        L_setNewX1,
+                        L_setNewY1,
+                        L_setNewX2,
+                        L_setNewY2
+                    );
+                }
+            } catch (error) {
+                console.warn("Erreur lors de l'initialisation de la courbe live:", error);
+            }
+        },
+        { once: true }
+    );
 }
 
 function showSpeedramps() {
@@ -354,17 +424,20 @@ function showSpeedramps() {
 
     resetCurveViews();
 
-    setTimeout(() => {
-        const speedrampSection = document.getElementById("speedrampSection");
-        if (speedrampSection) {
-            speedrampSection.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-            speedrampSection.style.transform = "scale(1)";
-            speedrampSection.style.opacity = "100%";
-        }
-    }, 50);
+    const speedrampSection = document.getElementById("speedrampSection");
+    if (!speedrampSection) return;
+
+    speedrampSection.style.transition =
+        "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
+
+    requestAnimationFrame(() => {
+        speedrampSection.style.transform = "scale(1)";
+        speedrampSection.style.opacity = "1";
+    });
 
     activate_speedramp = true;
 }
+
 
 function setupRightClickHandler() {
     const tabButton1 = document.getElementById("tabButton1");
@@ -374,14 +447,16 @@ function setupRightClickHandler() {
     tabButton1.addEventListener("contextmenu", function (e) {
         e.preventDefault();
         if (currentCurveTab === "instant") {
+            CloseDashBoard();
+            CloseNotes();
             showCurvePresets();
         } else {
+            CloseNotes();
+            CloseDashBoard();
             showLiveCurves();
         }
     });
 }
-
-
 
 function NavBar() {
     if (HelloIamRetarted) return;
@@ -398,6 +473,8 @@ function NavBar() {
                 CloseDashBoard();
             } else {
                 OpenDashBoard();
+                CloseNotes();
+
             }
         });
     }
@@ -408,11 +485,12 @@ function NavBar() {
             var QuickNoteSection = document.getElementById("QuickNoteSection");
             if (!QuickNoteSection) return;
 
-            if (QuickNoteSection.style.opacity != "1") {
+            if (!NotePadOpen) {
                 CloseDashBoard();
                 OpenNotes();
             } else {
                 CloseNotes();
+                CloseDashBoard();
             }
         });
     }
@@ -435,7 +513,11 @@ function NavBar() {
     setupRightClickHandler();
 
     function switchToTab(tabNumber) {
-        if (current_tab === tabNumber) return;
+        if (current_tab === tabNumber) {
+            CloseNotes();
+            CloseDashBoard();
+            return;
+        }
 
         CloseNotes();
         CloseDashBoard();
@@ -459,6 +541,7 @@ function NavBar() {
     if (tabButton2) {
         tabButton2.addEventListener("click", function () {
             switchToTab(2);
+
         });
     }
 
@@ -497,70 +580,123 @@ function NavBar() {
         });
     }
 }
+function redrawAllVisibleCurves() {
+    // Redessiner les presets si visibles OU si on est dans l'onglet presets
+    const setCurvePos = document.getElementById("set_curve_pos");
+    if ((setCurvePos && setCurvePos.style.opacity === "100%") || currentCurveTab === "presets") {
+        // Utiliser la nouvelle fonction pour forcer le rendu
+        forceRedrawAllPresets();
+    }
+
+    // Redessiner l'éditeur de courbe si ouvert
+    const createCurve = document.getElementById("create_curve");
+    if (createCurve && createCurve.style.opacity === "100%") {
+        resetDiv("CurvePreview");
+        LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
+    }
+
+    // Redessiner la courbe live si visible
+    const liveCurves = document.getElementById("liveCurves");
+    if (liveCurves && (liveCurves.style.opacity === "1" || currentCurveTab === "instant")) {
+        resetDiv("CurvePreview_Live");
+        LiveDrawCubicBezierVisualizerForLiveCurve(
+            "CurvePreview_Live",
+            L_setNewX1,
+            L_setNewY1,
+            L_setNewX2,
+            L_setNewY2
+        );
+    }
+}
 
 function initUI() {
     NavBar();
     UpdateNotePad();
     newTabAnims(1);
     updateNavActiveClasses(1);
-    showCurvePresets();
+    showLiveCurves();
+
+    // Initialiser les sliders de couleur seulement s'ils existent
+    const hueSlider = document.getElementById("hueSlider");
+    const satSlider = document.getElementById("satSlider");
+
+    if (hueSlider && satSlider) {
+        const root = document.documentElement;
+        hueSlider.addEventListener("input", () => {
+            root.style.setProperty("--hue", hueSlider.value);
+            redrawAllVisibleCurves();
+        });
+        satSlider.addEventListener("input", () => {
+            root.style.setProperty("--sat", satSlider.value + "%");
+            redrawAllVisibleCurves();
+        });
+    }
+
+    // FORCER L'INITIALISATION IMMEDIATE DES PRESETS
+    setTimeout(() => {
+        // S'assurer que les presets sont visibles et initialisés
+        const setCurvePos = document.getElementById("set_curve_pos");
+        if (setCurvePos) {
+            setCurvePos.style.opacity = "100%";
+            setCurvePos.style.transform = "scale(1)";
+            setCurvePos.style.zIndex = "1";
+
+            // Forcer le rendu immédiat des presets
+            forceRedrawAllPresets();
+        }
+    }, 200);
 
     if (isDashboardOpenOnStart) {
         OpenDashboardOnStart();
     }
 }
 
-
+// f(p) = 1−(1−p)3
 function animateProgressBar(targetPercent, duration) {
-    //anime la barre de chargement avec x pourcent
-    const progressBar = document.getElementById("StartLoadingbarProgress");
-    const startWidth = parseFloat(progressBar.style.width) || 0;
+    const bar = document.getElementById("StartLoadingbarProgress");
+    const start = parseFloat(bar.style.width) || 0;
     const startTime = performance.now();
 
-    function updateProgress(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+    function animate(time) {
+        let p = (time - startTime) / duration;
+        if (p > 1) p = 1;
 
-        // Easing function (ease-out)
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentWidth = startWidth + (targetPercent - startWidth) * easeProgress;
+        const ease = 1 - (1 - p) * (1 - p) * (1 - p);
+        bar.style.width = (start + (targetPercent - start) * ease) + "%";
 
-        progressBar.style.width = currentWidth + "%";
-
-        if (progress < 1) {
-            requestAnimationFrame(updateProgress);
-        }
+        if (p < 1) requestAnimationFrame(animate);
     }
 
-    requestAnimationFrame(updateProgress);
+    requestAnimationFrame(animate);
 }
+
 
 async function CheckAndLoad() {
     const WhatIsLoading = document.getElementById("WhatIsLoading");
     WhatIsLoading.style.color = "#5eff24";
 
-    animateProgressBar(10, 500);
+    animateProgressBar(0, 500); //10%
 
-    if (typeof CSInterface === "undefined") {
+    if (typeof CSInterface === "undefined") { //check si c'est internet ou ae
         WhatIsLoading.textContent = "After Effects unavailable";
         animateProgressBar(30, 800);
         await new Promise(r => setTimeout(r, 1000));
         return;
     }
 
-    WhatIsLoading.textContent = "Detecting After Effects version...";
-    animateProgressBar(25, 800);
+    WhatIsLoading.textContent = "ExcaliburFx can only be loaded in Adobe After Effect."; //pas DE GOOGLE
+    animateProgressBar(10, 800);
 
     const cs = new CSInterface();
 
     const currentAE_Version = await new Promise(resolve => {
-        cs.evalScript("AE_VersionButDumCuzAdobeIsFuckingStupid()", resolve);
+        cs.evalScript("AE_VersionButDumCuzAdobeIsFuckingStupid()", resolve); //sert à attendre le retour de cs.evalScript et a récupérer sa valeur avec await au lieu d’un callback
     });
 
     WhatIsLoading.textContent = `After Effects 20${currentAE_Version} detected.`;
-    document.getElementById("x1111293").textContent = "Reading your pc specs.";
+    document.getElementById("x1111293").textContent = "Reading your pc specs."; //lis les specs
 
-    animateProgressBar(50, 1000);
+    animateProgressBar(33, 1000);
     await new Promise(r => setTimeout(r, 1500));
 }
 
@@ -571,29 +707,25 @@ async function showSystemInfoInLoader() {
     WhatIsLoading.style.whiteSpace = "pre-line";
     WhatIsLoading.textContent = "Fetching system info...";
 
-    // Progresse à 70%
-    animateProgressBar(70, 800);
+    animateProgressBar(66, 800);
 
     let systemInfo = "Unknown";
 
     try {
         const params = await _getSystemParameters_WIN_11();
-        systemInfo = `CPU: ${params.cpuSerial}\nDisk: ${params.diskSerial}\nMAC: ${params.macAddress}\nGUID: ${params.machineGuid}`;
+        systemInfo = `CPU: ${params.cpuSerial}\nDisk: ${params.diskSerial}\nMAC: ${params.macAddress}\nGUID: ${params.machineGuid}`; //fetch quelques infos
         WhatIsLoading.textContent = systemInfo;
 
-        // Progresse à 90%
-        animateProgressBar(90, 800);
+        //progresse à 90%
+        animateProgressBar(66, 800);
     } catch (e) {
         console.warn("System info fetch failed:", e);
         WhatIsLoading.textContent = "System info unavailable";
-        animateProgressBar(85, 500);
+        animateProgressBar(100, 500);
     }
 
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Finalise à 100%
-    animateProgressBar(100, 500);
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     readSetGo();
 }
@@ -626,24 +758,285 @@ function readSetGo() {
     setTimeout(() => {
         Loading.style.display = "none";
         BluredBG.style.display = "none";
+
+        // FORCER L'INITIALISATION DE L'ONGLET INSTANT CURVE
+        setTimeout(() => {
+            // Réinitialiser toutes les vues d'abord
+            resetCurveViews();
+
+            // S'assurer que currentCurveTab n'est pas déjà sur instant pour éviter le return
+            currentCurveTab = "";
+
+            // Maintenant afficher les courbes live proprement
+            setTimeout(() => {
+                showLiveCurves();
+            }, 50);
+        }, 100);
+    }, 500);
+}
+
+function showLoginScreen() {
+    const loginScreen = document.getElementById("LoginScreen");
+    const loading = document.getElementById("Loading");
+
+    loading.style.display = "none";
+    loading.style.opacity = "0";
+    loading.style.zIndex = "99999999999";
+
+    loginScreen.style.display = "flex";
+    loginScreen.style.zIndex = "999999999999";
+
+    // Animation d'entrée améliorée
+    setTimeout(() => {
+        loginScreen.classList.add("visible");
+    }, 50);
+
+    setupLoginEvents();
+}
+
+function hideLoginScreen() {
+    const loginScreen = document.getElementById("LoginScreen");
+    const loading = document.getElementById("Loading");
+
+    loginScreen.classList.remove("visible");
+
+    setTimeout(() => {
+        loginScreen.style.display = "none";
+
+        // Restaurer complètement l'affichage du loader avec tous ses styles
+        loading.style.display = "block"; // Utiliser 'block' au lieu de 'flex' pour respecter le CSS
+        loading.style.opacity = "1";
+        loading.style.zIndex = "99999999999";
+        loading.style.position = "absolute";
+        loading.style.height = "100vh";
+        loading.style.width = "100%";
+        loading.style.top = "0";
+        loading.style.left = "0";
+
+        // Réinitialiser la barre de progression comme au démarrage
+        document.getElementById("StartLoadingbarProgress").style.width = "0%";
+    }, 500);
+}
+
+function setupLoginEvents() {
+    const usernameInput = document.getElementById("UsernameInput");
+    const loginButton = document.getElementById("LoginButton");
+    const loginError = document.getElementById("LoginError");
+
+    function validateUsername(username) {
+        if (!username || username.trim().length === 0) {
+            return "Username cannot be empty";
+        }
+        if (username.trim().length < 2) {
+            return "Username must be at least 2 characters";
+        }
+        if (username.trim().length > 20) {
+            return "Username cannot exceed 20 characters";
+        }
+        // Validation pour caractères interdits
+        const forbiddenChars = /[<>:"/\\|?*]/;
+        if (forbiddenChars.test(username)) {
+            return "Username contains invalid characters";
+        }
+        // Validation pour caractères uniquement alphanumériques et quelques symboles autorisés
+        const validChars = /^[a-zA-Z0-9._-]+$/;
+        if (!validChars.test(username.trim())) {
+            return "Username can only contain letters, numbers, dots, dashes and underscores";
+        }
+        return null; // Aucune erreur
+    }
+
+    function handleLogin() {
+        const username = usernameInput.value.trim();
+        const error = validateUsername(username);
+
+        // Nettoyer les erreurs précédentes
+        loginError.classList.remove("show");
+
+        if (error) {
+            showLoginError(error);
+            return;
+        }
+
+        // Désactiver le bouton et montrer le chargement
+        loginButton.disabled = true;
+        loginButton.textContent = "Loading...";
+        usernameInput.disabled = true;
+
+        try {
+            const success = updateUserConfig({
+                username: username,
+                firstTime: false
+            });
+
+            if (success) {
+                SendNotification(`Welcome, ${username}!`, true, true);
+
+                // Mettre à jour le texte du loader directement comme pour les utilisateurs existants
+                const loading = document.getElementById("Loading");
+                const welcomeText = loading.querySelector("h1");
+                welcomeText.textContent = `Welcome, ${username}!`;
+
+                setTimeout(() => {
+                    hideLoginScreen();
+
+                    // Petit délai pour permettre la transition
+                    setTimeout(() => {
+                        startMainApp();
+                    }, 100);
+                }, 300);
+            } else {
+                throw new Error("Failed to save user configuration");
+            }
+        } catch (e) {
+            console.error('Login error:', e);
+            showLoginError("Unable to save your information. Please try again.");
+            resetLoginButton();
+        }
+    }
+
+    loginButton.addEventListener("click", handleLogin);
+
+    usernameInput.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            handleLogin();
+        }
+    });
+
+    usernameInput.addEventListener("input", function () {
+        clearLoginError();
+
+        // Validation en temps réel (optionnelle, pour un meilleur UX)
+        const currentValue = usernameInput.value.trim();
+        if (currentValue.length > 20) {
+            usernameInput.value = currentValue.substring(0, 20);
+        }
+    });
+
+    // Gestion de l'événement paste pour valider le contenu collé
+    usernameInput.addEventListener("paste", function (event) {
+        setTimeout(() => {
+            const pastedValue = usernameInput.value.trim();
+            if (pastedValue.length > 20) {
+                usernameInput.value = pastedValue.substring(0, 20);
+            }
+        }, 10);
+    });
+
+    // Fonctions utilitaires pour la gestion de l'interface
+    function showLoginError(message) {
+        loginError.textContent = message;
+        loginError.classList.add("show");
+
+        // Animation pour attirer l'attention
+        usernameInput.classList.add("error");
+        usernameInput.focus();
+
+        // Retirer la classe d'erreur après l'animation
+        setTimeout(() => {
+            usernameInput.classList.remove("error");
+        }, 500);
+
+        // Auto-cacher l'erreur après 5 secondes
+        setTimeout(() => {
+            if (loginError.classList.contains("show")) {
+                loginError.classList.remove("show");
+            }
+        }, 5000);
+    }
+
+    function resetLoginButton() {
+        loginButton.disabled = false;
+        loginButton.textContent = "Enter";
+        usernameInput.disabled = false;
+        usernameInput.focus();
+    }
+
+    // Fonction de nettoyage des erreurs
+    function clearLoginError() {
+        loginError.classList.remove("show");
+        usernameInput.classList.remove("error");
+    }
+
+    // Auto-focus sur l'input au chargement avec sélection du texte
+    setTimeout(() => {
+        usernameInput.focus();
+        if (usernameInput.value.trim() !== '') {
+            usernameInput.select(); // Sélectionner le texte s'il y en a
+        }
+    }, 100);
+}
+
+async function startMainApp() {
+    await CheckAndLoad();
+    await showSystemInfoInLoader();
+
+    customFileReadOrCreate();
+
+    // INITIALISER LES PRESETS IMMÉDIATEMENT
+    setTimeout(() => {
+        drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
+        drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
+        drawCubicBezierVisualizer("CUR_SpeedRamp_Preset", 0.20, 0.80, 0.80, 0.20);
+        drawCubicBezierVisualizer("CUR_S_Preset", 0.6, 0, 0.3, 1);
+        drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
+        LoadCustomCurves();
+    }, 100);
+
+    LiveCurveStuff();
+    CheckForButtonPress();
+    PresetsButtons();
+
+    // Message de bienvenue personnalisé selon si c'est un nouvel utilisateur ou pas
+    const userConfig = readOrCreateUserConfig();
+    const isNewUser = userConfig && userConfig.lastLogin &&
+        (new Date() - new Date(userConfig.lastLogin)) < 60000; // moins d'une minute = nouveau
+
+    if (isNewUser) {
+        SendNotification(`Welcome to ExcaliburFx, ${userConfig.username}!`, true, true);
+    } else {
+        SendNotification('Welcome Back', true, true);
+    }
+
+    // Final: Masquer le loader et afficher l'interface
+    setTimeout(() => {
+        readSetGo();
+
+        // DOUBLE RENDU APRES QUE L'INTERFACE SOIT VISIBLE
+        setTimeout(() => {
+            forceRedrawAllPresets();
+        }, 600);
     }, 500);
 }
 
 (async function startApp() {
     initUI();
 
-    // demarre a 0 sur barre de loading
     document.getElementById("StartLoadingbarProgress").style.width = "0%";
 
     while (typeof CSInterface === "undefined") {
         await new Promise(r => setTimeout(r, 10));
     }
 
-    await CheckAndLoad();
-    await showSystemInfoInLoader();
+    if (!hasValidUserSession()) {
+        showLoginScreen();
+    } else {
+        hideLoginScreen();
+        // Utilisateur connu : continuer normalement avec le nom personnalisé
+        const userConfig = readOrCreateUserConfig();
+        const welcomeText = document.getElementById("Loading").querySelector("h1");
+        welcomeText.textContent = `Welcome back, ${userConfig.username}!`;
 
-    SendNotification('Welcome Back');
+        await startMainApp();
+    }
 })();
+
+// Fonction pour compatibilité avec index.html - le démarrage se fait maintenant automatiquement
+function downloadJSAtOnload() {
+    // Cette fonction est appelée par l'HTML mais le démarrage se fait déjà automatiquement
+    // via l'IIFE startApp() ci-dessus
+}
+
 
 // TODO: RESIZE FUNCTION
 
@@ -756,28 +1149,7 @@ async function _getSystemParameters_WIN_11() {
     }
 }
 
-async function showSystemInfoInLoader() {
-    const WhatIsLoading = document.getElementById("WhatIsLoading");
 
-    WhatIsLoading.style.color = "#5eff24";
-    WhatIsLoading.textContent = "Fetching system info...";
-
-    let systemInfo = "Unknown";
-
-    try {
-        const params = await _getSystemParameters_WIN_11();
-
-        systemInfo = `CPU: ${params.cpuSerial}\nDisk: ${params.diskSerial}\nMAC: ${params.macAddress}\nGUID: ${params.machineGuid}`;
-    } catch (e) {
-        console.warn("System info fetch failed:", e);
-        systemInfo = "System info unavailable";
-    }
-
-    WhatIsLoading.innerText = systemInfo;
-
-    await new Promise(resolve => setTimeout(resolve, 2000)); //loader encore visible
-    readSetGo();
-}
 
 async function StartGetParams() {
     let systemParameters;
@@ -838,6 +1210,1240 @@ async function StartGetParams() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function getConfigPaths() {
+    const cs = new CSInterface();
+    const documentsFolder = cs.getSystemPath(SystemPath.MY_DOCUMENTS);
+    const baseFolder = path.join(documentsFolder, 'Excalibur');
+
+    return {
+        baseFolder,
+        assetsFolder: path.join(baseFolder, 'Assets'),
+        settingsCurves: path.join(baseFolder, 'settingsCurves.json'),
+        userConfig: path.join(baseFolder, 'userConfig.json')
+    };
+}
+
+function readOrCreateUserConfig() {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        if (!fs.existsSync(paths.userConfig)) {
+            const initialConfig = {
+                username: "",
+                lastLogin: null,
+                firstTime: true
+            };
+
+            fs.writeFileSync(
+                paths.userConfig,
+                JSON.stringify(initialConfig, null, 2),
+                'utf-8'
+            );
+            return initialConfig;
+        }
+
+        const configData = fs.readFileSync(paths.userConfig, 'utf-8');
+        let config = JSON.parse(configData);
+        return config;
+
+    } catch (e) {
+        console.error('readOrCreateUserConfig error:', e);
+    }
+}
+
+function sanitizeUsername(username) {
+    if (!username || typeof username !== 'string') {
+        return '';
+    }
+
+    // Nettoyer les caractères dangereux et les espaces en début/fin
+    return username
+        .trim()
+        .replace(/[<>:"/\\|?*]/g, '') // Supprimer les caractères interdits
+        .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
+        .substring(0, 20); // Limiter à 20 caractères
+}
+
+function updateUserConfig(newConfig) {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        const currentConfig = readOrCreateUserConfig();
+
+        // Nettoyer le nom d'utilisateur si présent
+        const cleanedConfig = { ...newConfig };
+        if (cleanedConfig.username) {
+            cleanedConfig.username = sanitizeUsername(cleanedConfig.username);
+        }
+
+        const updatedConfig = {
+            ...currentConfig,
+            ...cleanedConfig,
+            lastLogin: new Date().toISOString()
+        };
+
+        fs.writeFileSync(
+            paths.userConfig,
+            JSON.stringify(updatedConfig, null, 2),
+            'utf-8'
+        );
+
+        console.log('User config updated successfully:', updatedConfig);
+        return true;
+    } catch (e) {
+        console.error('updateUserConfig error:', e);
+        return false;
+    }
+}
+
+function hasValidUserSession() {
+    try {
+        const userConfig = readOrCreateUserConfig();
+
+        // V\u00e9rification plus robuste de la validit\u00e9 de la session
+        if (!userConfig) {
+            console.log('No user config found');
+            return false;
+        }
+
+        if (!userConfig.username || typeof userConfig.username !== 'string') {
+            console.log('Invalid or missing username');
+            return false;
+        }
+
+        const trimmedUsername = userConfig.username.trim();
+        if (trimmedUsername === '' || trimmedUsername.length < 2) {
+            console.log('Username too short or empty');
+            return false;
+        }
+
+        if (userConfig.firstTime !== false) {
+            console.log('First time user');
+            return false;
+        }
+
+        // V\u00e9rifier que le nom d'utilisateur respecte les r\u00e8gles de validation\n        const forbiddenChars = /[<>:\"/\\\\|?*]/;\n        if (forbiddenChars.test(trimmedUsername)) {\n            console.log('Username contains forbidden characters');\n            return false;\n        }\n        \n        const validChars = /^[a-zA-Z0-9._-]+$/;\n        if (!validChars.test(trimmedUsername)) {\n            console.log('Username contains invalid characters');\n            return false;\n        }\n        \n        console.log(`Valid user session found for: ${trimmedUsername}`);
+        return true;
+
+    } catch (e) {
+        console.error('hasValidUserSession error:', e);
+        return false;
+    }
+}
+
+
+
+function customFileReadOrCreate() {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+        if (!fs.existsSync(paths.assetsFolder)) {
+            fs.mkdirSync(paths.assetsFolder, { recursive: true });
+        }
+
+        if (!fs.existsSync(paths.settingsCurves)) {
+            const initialCurves = Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }));
+
+            fs.writeFileSync(
+                paths.settingsCurves,
+                JSON.stringify(initialCurves, null, 2),
+                'utf-8'
+            );
+            return { curves: initialCurves };
+        }
+
+        const curvesData = fs.readFileSync(paths.settingsCurves, 'utf-8');
+        let curves = JSON.parse(curvesData);
+
+        if (!Array.isArray(curves) || curves.length !== 20) {
+            curves = Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }));
+        } else {
+            curves = curves.map((curve, i) => ({
+                id: i + 1,
+                active: curve?.active || false,
+                name: curve?.name || "",
+                x1: parseFloat(curve?.x1) || 0.2,
+                y1: parseFloat(curve?.y1) || 0.8,
+                x2: parseFloat(curve?.x2) || 0.8,
+                y2: parseFloat(curve?.y2) || 0.2
+            }));
+        }
+
+        return { curves };
+
+    } catch (e) {
+        console.error('customFileReadOrCreate error:', e);
+        SendNotification('Error loading curves data', true, false);
+
+        return {
+            curves: Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }))
+        };
+    }
+}
+
+
+
+function updateSettingsCurves(newCurves) {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        // Validation des données avant sauvegarde
+        const validatedCurves = newCurves.map((curve, i) => ({
+            id: i + 1,
+            active: Boolean(curve.active),
+            name: String(curve.name || ""),
+            x1: parseFloat(curve.x1) || 0,
+            y1: parseFloat(curve.y1) || 0,
+            x2: parseFloat(curve.x2) || 1,
+            y2: parseFloat(curve.y2) || 1
+        }));
+
+        fs.writeFileSync(
+            paths.settingsCurves,
+            JSON.stringify(validatedCurves, null, 2),
+            'utf-8'
+        );
+
+        return true;
+    } catch (e) {
+        console.error('updateSettingsCurves error:', e);
+        SendNotification('Error saving curves', true, false);
+        return false;
+    }
+}
+
+
+function resetDiv(divId) {
+    var div = document.getElementById(divId);
+    if (!div) return;
+
+    while (div.firstChild) {
+        div.removeChild(div.firstChild);
+    }
+    div.style.backgroundSize = "contain";
+    div.style.position = "relative"; // S'assurer que le positionnement est correct
+}
+
+function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
+    var div = document.getElementById(divId);
+    if (!div) return;
+
+    // Nettoyer le div
+    while (div.firstChild) {
+        div.removeChild(div.firstChild);
+    }
+
+    var container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.height = "100%";
+    container.style.position = "absolute";
+    container.style.top = "0";
+    container.style.left = "0";
+    container.style.pointerEvents = "none";
+    div.appendChild(container);
+    div.style.backgroundSize = "0px";
+    div.style.position = "relative";
+
+    var paddingPercentage = 0.175;
+
+    function calculateControlPoints() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var paddingX = containerWidth * paddingPercentage;
+        var paddingY = width * paddingPercentage;
+        var ctrlX1 = Math.max(0, Math.min(x1 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY1 = Math.max(0, Math.min((1 - y1) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        var ctrlX2 = Math.max(0, Math.min(x2 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY2 = Math.max(0, Math.min((1 - y2) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        return [ctrlX1, ctrlY1, ctrlX2, ctrlY2];
+    }
+
+    var canvas = document.createElement("canvas");
+    canvas.style.pointerEvents = "none";
+    container.appendChild(canvas);
+
+    function drawCurve() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var ctx = canvas.getContext("2d");
+        var points = calculateControlPoints();
+
+        canvas.width = containerWidth;
+        canvas.height = width;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Dessiner la courbe
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.bezierCurveTo(points[0], points[1], points[2], points[3], (1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.strokeStyle = getCSSVar('--accent-light');
+        ctx.lineWidth = width / 25;
+        ctx.stroke();
+
+        // Lignes de contrôle
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.lineTo(points[0], points[1]);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = width / 29;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo((1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.lineTo(points[2], points[3]);
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+
+        // Points de contrôle
+        ctx.beginPath();
+        ctx.arc(points[0], points[1], width / 20, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(points[2], points[3], width / 20, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    }
+
+    drawCurve();
+
+    // Nettoyer et ajouter le resize handler
+    var resizeHandler = function () { drawCurve(); };
+    window.removeEventListener('resize', resizeHandler);
+    window.addEventListener('resize', resizeHandler);
+}
+
+function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
+    var div = document.getElementById(divId);
+    if (!div) return;
+
+    // Nettoyer le div
+    while (div.firstChild) {
+        div.removeChild(div.firstChild);
+    }
+
+    var container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.width = "100%";
+    container.style.height = "100%";
+    container.style.top = "0";
+    container.style.left = "0";
+    div.appendChild(container);
+    div.style.backgroundSize = "0px";
+
+    var paddingPercentage = 0.05;
+    var draggingControlPoint = null;
+
+    function calculateControlPoints() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var paddingX = containerWidth * paddingPercentage;
+        var paddingY = width * paddingPercentage;
+        var ctrlX1 = Math.max(0, Math.min(x1 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY1 = Math.max(0, Math.min((1 - y1) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        var ctrlX2 = Math.max(0, Math.min(x2 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY2 = Math.max(0, Math.min((1 - y2) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        return [ctrlX1, ctrlY1, ctrlX2, ctrlY2];
+    }
+
+    var canvas = document.createElement("canvas");
+    canvas.style.cursor = "Crosshair";
+    container.appendChild(canvas);
+
+    function drawCurve() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var ctx = canvas.getContext("2d");
+        var points = calculateControlPoints();
+
+        var paddedContainerWidth = containerWidth * (1 - 2 * paddingPercentage);
+        var paddedHeight = width * (1 - 2 * paddingPercentage);
+        canvas.width = containerWidth;
+        canvas.height = width;
+
+        // Grille
+        if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+            ctx.beginPath();
+            for (var x = containerWidth * paddingPercentage; x <= containerWidth * Math.round(1 - paddingPercentage); x += paddedContainerWidth / 4) {
+                ctx.moveTo(x, width * paddingPercentage);
+                ctx.lineTo(x, width * (1 - paddingPercentage));
+            }
+            for (var y = width * paddingPercentage; y <= width * Math.round(1 - paddingPercentage); y += paddedHeight / 4) {
+                ctx.moveTo(containerWidth * paddingPercentage, y);
+                ctx.lineTo(containerWidth * (1 - paddingPercentage), y);
+            }
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = div.offsetHeight * 0.005;
+            ctx.stroke();
+        }
+
+        // Courbe
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.bezierCurveTo(points[0], points[1], points[2], points[3], (1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = width / 80;
+        ctx.stroke();
+
+        // Lignes de contrôle
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.lineTo(points[0], points[1]);
+        ctx.strokeStyle = getCSSVar('--accent-light');
+        ctx.lineWidth = width / 55;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo((1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.lineTo(points[2], points[3]);
+        ctx.strokeStyle = getCSSVar('--accent-light');
+        ctx.stroke();
+
+        // Points de contrôle
+        ctx.beginPath();
+        ctx.arc(points[0], points[1], width / 40, 0, Math.PI * 2);
+        ctx.fillStyle = getCSSVar('--accent-light');
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(points[2], points[3], width / 40, 0, Math.PI * 2);
+        ctx.fillStyle = getCSSVar('--accent-light');
+        ctx.fill();
+    }
+
+    function getScaleFactor(element) {
+        const style = window.getComputedStyle(element);
+        const transform = style.transform || style.webkitTransform || style.mozTransform;
+        const matrix = transform.match(/^matrix\((.+)\)$/);
+        return matrix ? parseFloat(matrix[1].split(', ')[0]) : 1;
+    }
+
+    function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        var liveCurves = document.getElementById("liveCurves");
+        var scaleFactor = getScaleFactor(liveCurves);
+        return {
+            x: (evt.clientX - rect.left) / scaleFactor,
+            y: (evt.clientY - rect.top) / scaleFactor
+        };
+    }
+
+    // Event handlers pour le drag
+    canvas.addEventListener("mousedown", function (evt) {
+        var mousePos = getMousePos(canvas, evt);
+        var width = div.offsetHeight;
+        var points = calculateControlPoints();
+
+        if (Math.sqrt(Math.pow(mousePos.x - points[0], 2) + Math.pow(mousePos.y - points[1], 2)) <= width / 20) {
+            draggingControlPoint = 1;
+        } else if (Math.sqrt(Math.pow(mousePos.x - points[2], 2) + Math.pow(mousePos.y - points[3], 2)) <= width / 20) {
+            draggingControlPoint = 2;
+        }
+        drawCurve();
+    });
+
+    canvas.addEventListener("mousemove", function (evt) {
+        if (draggingControlPoint !== null) {
+            document.body.style.userSelect = "none";
+            canvas.style.cursor = "Crosshair";
+
+            var mousePos = getMousePos(canvas, evt);
+            var width = div.offsetHeight;
+            var containerWidth = container.offsetWidth;
+            var paddingX = containerWidth * paddingPercentage;
+            var paddingY = width * paddingPercentage;
+
+            if (draggingControlPoint === 1) {
+                L_setNewX1 = x1 = Math.max(0, Math.min((mousePos.x - paddingX) / (containerWidth - 2 * paddingX), 1));
+                L_setNewY1 = y1 = Math.max(0, Math.min(1 - (mousePos.y - paddingY) / (width - 2 * paddingY), 1));
+                document.getElementById("Curve_Val_live").value =
+                    Number(L_setNewX1).toFixed(2) + " | " + Number(L_setNewY1).toFixed(2) + " | " +
+                    Number(L_setNewX2).toFixed(2) + " | " + Number(L_setNewY2).toFixed(2);
+            } else if (draggingControlPoint === 2) {
+                L_setNewX2 = x2 = Math.max(0, Math.min((mousePos.x - paddingX) / (containerWidth - 2 * paddingX), 1));
+                L_setNewY2 = y2 = Math.max(0, Math.min(1 - (mousePos.y - paddingY) / (width - 2 * paddingY), 1));
+                document.getElementById("Curve_Val_live").value =
+                    Number(L_setNewX1).toFixed(2) + " | " + Number(L_setNewY1).toFixed(2) + " | " +
+                    Number(L_setNewX2).toFixed(2) + " | " + Number(L_setNewY2).toFixed(2);
+            }
+
+            drawCurve();
+        }
+    });
+
+    canvas.addEventListener("mouseup", function () {
+        document.body.style.userSelect = "";
+        draggingControlPoint = null;
+        canvas.style.cursor = "Crosshair";
+    });
+
+    canvas.addEventListener("mouseleave", function () {
+        document.body.style.userSelect = "";
+        draggingControlPoint = null;
+        canvas.style.cursor = "Crosshair";
+    });
+
+    drawCurve();
+
+    var resizeHandler = function () { drawCurve(); };
+    window.removeEventListener('resize', resizeHandler);
+    window.addEventListener('resize', resizeHandler);
+
+    // Boutons Copy/Paste - UNE SEULE FOIS
+    var CopyButton = document.getElementById("CopyCurve_live");
+    var PasteButton = document.getElementById("PasteCurve_live");
+
+    if (CopyButton) {
+        // Enlever les anciens listeners
+        var newCopyButton = CopyButton.cloneNode(true);
+        CopyButton.parentNode.replaceChild(newCopyButton, CopyButton);
+
+        newCopyButton.addEventListener("click", function () {
+            if (GlobalsCurrentTab != 1) return;
+            copy_x1 = x1;
+            copy_y1 = y1;
+            copy_x2 = x2;
+            copy_y2 = y2;
+            hasCopyValue = true;
+            SendNotification("Curve Copied!");
+        });
+    }
+
+    if (PasteButton) {
+        // Enlever les anciens listeners
+        var newPasteButton = PasteButton.cloneNode(true);
+        PasteButton.parentNode.replaceChild(newPasteButton, PasteButton);
+
+        newPasteButton.addEventListener("click", function () {
+            if (GlobalsCurrentTab != 1) return;
+            if (!hasCopyValue) {
+                SendNotification("No Curve Copied!", true, false);
+                return;
+            }
+            L_setNewX1 = x1 = copy_x1;
+            L_setNewY1 = y1 = copy_y1;
+            L_setNewX2 = x2 = copy_x2;
+            L_setNewY2 = y2 = copy_y2;
+            document.getElementById("Curve_Val_live").value =
+                Number(L_setNewX1).toFixed(2) + " | " + Number(L_setNewY1).toFixed(2) + " | " +
+                Number(L_setNewX2).toFixed(2) + " | " + Number(L_setNewY2).toFixed(2);
+            drawCurve();
+            SendNotification("Curve Pasted!");
+        });
+    }
+
+    // Initialiser la valeur
+    document.getElementById("Curve_Val_live").value =
+        Number(L_setNewX1).toFixed(2) + " | " + Number(L_setNewY1).toFixed(2) + " | " +
+        Number(L_setNewX2).toFixed(2) + " | " + Number(L_setNewY2).toFixed(2);
+}
+
+
+
+var hasCopyValue = false;
+var copy_x1 = 0, copy_y1 = 0, copy_x2 = 0, copy_y2 = 0;
+
+
+var GetARandomCurvePresetV2 = 0;
+
+function LiveDrawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
+    var div = document.getElementById(divId);
+    var container = document.createElement("div");
+    container.style.position = "relative";
+    div.appendChild(container);
+    div.style.backgroundSize = "0px";
+
+    var paddingPercentage = 0.05;
+
+    function calculateControlPoints() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var paddingX = containerWidth * paddingPercentage;
+        var paddingY = width * paddingPercentage;
+        var ctrlX1 = Math.max(0, Math.min(x1 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY1 = Math.max(0, Math.min((1 - y1) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        var ctrlX2 = Math.max(0, Math.min(x2 * (containerWidth - 2 * paddingX) + paddingX, containerWidth - paddingX));
+        var ctrlY2 = Math.max(0, Math.min((1 - y2) * (width - 2 * paddingY) + paddingY, width - paddingY));
+        return [ctrlX1, ctrlY1, ctrlX2, ctrlY2];
+    }
+
+    var canvas = document.createElement("canvas");
+    container.appendChild(canvas);
+
+    function drawCurve() {
+        var width = div.offsetHeight;
+        var containerWidth = container.offsetWidth;
+        var ctx = canvas.getContext("2d");
+        var points = calculateControlPoints();
+
+        var paddedContainerWidth = containerWidth * (1 - 2 * paddingPercentage);
+        var paddedHeight = width * (1 - 2 * paddingPercentage);
+        canvas.width = containerWidth;
+        canvas.height = width;
+
+        if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+            ctx.beginPath();
+            for (var x = containerWidth * paddingPercentage; x <= containerWidth * Math.round(1 - paddingPercentage); x += paddedContainerWidth / 4) {
+                ctx.moveTo(x, width * paddingPercentage);
+                ctx.lineTo(x, width * (1 - paddingPercentage));
+            }
+            for (var y = width * paddingPercentage; y <= width * Math.round(1 - paddingPercentage); y += paddedHeight / 4) {
+                ctx.moveTo(containerWidth * paddingPercentage, y);
+                ctx.lineTo(containerWidth * (1 - paddingPercentage), y);
+            }
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = div.offsetHeight * 0.005;
+            ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.bezierCurveTo(points[0], points[1], points[2], points[3], (1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = width / 60;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
+        ctx.lineTo(points[0], points[1]);
+        ctx.strokeStyle = getCSSVar('--accent-light');
+        ctx.lineWidth = width / 50;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo((1 - paddingPercentage) * containerWidth, paddingPercentage * width);
+        ctx.lineTo(points[2], points[3]);
+        ctx.strokeStyle = getCSSVar('--accent-light');
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(points[0], points[1], width / 30, 0, Math.PI * 2);
+        ctx.fillStyle = getCSSVar('--accent-light'); // CORRIGÉ
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(points[2], points[3], width / 30, 0, Math.PI * 2);
+        ctx.fillStyle = getCSSVar('--accent-light');
+        ctx.fill();
+    }
+    drawCurve();
+
+    window.addEventListener('resize', function () {
+        drawCurve();
+    });
+
+    drawCurve_live2_Inverval = setInterval(drawCurve, 1);
+
+    var draggingControlPoint = null;
+
+    function getScaleFactor(element) {
+        const style = window.getComputedStyle(element);
+        const transform = style.transform || style.webkitTransform || style.mozTransform;
+        const matrix = transform.match(/^matrix\((.+)\)$/);
+        return matrix ? parseFloat(matrix[1].split(', ')[0]) : 1;
+    }
+
+    function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        var create_curve = document.getElementById("create_curve");
+        var scaleFactor = getScaleFactor(create_curve);
+        return {
+            x: (evt.clientX - rect.left) / scaleFactor,
+            y: (evt.clientY - rect.top) / scaleFactor
+        };
+    }
+
+    canvas.addEventListener("mousedown", function (evt) {
+        var mousePos = getMousePos(canvas, evt);
+        var width = div.offsetHeight;
+        var points = calculateControlPoints();
+        div.style.cursor = "Crosshair";
+
+        if (Math.sqrt(Math.pow(mousePos.x - points[0], 2) + Math.pow(mousePos.y - points[1], 2)) <= width / 20) {
+            draggingControlPoint = 1;
+        } else if (Math.sqrt(Math.pow(mousePos.x - points[2], 2) + Math.pow(mousePos.y - points[3], 2)) <= width / 20) {
+            draggingControlPoint = 2;
+        }
+        drawCurve();
+    });
+
+    var old_val = document.getElementById("Curve_Val").value;
+
+    window.addEventListener("mousemove", function (evt) {
+        if (GlobalsCurrentTab != 1) return;
+        if (draggingControlPoint !== null) {
+            document.body.style.userSelect = "none";
+            var mousePos = getMousePos(canvas, evt);
+            var width = div.offsetHeight;
+            var containerWidth = container.offsetWidth;
+            var paddingX = containerWidth * paddingPercentage;
+            var paddingY = width * paddingPercentage;
+
+            switch (draggingControlPoint) {
+                case 1:
+                    {
+                        setNewX1 = x1 = Math.max(0, Math.min((mousePos.x - paddingX) / (containerWidth - 2 * paddingX), 1));
+                        setNewY1 = y1 = Math.max(0, Math.min(1 - (mousePos.y - paddingY) / (width - 2 * paddingY), 1));
+                        if (old_val != Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2))
+                            document.getElementById("Curve_Val").value = Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2);
+                    }
+                    break;
+                case 2:
+                    {
+                        setNewX2 = x2 = Math.max(0, Math.min((mousePos.x - paddingX) / (containerWidth - 2 * paddingX), 1));
+                        setNewY2 = y2 = Math.max(0, Math.min(1 - (mousePos.y - paddingY) / (width - 2 * paddingY), 1));
+                        if (old_val != Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2))
+                            document.getElementById("Curve_Val").value = Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2);
+                    }
+                    break;
+            }
+
+            drawCurve();
+        }
+    });
+
+    window.addEventListener("mouseup", function () {
+        if (GlobalsCurrentTab != 1) return;
+        document.body.style.userSelect = "";
+        draggingControlPoint = null;
+        div.style.cursor = "Crosshair";
+    });
+
+    var CopyButton = document.getElementById("CopyCurve");
+    var PasteButton = document.getElementById("PasteCurve");
+
+    CopyButton.addEventListener("click", function () {
+        if (GlobalsCurrentTab != 1) return;
+        copy_x1 = x1;
+        copy_y1 = y1;
+        copy_x2 = x2;
+        copy_y2 = y2;
+        if (!hasCopyValue) hasCopyValue = true;
+        SendNotification("Curve Copied!");
+    });
+
+    PasteButton.addEventListener("click", function () {
+        if (GlobalsCurrentTab != 1) return;
+        if (!hasCopyValue) {
+            SendNotification("No Curve Copied!", true, false);
+            return;
+        }
+        setNewX1 = x1 = copy_x1;
+        setNewY1 = y1 = copy_y1;
+        setNewX2 = x2 = copy_x2;
+        setNewY2 = y2 = copy_y2;
+        document.getElementById("Curve_Val").value = Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2);
+        SendNotification("Curve Pasted!");
+    });
+
+
+
+    if (old_val != Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2))
+        document.getElementById("Curve_Val").value = Number(setNewX1).toFixed(2) + ", " + Number(setNewY1).toFixed(2) + ", " + Number(setNewX2).toFixed(2) + ", " + Number(setNewY2).toFixed(2);
+}
+
+
+
+function returnToOrigPos() {
+    var tab1 = document.getElementById("tab_1");
+    var set_custom_curveTab = document.getElementById("create_curve");
+
+    tab1.style.transition = margin_time_min + ", " + opacity_time + ", " + top_time_min;
+    tab1.style.zIndex = "1";
+    tab1.style.marginTop = "-10vh";
+
+    curveWrapper.style.transform = "scale(0.6)";
+    curveWrapper.style.transition = "transform " + Math.round(settingsData[0].ui_animation_speed) + "ms cubic-bezier(.61,-0.01,1,.45)";
+
+    set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
+    set_custom_curveTab.style.opacity = "0%";
+    set_custom_curveTab.style.zIndex = "0";
+}
+
+function formatCurveName(name) {
+    if (!name) return "";
+
+    let result = "";
+    const maxLength = 12;
+
+    for (let i = 0; i < name.length && i < maxLength; i++) {
+        const char = name[i];
+        const isLongChar = ['W', 'M', 'O', 'G', 'H'].includes(char.toUpperCase());
+        const effectiveMax = isLongChar ? 8 : 10;
+
+        if (i < effectiveMax) {
+            result += i === 0 ? char.toUpperCase() : char.toLowerCase();
+        } else if (i <= maxLength) {
+            result += ".";
+        }
+    }
+
+    return result;
+}
+
+function LoadCustomCurves() {
+    const { curves } = customFileReadOrCreate();
+
+    for (let i = 0; i < 20; i++) {
+        const curve = curves[i];
+        const buttonId = `custom_${i + 1}`;
+        const buttonElement = document.getElementById(buttonId);
+
+        if (!buttonElement) continue;
+
+        if (curve.active && curve.name) {
+            const displayName = formatCurveName(curve.name);
+            buttonElement.innerHTML = `<span class="curve_label">${displayName}</span>`;
+
+            // S'assurer que le div est réinitialisé avant de dessiner
+            setTimeout(() => {
+                resetDiv(buttonId);
+                drawCubicBezierVisualizer(
+                    buttonId,
+                    parseFloat(curve.x1),
+                    parseFloat(curve.y1),
+                    parseFloat(curve.x2),
+                    parseFloat(curve.y2)
+                );
+            }, 50);
+        } else {
+            buttonElement.innerHTML = `<span class="curve_label">Add Custom</span>`;
+            resetDiv(buttonId);
+        }
+    }
+}
+
+// Fonction pour s'assurer que tous les presets sont bien rendus
+function forceRedrawAllPresets() {
+    // Redessiner tous les presets avec un petit délai
+    setTimeout(() => {
+        // S'assurer que les éléments existent avant de dessiner
+        if (document.getElementById("CUR_In_Preset")) {
+            resetDiv("CUR_In_Preset");
+            drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
+        }
+        if (document.getElementById("CUR_Out_Preset")) {
+            resetDiv("CUR_Out_Preset");
+            drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
+        }
+        if (document.getElementById("CUR_SpeedRamp_Preset")) {
+            resetDiv("CUR_SpeedRamp_Preset");
+            drawCubicBezierVisualizer("CUR_SpeedRamp_Preset", 0.20, 0.80, 0.80, 0.20);
+        }
+        if (document.getElementById("CUR_S_Preset")) {
+            resetDiv("CUR_S_Preset");
+            drawCubicBezierVisualizer("CUR_S_Preset", 0.6, 0, 0.3, 1);
+        }
+        if (document.getElementById("CUR_Reset")) {
+            resetDiv("CUR_Reset");
+            drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
+        }
+
+        // Recharger les custom curves aussi
+        LoadCustomCurves();
+    }, 100);
+
+    // Double rendu pour être sûr
+    setTimeout(() => {
+        if (document.getElementById("CUR_In_Preset")) {
+            drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
+            drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
+            drawCubicBezierVisualizer("CUR_SpeedRamp_Preset", 0.20, 0.80, 0.80, 0.20);
+            drawCubicBezierVisualizer("CUR_S_Preset", 0.6, 0, 0.3, 1);
+            drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
+        }
+    }, 300);
+}
+
+function PresetsButtons() {
+    var interfaceEntrypoint = new CSInterface();
+
+    var Preset1 = document.getElementById("CUR_In_Preset");
+    var Preset2 = document.getElementById("CUR_Out_Preset");
+    var Preset3 = document.getElementById("CUR_SpeedRamp_Preset");
+    var Preset4 = document.getElementById("CUR_S_Preset");
+    var None = document.getElementById("CUR_Reset");
+
+    Preset1.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0, 0.0, 0, 1)`); });
+    Preset2.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(1, 0, 1, 1)`); });
+    Preset3.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0.22, 0.85, 0.79, 0.19)`); });
+    Preset4.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0.6, 0, 0.3, 1)`); });
+    None.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0, 0, 1, 1)`); });
+}
+function openCurveEditor(slotIndex, existingCurve) {
+    const tab1 = document.getElementById("tab_1");
+    const set_custom_curveTab = document.getElementById("create_curve");
+    const curveWrapper = document.getElementById("curveWrapper");
+
+    currentEditingSlot = slotIndex;
+    isEditMode = existingCurve !== null;
+
+    // Animer l'ouverture de l'éditeur
+    CloseDashBoard();
+
+    set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
+    set_custom_curveTab.style.marginTop = "10vh";
+    set_custom_curveTab.style.opacity = "100%";
+    set_custom_curveTab.style.zIndex = "11111111";
+
+    curveWrapper.style.transform = "scale(1)";
+    curveWrapper.style.transition = "transform 300ms cubic-bezier(.61,-0.01,1,.45)";
+
+
+    tab1.style.transition = margin_time_min + ", " + opacity_time + ", " + top_time_min;
+    tab1.style.opacity = "0%";
+    tab1.style.zIndex = "0";
+    tab1.style.marginTop = "0vh";
+
+    if (existingCurve) {
+        setNewX1 = parseFloat(existingCurve.x1);
+        setNewY1 = parseFloat(existingCurve.y1);
+        setNewX2 = parseFloat(existingCurve.x2);
+        setNewY2 = parseFloat(existingCurve.y2);
+        document.getElementById("Curve_Name").value = existingCurve.name;
+    } else {
+        // Générer une courbe aléatoire par défaut
+        const presets = [
+            { x1: 0.5, y1: 0, x2: 0.5, y2: 1 },
+            { x1: 0, y1: 0, x2: 0, y2: 1 },
+            { x1: 1, y1: 0, x2: 1, y2: 1 },
+            { x1: 0.2, y1: 0.8, x2: 0.8, y2: 0.2 },
+            { x1: 0, y1: 0, x2: 1, y2: 1 }
+        ];
+
+        const preset = presets[Math.floor(Math.random() * presets.length)];
+        setNewX1 = preset.x1;
+        setNewY1 = preset.y1;
+        setNewX2 = preset.x2;
+        setNewY2 = preset.y2;
+        document.getElementById("Curve_Name").value = "";
+    }
+
+    document.getElementById("Curve_Val").value =
+        `${setNewX1.toFixed(2)}, ${setNewY1.toFixed(2)}, ${setNewX2.toFixed(2)}, ${setNewY2.toFixed(2)}`;
+
+    resetDiv("CurvePreview");
+    LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
+}
+
+function closeCurveEditor() {
+    const tab1 = document.getElementById("tab_1");
+    const set_custom_curveTab = document.getElementById("create_curve");
+    const curveWrapper = document.getElementById("curveWrapper");
+
+    set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
+    set_custom_curveTab.style.opacity = "0%";
+    set_custom_curveTab.style.zIndex = "0";
+
+    curveWrapper.style.transform = "scale(0.6)";
+    curveWrapper.style.transition = "transform 200ms cubic-bezier(.61,-0.01,1,.45)";
+
+    tab1.style.transition = margin_time_min + ", " + opacity_time + ", " + top_time_min;
+    tab1.style.opacity = "100%";
+    tab1.style.zIndex = "1";
+    tab1.style.marginTop = "-10vh";
+
+    currentEditingSlot = null;
+    isEditMode = false;
+}
+
+
+function CheckForButtonPress() {
+    var interfaceEntrypoint = new CSInterface();
+    const { curves: dataArray } = customFileReadOrCreate();
+
+    if (!dataArray) {
+        interfaceEntrypoint.evalScript(`SendJSX_SCRIPT_ALERT_ERROR("Failed to load curves data")`);
+        return;
+    }
+
+    var tab1 = document.getElementById("tab_1");
+    var ButtonRemove = document.getElementById("Curve_Remove");
+    var ButtonGoBack = document.getElementById("Curve_GoBack");
+    var ButtonApply = document.getElementById("Curve_Apply");
+    var set_custom_curveTab = document.getElementById("create_curve");
+    var curveWrapper = document.getElementById("curveWrapper");
+
+    var loadedButtonIndex = 0;
+    var getbuttonname = "";
+
+    function openCurveEditorForSlot(index, dataArray, buttonName) {
+        CloseDashBoard();
+
+        set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
+        set_custom_curveTab.style.marginTop = "10vh";
+        set_custom_curveTab.style.opacity = "100%";
+        set_custom_curveTab.style.zIndex = "11111111";
+
+        curveWrapper.style.transform = "scale(1)";
+        curveWrapper.style.transition = "transform 300ms cubic-bezier(0,.68,.39,1)";
+
+        tab1.style.transition = margin_time_min + ", " + opacity_time + ", " + top_time_min;
+        tab1.style.opacity = "0%";
+        tab1.style.zIndex = "0";
+        tab1.style.marginTop = "0vh";
+
+        loadedButtonIndex = index;
+        getbuttonname = buttonName;
+
+        if (dataArray[index].active) {
+            setNewX1 = parseFloat(dataArray[index].x1);
+            setNewY1 = parseFloat(dataArray[index].y1);
+            setNewX2 = parseFloat(dataArray[index].x2);
+            setNewY2 = parseFloat(dataArray[index].y2);
+            document.getElementById("Curve_Name").value = dataArray[index].name || "";
+        } else {
+            const presets = [
+                { x1: 0.5, y1: 0, x2: 0.5, y2: 1 },
+                { x1: 0, y1: 0, x2: 0, y2: 1 },
+                { x1: 1, y1: 0, x2: 1, y2: 1 },
+                { x1: 0.2, y1: 0.8, x2: 0.8, y2: 0.2 },
+                { x1: 0, y1: 0, x2: 1, y2: 1 }
+            ];
+            const preset = presets[GetARandomCurvePreset % presets.length];
+            setNewX1 = preset.x1;
+            setNewY1 = preset.y1;
+            setNewX2 = preset.x2;
+            setNewY2 = preset.y2;
+            GetARandomCurvePreset++;
+            document.getElementById("Curve_Name").value = "";
+        }
+
+        document.getElementById("Curve_Val").value =
+            `${Number(setNewX1).toFixed(2)}, ${Number(setNewY1).toFixed(2)}, ${Number(setNewX2).toFixed(2)}, ${Number(setNewY2).toFixed(2)}`;
+
+        resetDiv("CurvePreview");
+        LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
+    }
+
+    function closeEditor() {
+        set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
+        set_custom_curveTab.style.opacity = "0%";
+        set_custom_curveTab.style.zIndex = "0";
+
+        curveWrapper.style.transform = "scale(0.6)";
+        curveWrapper.style.transition = "transform 200ms cubic-bezier(.61,-0.01,1,.45)";
+
+        tab1.style.transition = margin_time_min + ", " + opacity_time + ", " + top_time_min;
+        tab1.style.opacity = "100%";
+        tab1.style.zIndex = "1";
+        tab1.style.marginTop = "-10vh";
+    }
+
+    // Configuration des 20 slots - UNE SEULE FOIS
+    for (var i = 0; i < 20; i++) {
+        (function (index) {
+            var button_text = "custom_" + (index + 1);
+            var getcurbutton = document.getElementById(button_text);
+
+            if (!getcurbutton) return;
+
+            getcurbutton.addEventListener("click", function () {
+                if (GlobalsCurrentTab != 1) return;
+                if (document.getElementById("create_curve").style.opacity === '1') return;
+
+                if (!dataArray[index].active) {
+                    openCurveEditorForSlot(index, dataArray, button_text);
+                } else {
+                    loadedButtonIndex = index;
+                    interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(
+                        ${dataArray[index].x1}, ${dataArray[index].y1},
+                        ${dataArray[index].x2}, ${dataArray[index].y2})`);
+                }
+            });
+
+            getcurbutton.addEventListener("contextmenu", function (e) {
+                e.preventDefault();
+                if (GlobalsCurrentTab != 1) return;
+                if (document.getElementById("create_curve").style.opacity === '1') return;
+
+                if (dataArray[index].active) {
+                    openCurveEditorForSlot(index, dataArray, button_text);
+                }
+            });
+        })(i);
+    }
+
+    // Boutons Remove, Apply, GoBack - UNE SEULE FOIS
+    if (ButtonRemove) {
+        ButtonRemove.addEventListener("click", function () {
+            if (GlobalsCurrentTab != 1) return;
+
+            dataArray[loadedButtonIndex].active = false;
+            dataArray[loadedButtonIndex].x1 = 0;
+            dataArray[loadedButtonIndex].y1 = 0;
+            dataArray[loadedButtonIndex].x2 = 1;
+            dataArray[loadedButtonIndex].y2 = 1;
+            dataArray[loadedButtonIndex].name = "";
+
+            resetDiv(getbuttonname);
+            document.getElementById(getbuttonname).textContent = "Add Custom";
+            updateSettingsCurves(dataArray);
+            SendNotification("Curve Removed!", true, false);
+            closeEditor();
+        });
+    }
+
+    if (ButtonApply) {
+        ButtonApply.addEventListener("click", function () {
+            if (GlobalsCurrentTab != 1) return;
+
+            dataArray[loadedButtonIndex].active = true;
+            dataArray[loadedButtonIndex].x1 = Number(setNewX1).toFixed(2);
+            dataArray[loadedButtonIndex].y1 = Number(setNewY1).toFixed(2);
+            dataArray[loadedButtonIndex].x2 = Number(setNewX2).toFixed(2);
+            dataArray[loadedButtonIndex].y2 = Number(setNewY2).toFixed(2);
+            dataArray[loadedButtonIndex].name = document.getElementById("Curve_Name").value;
+
+            resetDiv(getbuttonname);
+
+            const displayName = formatCurveName(document.getElementById("Curve_Name").value);
+            document.getElementById(getbuttonname).textContent = displayName;
+
+            drawCubicBezierVisualizer(
+                getbuttonname,
+                dataArray[loadedButtonIndex].x1,
+                dataArray[loadedButtonIndex].y1,
+                dataArray[loadedButtonIndex].x2,
+                dataArray[loadedButtonIndex].y2
+            );
+
+            updateSettingsCurves(dataArray);
+            SendNotification("Curve Saved!");
+            closeEditor();
+        });
+    }
+
+    if (ButtonGoBack) {
+        ButtonGoBack.addEventListener("click", function () {
+            if (GlobalsCurrentTab != 1) return;
+            closeEditor();
+        });
+    }
+}
+
+var ButtomRandom = document.getElementById("Curve_Randomize");
+if (ButtomRandom) {
+    ButtomRandom.addEventListener("click", function () {
+        if (GlobalsCurrentTab != 1) return;
+
+        setNewX1 = Math.random();
+        setNewY1 = Math.random();
+        setNewX2 = Math.random();
+        setNewY2 = Math.random();
+
+        document.getElementById("Curve_Val").value =
+            `${Number(setNewX1).toFixed(2)}, ${Number(setNewY1).toFixed(2)}, ${Number(setNewX2).toFixed(2)}, ${Number(setNewY2).toFixed(2)}`;
+    });
+}
+
+
+
+
+function LiveCurveStuff() {
+    var interfaceEntrypoint = new CSInterface();
+    var x1 = 0.20, y1 = 0.80, x2 = 0.80, y2 = 0.20;
+    LiveDrawCubicBezierVisualizerForLiveCurve("CurvePreview_Live", x1, y1, x2, y2);
+
+    document.getElementById("Apply_LiveCurve").addEventListener("click", function () {
+        if (GlobalsCurrentTab != 1) return;
+        interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur("${L_setNewX1}", "${L_setNewY1}","${L_setNewX2}", "${L_setNewY2}")`);
+    });
+}
+
+
+function PresetsButtons() {
+    var interfaceEntrypoint = new CSInterface();
+
+    var Preset1 = document.getElementById("CUR_In_Preset");
+    var Preset2 = document.getElementById("CUR_Out_Preset");
+    var Preset3 = document.getElementById("CUR_SpeedRamp_Preset");
+    var Preset4 = document.getElementById("CUR_S_Preset");
+    var None = document.getElementById("CUR_Reset");
+
+    Preset1.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0, 0.0, 0, 1)`); });
+    Preset2.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(1, 0, 1, 1)`); });
+    Preset3.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0.22, 0.85, 0.79, 0.19)`); });
+    Preset4.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0.6, 0, 0.3, 1)`); });
+    None.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0, 0, 1, 1)`); });
+}
 
 
 

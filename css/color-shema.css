@@ -1,0 +1,16 @@
+:root {
+    --black: #1d1d1d;
+    --black-soft: #191919;
+    --black-light: #292929;
+    --black-overlay: rgba(23, 23, 23, 0.65);
+    --gray: #525252;
+    --white: #ffffff;
+    --white-soft: rgba(255, 255, 255, 0.85);
+    --white-outline: rgba(255, 255, 255, 0.15);
+    --green: rgb(186, 255, 47);
+    --hue: 250;
+    --sat: 100%;
+    --accent: hsl(var(--hue), var(--sat), 60%);
+    --accent-light: hsl(var(--hue), var(--sat), 70%);
+    --accent-shadow: hsla(var(--hue), var(--sat), 60%, 0.4);
+}

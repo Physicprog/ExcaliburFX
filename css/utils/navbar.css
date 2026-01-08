@@ -94,7 +94,7 @@ header nav ul li {
     margin-bottom: 0.5vh;
     text-align: center;
     opacity: 100%;
-    color: rgba(255, 255, 255, 0.95);
+    color: rgba(255, 255, 255, 0.75);
     transform: scale(1);
     cursor: pointer;
     transition: opacity 125ms, color 125ms;
@@ -114,7 +114,7 @@ header nav ul li {
 }
 
 header nav ul li:hover {
-    color: rgba(255, 255, 255, 1);
+    color: #FFFFFF;
     transition: opacity 25ms, color 125ms;
 }
 
@@ -126,7 +126,7 @@ header nav ul li:hover {
 .ShakesActive,
 .SoundActive,
 .SettingsActive {
-    outline: 2px solid rgba(255, 255, 255, 0.15);
+    outline: 2px solid rgba(255, 255, 255, 0.25);
     outline-offset: -1px;
     background-position: 100vw 100vw;
     background-image: url("./../../Assets/img/bgpattern.png");
@@ -134,7 +134,7 @@ header nav ul li:hover {
     border-top: 1px solid #525252 !important;
     border-bottom: 1px solid #525252 !important;
     color: rgb(118, 97, 255) !important;
-    text-shadow: 0px 0px 1vw #6f00ff57;
+    text-shadow: 0px 0px 1vw #6243e06b;
     opacity: 100% !important;
 }
 
@@ -146,7 +146,7 @@ header nav ul li:hover {
 .Shakes,
 .Sound,
 .Settings {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.75);
 }
 
 /* Footer */
@@ -186,21 +186,21 @@ header nav ul li:hover {
 
 /* tabs visibility */
 .eff_active {
-    background-color: #191919;
-    border-bottom: 0.5vh solid #6843ff;
+    background-color: rgba(28, 28, 28, 0.2);
+    border-bottom: 0.5vh solid rgb(118, 97, 255);
 }
 
 .eff_active:hover {
-    border-bottom: 0.5vh solid #a58fff;
-    background-color: #6843ff;
+    border-bottom: 0.5vh solid #8060ff;
+    background-color: rgb(118, 97, 255);
 }
 
 .not_eff_active {
     border-bottom: 0.5vh solid #00000000;
-    background-color: #191919;
+    background-color: rgba(28, 28, 28, 0.2);
 }
 
 .not_eff_active:hover {
-    border-bottom: 0.5vh solid #a58fff;
-    background-color: #6843ff;
+    border-bottom: 0.5vh solid #8060ff;
+    background-color: rgb(118, 97, 255);
 }

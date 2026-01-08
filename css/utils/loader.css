@@ -1,32 +1,29 @@
 #Loading {
-    /* display: none; */
     position: absolute;
     height: 100vh;
     width: 100%;
-    margin-top: 0vh;
-    background-color: #171717a8;
+    background-color: var(--black-dark-3);
     backdrop-filter: blur(8px);
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
     z-index: 99999999999;
     user-select: none;
 }
 
 #BluredBG {
-    /* display: none; */
     position: absolute;
     height: 100vh;
     width: 100%;
-    margin-top: 0vh;
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--black-05);
     backdrop-filter: blur(8px);
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
     opacity: 100%;
     z-index: 99999999999;
     user-select: none;
     transition: opacity 500ms ease-in-out;
 }
+
 
 #dancingDuck {
     margin-top: 25vh;
