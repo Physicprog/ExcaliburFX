@@ -43,6 +43,7 @@ let currentEditingSlot = null;
 let isEditMode = false;
 
 
+
 function getCSSVar(varName) {
     return getComputedStyle(document.documentElement)
         .getPropertyValue(varName).trim();
@@ -53,7 +54,6 @@ function E(script) {
 }
 
 function clearALLNoteTimeouts() {
-    //enleve les timeouts
     for (let id of NotetimeoutIDs) {
         clearTimeout(id);
     }
@@ -365,10 +365,9 @@ function showCurvePresets() {
             setCurvePos.style.opacity = "100%";
             setCurvePos.style.zIndex = "1";
 
-            // AJOUTEZ CES LIGNES - Redessiner après l'animation avec un délai plus long
             setTimeout(() => {
                 forceRedrawAllPresets();
-            }, 350); // Après la transition
+            }, 350);
         }
     }, 50);
 
@@ -400,7 +399,6 @@ function showLiveCurves() {
                 clearInterval(drawCurve_live_Inverval);
                 resetDiv("CurvePreview_Live");
 
-                // Vérifier que la fonction existe avant de l'appeler
                 if (typeof LiveDrawCubicBezierVisualizerForLiveCurve === "function") {
                     LiveDrawCubicBezierVisualizerForLiveCurve(
                         "CurvePreview_Live",
@@ -581,21 +579,17 @@ function NavBar() {
     }
 }
 function redrawAllVisibleCurves() {
-    // Redessiner les presets si visibles OU si on est dans l'onglet presets
     const setCurvePos = document.getElementById("set_curve_pos");
     if ((setCurvePos && setCurvePos.style.opacity === "100%") || currentCurveTab === "presets") {
-        // Utiliser la nouvelle fonction pour forcer le rendu
         forceRedrawAllPresets();
     }
 
-    // Redessiner l'éditeur de courbe si ouvert
     const createCurve = document.getElementById("create_curve");
     if (createCurve && createCurve.style.opacity === "100%") {
         resetDiv("CurvePreview");
         LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
     }
 
-    // Redessiner la courbe live si visible
     const liveCurves = document.getElementById("liveCurves");
     if (liveCurves && (liveCurves.style.opacity === "1" || currentCurveTab === "instant")) {
         resetDiv("CurvePreview_Live");
@@ -609,39 +603,104 @@ function redrawAllVisibleCurves() {
     }
 }
 
+
+function colorUpdate() {
+    const hueSlider = document.getElementById("hueSlider");
+    const satSlider = document.getElementById("satSlider");
+    const huePicker = document.getElementById("ColorPicker");
+    const satPicker = document.getElementById("ColorPickerForSat");
+    const hueBackground = document.getElementById("CoolExcaliburHue");
+    const satBackground = document.getElementById("CoolExcaliburSat");
+
+    if (!hueSlider || !satSlider || !huePicker || !satPicker) return;
+
+    const root = document.documentElement;
+
+    let currentHue = hueSlider.value;
+    let currentSat = satSlider.value;
+
+    function updatePickerPosition(slider, picker) {
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const percentage = ((slider.value - min) / (max - min)) * 100;
+        picker.style.left = percentage + '%';
+    }
+
+    function updateHueThumb() {
+        huePicker.style.backgroundColor = '#fff';
+    }
+
+    function updateSatThumb() {
+        satPicker.style.backgroundColor = '#fff';
+    }
+
+    function updateHueBackground(hue, sat) {
+        if (hueBackground) {
+            let gradient = [];
+            for (let deg = 0; deg <= 360; deg += 60) {
+                gradient.push(`hsl(${deg}, ${sat}%, 50%)`);
+            }
+            hueBackground.style.background = `linear-gradient(to right, ${gradient.join(', ')})`;
+        }
+    }
+
+    function updateSatBackground(hue) {
+        if (satBackground) {
+            satBackground.style.background = `linear-gradient(to right, hsl(${hue}, 0%, 50%), hsl(${hue}, 100%, 50%))`;
+        }
+    }
+
+    function updateRootColor() {
+        root.style.setProperty('--accent', `hsl(${currentHue}, ${currentSat}%, 50%)`);
+        root.style.setProperty('--accent-light', `hsl(${currentHue}, ${currentSat}%, 70%)`);
+        root.style.setProperty('--accent-shadow', `hsla(${currentHue}, ${currentSat}%, 60%, 0.4)`);
+    }
+
+    updatePickerPosition(hueSlider, huePicker);
+    updatePickerPosition(satSlider, satPicker);
+    updateHueThumb();
+    updateSatThumb();
+    updateHueBackground(currentHue, currentSat);
+    updateSatBackground(currentHue);
+    updateRootColor();
+
+    hueSlider.addEventListener('input', () => {
+        currentHue = hueSlider.value;
+        updatePickerPosition(hueSlider, huePicker);
+        updateHueThumb();
+        updateHueBackground(currentHue, currentSat);
+        updateSatBackground(currentHue);
+        updateRootColor();
+        redrawAllVisibleCurves();
+    });
+
+    satSlider.addEventListener('input', () => {
+        currentSat = satSlider.value;
+        updatePickerPosition(satSlider, satPicker);
+        updateSatThumb();
+        updateHueBackground(currentHue, currentSat);
+        updateSatBackground(currentHue);
+        updateRootColor();
+        redrawAllVisibleCurves();
+    });
+}
+
+
+
 function initUI() {
     NavBar();
     UpdateNotePad();
     newTabAnims(1);
     updateNavActiveClasses(1);
     showLiveCurves();
+    colorUpdate();
 
-    // Initialiser les sliders de couleur seulement s'ils existent
-    const hueSlider = document.getElementById("hueSlider");
-    const satSlider = document.getElementById("satSlider");
-
-    if (hueSlider && satSlider) {
-        const root = document.documentElement;
-        hueSlider.addEventListener("input", () => {
-            root.style.setProperty("--hue", hueSlider.value);
-            redrawAllVisibleCurves();
-        });
-        satSlider.addEventListener("input", () => {
-            root.style.setProperty("--sat", satSlider.value + "%");
-            redrawAllVisibleCurves();
-        });
-    }
-
-    // FORCER L'INITIALISATION IMMEDIATE DES PRESETS
     setTimeout(() => {
-        // S'assurer que les presets sont visibles et initialisés
         const setCurvePos = document.getElementById("set_curve_pos");
         if (setCurvePos) {
             setCurvePos.style.opacity = "100%";
             setCurvePos.style.transform = "scale(1)";
             setCurvePos.style.zIndex = "1";
-
-            // Forcer le rendu immédiat des presets
             forceRedrawAllPresets();
         }
     }, 200);
@@ -650,6 +709,9 @@ function initUI() {
         OpenDashboardOnStart();
     }
 }
+
+
+
 
 // f(p) = 1−(1−p)3
 function animateProgressBar(targetPercent, duration) {
@@ -675,9 +737,9 @@ async function CheckAndLoad() {
     const WhatIsLoading = document.getElementById("WhatIsLoading");
     WhatIsLoading.style.color = "#5eff24";
 
-    animateProgressBar(0, 500); //10%
+    animateProgressBar(0, 500);
 
-    if (typeof CSInterface === "undefined") { //check si c'est internet ou ae
+    if (typeof CSInterface === "undefined") {
         WhatIsLoading.textContent = "After Effects unavailable";
         animateProgressBar(30, 800);
         await new Promise(r => setTimeout(r, 1000));
@@ -690,11 +752,11 @@ async function CheckAndLoad() {
     const cs = new CSInterface();
 
     const currentAE_Version = await new Promise(resolve => {
-        cs.evalScript("AE_VersionButDumCuzAdobeIsFuckingStupid()", resolve); //sert à attendre le retour de cs.evalScript et a récupérer sa valeur avec await au lieu d’un callback
+        cs.evalScript("AE_VersionButDumCuzAdobeIsFuckingStupid()", resolve);
     });
 
     WhatIsLoading.textContent = `After Effects 20${currentAE_Version} detected.`;
-    document.getElementById("x1111293").textContent = "Reading your pc specs."; //lis les specs
+    document.getElementById("x1111293").textContent = "Reading your pc specs.";
 
     animateProgressBar(33, 1000);
     await new Promise(r => setTimeout(r, 1500));
@@ -759,15 +821,11 @@ function readSetGo() {
         Loading.style.display = "none";
         BluredBG.style.display = "none";
 
-        // FORCER L'INITIALISATION DE L'ONGLET INSTANT CURVE
         setTimeout(() => {
-            // Réinitialiser toutes les vues d'abord
             resetCurveViews();
 
-            // S'assurer que currentCurveTab n'est pas déjà sur instant pour éviter le return
             currentCurveTab = "";
 
-            // Maintenant afficher les courbes live proprement
             setTimeout(() => {
                 showLiveCurves();
             }, 50);
@@ -786,7 +844,6 @@ function showLoginScreen() {
     loginScreen.style.display = "flex";
     loginScreen.style.zIndex = "999999999999";
 
-    // Animation d'entrée améliorée
     setTimeout(() => {
         loginScreen.classList.add("visible");
     }, 50);
@@ -803,8 +860,7 @@ function hideLoginScreen() {
     setTimeout(() => {
         loginScreen.style.display = "none";
 
-        // Restaurer complètement l'affichage du loader avec tous ses styles
-        loading.style.display = "block"; // Utiliser 'block' au lieu de 'flex' pour respecter le CSS
+        loading.style.display = "block";
         loading.style.opacity = "1";
         loading.style.zIndex = "99999999999";
         loading.style.position = "absolute";
@@ -813,7 +869,6 @@ function hideLoginScreen() {
         loading.style.top = "0";
         loading.style.left = "0";
 
-        // Réinitialiser la barre de progression comme au démarrage
         document.getElementById("StartLoadingbarProgress").style.width = "0%";
     }, 500);
 }
@@ -833,24 +888,21 @@ function setupLoginEvents() {
         if (username.trim().length > 20) {
             return "Username cannot exceed 20 characters";
         }
-        // Validation pour caractères interdits
         const forbiddenChars = /[<>:"/\\|?*]/;
         if (forbiddenChars.test(username)) {
             return "Username contains invalid characters";
         }
-        // Validation pour caractères uniquement alphanumériques et quelques symboles autorisés
         const validChars = /^[a-zA-Z0-9._-]+$/;
         if (!validChars.test(username.trim())) {
             return "Username can only contain letters, numbers, dots, dashes and underscores";
         }
-        return null; // Aucune erreur
+        return null;
     }
 
     function handleLogin() {
         const username = usernameInput.value.trim();
         const error = validateUsername(username);
 
-        // Nettoyer les erreurs précédentes
         loginError.classList.remove("show");
 
         if (error) {
@@ -858,7 +910,6 @@ function setupLoginEvents() {
             return;
         }
 
-        // Désactiver le bouton et montrer le chargement
         loginButton.disabled = true;
         loginButton.textContent = "Loading...";
         usernameInput.disabled = true;
@@ -872,7 +923,6 @@ function setupLoginEvents() {
             if (success) {
                 SendNotification(`Welcome, ${username}!`, true, true);
 
-                // Mettre à jour le texte du loader directement comme pour les utilisateurs existants
                 const loading = document.getElementById("Loading");
                 const welcomeText = loading.querySelector("h1");
                 welcomeText.textContent = `Welcome, ${username}!`;
@@ -880,7 +930,6 @@ function setupLoginEvents() {
                 setTimeout(() => {
                     hideLoginScreen();
 
-                    // Petit délai pour permettre la transition
                     setTimeout(() => {
                         startMainApp();
                     }, 100);
@@ -906,14 +955,12 @@ function setupLoginEvents() {
     usernameInput.addEventListener("input", function () {
         clearLoginError();
 
-        // Validation en temps réel (optionnelle, pour un meilleur UX)
         const currentValue = usernameInput.value.trim();
         if (currentValue.length > 20) {
             usernameInput.value = currentValue.substring(0, 20);
         }
     });
 
-    // Gestion de l'événement paste pour valider le contenu collé
     usernameInput.addEventListener("paste", function (event) {
         setTimeout(() => {
             const pastedValue = usernameInput.value.trim();
@@ -923,21 +970,17 @@ function setupLoginEvents() {
         }, 10);
     });
 
-    // Fonctions utilitaires pour la gestion de l'interface
     function showLoginError(message) {
         loginError.textContent = message;
         loginError.classList.add("show");
 
-        // Animation pour attirer l'attention
         usernameInput.classList.add("error");
         usernameInput.focus();
 
-        // Retirer la classe d'erreur après l'animation
         setTimeout(() => {
             usernameInput.classList.remove("error");
         }, 500);
 
-        // Auto-cacher l'erreur après 5 secondes
         setTimeout(() => {
             if (loginError.classList.contains("show")) {
                 loginError.classList.remove("show");
@@ -952,17 +995,15 @@ function setupLoginEvents() {
         usernameInput.focus();
     }
 
-    // Fonction de nettoyage des erreurs
     function clearLoginError() {
         loginError.classList.remove("show");
         usernameInput.classList.remove("error");
     }
 
-    // Auto-focus sur l'input au chargement avec sélection du texte
     setTimeout(() => {
         usernameInput.focus();
         if (usernameInput.value.trim() !== '') {
-            usernameInput.select(); // Sélectionner le texte s'il y en a
+            usernameInput.select();
         }
     }, 100);
 }
@@ -973,7 +1014,6 @@ async function startMainApp() {
 
     customFileReadOrCreate();
 
-    // INITIALISER LES PRESETS IMMÉDIATEMENT
     setTimeout(() => {
         drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
         drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
@@ -987,10 +1027,9 @@ async function startMainApp() {
     CheckForButtonPress();
     PresetsButtons();
 
-    // Message de bienvenue personnalisé selon si c'est un nouvel utilisateur ou pas
     const userConfig = readOrCreateUserConfig();
     const isNewUser = userConfig && userConfig.lastLogin &&
-        (new Date() - new Date(userConfig.lastLogin)) < 60000; // moins d'une minute = nouveau
+        (new Date() - new Date(userConfig.lastLogin)) < 60000;
 
     if (isNewUser) {
         SendNotification(`Welcome to ExcaliburFx, ${userConfig.username}!`, true, true);
@@ -998,11 +1037,9 @@ async function startMainApp() {
         SendNotification('Welcome Back', true, true);
     }
 
-    // Final: Masquer le loader et afficher l'interface
     setTimeout(() => {
         readSetGo();
 
-        // DOUBLE RENDU APRES QUE L'INTERFACE SOIT VISIBLE
         setTimeout(() => {
             forceRedrawAllPresets();
         }, 600);
@@ -1022,7 +1059,6 @@ async function startMainApp() {
         showLoginScreen();
     } else {
         hideLoginScreen();
-        // Utilisateur connu : continuer normalement avec le nom personnalisé
         const userConfig = readOrCreateUserConfig();
         const welcomeText = document.getElementById("Loading").querySelector("h1");
         welcomeText.textContent = `Welcome back, ${userConfig.username}!`;
@@ -1031,10 +1067,9 @@ async function startMainApp() {
     }
 })();
 
-// Fonction pour compatibilité avec index.html - le démarrage se fait maintenant automatiquement
 function downloadJSAtOnload() {
-    // Cette fonction est appelée par l'HTML mais le démarrage se fait déjà automatiquement
-    // via l'IIFE startApp() ci-dessus
+    //Cette fonction est appelée par l'HTML mais le démarrage se fait déjà automatiquement
+    //via l'IIFE startApp() ci-dessus
 }
 
 
@@ -1046,6 +1081,11 @@ function ScaleToTheWidth() {
     var tab_2 = document.getElementById("tab_2");
     var tab_3 = document.getElementById("tab_3");
     var tab_4 = document.getElementById("tab_4");
+    var tab_5 = document.getElementById("tab_5");
+    var tab_6 = document.getElementById("tab_6");
+    var tab_7 = document.getElementById("tab_7");
+
+
     var midsec = document.getElementById("midsec");
 
     if (window.innerWidth - (window.innerWidth * 0.15) > window.innerHeight) {
@@ -1054,6 +1094,9 @@ function ScaleToTheWidth() {
         tab_2.style.transform = 'none';
         tab_3.style.transform = 'none';
         tab_4.style.transform = 'none';
+        tab_5.style.transform = 'none';
+        tab_6.style.transform = 'none';
+        tab_7.style.transform = 'none';
         if (midsec) midsec.style.transform = 'scale(1) translate(-50%, 0)';
         if (document.getElementById("volumebar")) document.getElementById("volumebar").style.transform = 'scale(1)'; //example sur volume bar
 
@@ -1069,6 +1112,9 @@ function ScaleToTheWidth() {
     tab_2.style.transform = pleaseKillMeTy;
     tab_3.style.transform = pleaseKillMeTy;
     tab_4.style.transform = pleaseKillMeTy;
+    tab_5.style.transform = pleaseKillMeTy;
+    tab_6.style.transform = pleaseKillMeTy;
+    tab_7.style.transform = pleaseKillMeTy;
     if (midsec) midsec.style.transform = pleaseKillMeTy + ' translate(-50%, 0)';
     if (document.getElementById("volumebar")) document.getElementById("volumebar").style.transform = pleaseKillMeTy;
 }
@@ -1170,82 +1216,6 @@ async function StartGetParams() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getConfigPaths() {
     const cs = new CSInterface();
     const documentsFolder = cs.getSystemPath(SystemPath.MY_DOCUMENTS);
@@ -1296,12 +1266,11 @@ function sanitizeUsername(username) {
         return '';
     }
 
-    // Nettoyer les caractères dangereux et les espaces en début/fin
     return username
         .trim()
-        .replace(/[<>:"/\\|?*]/g, '') // Supprimer les caractères interdits
-        .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
-        .substring(0, 20); // Limiter à 20 caractères
+        .replace(/[<>:"/\\|?*]/g, '') //supprimer les caractères interdits
+        .replace(/\s+/g, '_') //remplacer les espaces par des underscores
+        .substring(0, 20);
 }
 
 function updateUserConfig(newConfig) {
@@ -1314,7 +1283,6 @@ function updateUserConfig(newConfig) {
 
         const currentConfig = readOrCreateUserConfig();
 
-        // Nettoyer le nom d'utilisateur si présent
         const cleanedConfig = { ...newConfig };
         if (cleanedConfig.username) {
             cleanedConfig.username = sanitizeUsername(cleanedConfig.username);
@@ -1344,7 +1312,6 @@ function hasValidUserSession() {
     try {
         const userConfig = readOrCreateUserConfig();
 
-        // V\u00e9rification plus robuste de la validit\u00e9 de la session
         if (!userConfig) {
             console.log('No user config found');
             return false;
@@ -1366,7 +1333,6 @@ function hasValidUserSession() {
             return false;
         }
 
-        // V\u00e9rifier que le nom d'utilisateur respecte les r\u00e8gles de validation\n        const forbiddenChars = /[<>:\"/\\\\|?*]/;\n        if (forbiddenChars.test(trimmedUsername)) {\n            console.log('Username contains forbidden characters');\n            return false;\n        }\n        \n        const validChars = /^[a-zA-Z0-9._-]+$/;\n        if (!validChars.test(trimmedUsername)) {\n            console.log('Username contains invalid characters');\n            return false;\n        }\n        \n        console.log(`Valid user session found for: ${trimmedUsername}`);
         return true;
 
     } catch (e) {
@@ -1462,7 +1428,6 @@ function updateSettingsCurves(newCurves) {
             fs.mkdirSync(paths.baseFolder, { recursive: true });
         }
 
-        // Validation des données avant sauvegarde
         const validatedCurves = newCurves.map((curve, i) => ({
             id: i + 1,
             active: Boolean(curve.active),
@@ -1496,7 +1461,7 @@ function resetDiv(divId) {
         div.removeChild(div.firstChild);
     }
     div.style.backgroundSize = "contain";
-    div.style.position = "relative"; // S'assurer que le positionnement est correct
+    div.style.position = "relative";
 }
 
 function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
@@ -1548,7 +1513,6 @@ function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Dessiner la courbe
         ctx.beginPath();
         ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
         ctx.bezierCurveTo(points[0], points[1], points[2], points[3], (1 - paddingPercentage) * containerWidth, paddingPercentage * width);
@@ -1556,7 +1520,6 @@ function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
         ctx.lineWidth = width / 25;
         ctx.stroke();
 
-        // Lignes de contrôle
         ctx.beginPath();
         ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
         ctx.lineTo(points[0], points[1]);
@@ -1570,7 +1533,6 @@ function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
         ctx.strokeStyle = "white";
         ctx.stroke();
 
-        // Points de contrôle
         ctx.beginPath();
         ctx.arc(points[0], points[1], width / 20, 0, Math.PI * 2);
         ctx.fillStyle = "white";
@@ -1584,7 +1546,6 @@ function drawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
 
     drawCurve();
 
-    // Nettoyer et ajouter le resize handler
     var resizeHandler = function () { drawCurve(); };
     window.removeEventListener('resize', resizeHandler);
     window.addEventListener('resize', resizeHandler);
@@ -1594,7 +1555,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
     var div = document.getElementById(divId);
     if (!div) return;
 
-    // Nettoyer le div
     while (div.firstChild) {
         div.removeChild(div.firstChild);
     }
@@ -1638,7 +1598,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
         canvas.width = containerWidth;
         canvas.height = width;
 
-        // Grille
         if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
             ctx.beginPath();
             for (var x = containerWidth * paddingPercentage; x <= containerWidth * Math.round(1 - paddingPercentage); x += paddedContainerWidth / 4) {
@@ -1654,7 +1613,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
             ctx.stroke();
         }
 
-        // Courbe
         ctx.beginPath();
         ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
         ctx.bezierCurveTo(points[0], points[1], points[2], points[3], (1 - paddingPercentage) * containerWidth, paddingPercentage * width);
@@ -1662,7 +1620,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
         ctx.lineWidth = width / 80;
         ctx.stroke();
 
-        // Lignes de contrôle
         ctx.beginPath();
         ctx.moveTo(paddingPercentage * containerWidth, (1 - paddingPercentage) * width);
         ctx.lineTo(points[0], points[1]);
@@ -1676,7 +1633,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
         ctx.strokeStyle = getCSSVar('--accent-light');
         ctx.stroke();
 
-        // Points de contrôle
         ctx.beginPath();
         ctx.arc(points[0], points[1], width / 40, 0, Math.PI * 2);
         ctx.fillStyle = getCSSVar('--accent-light');
@@ -1705,7 +1661,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
         };
     }
 
-    // Event handlers pour le drag
     canvas.addEventListener("mousedown", function (evt) {
         var mousePos = getMousePos(canvas, evt);
         var width = div.offsetHeight;
@@ -1766,12 +1721,10 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
     window.removeEventListener('resize', resizeHandler);
     window.addEventListener('resize', resizeHandler);
 
-    // Boutons Copy/Paste - UNE SEULE FOIS
     var CopyButton = document.getElementById("CopyCurve_live");
     var PasteButton = document.getElementById("PasteCurve_live");
 
     if (CopyButton) {
-        // Enlever les anciens listeners
         var newCopyButton = CopyButton.cloneNode(true);
         CopyButton.parentNode.replaceChild(newCopyButton, CopyButton);
 
@@ -1787,7 +1740,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
     }
 
     if (PasteButton) {
-        // Enlever les anciens listeners
         var newPasteButton = PasteButton.cloneNode(true);
         PasteButton.parentNode.replaceChild(newPasteButton, PasteButton);
 
@@ -1809,7 +1761,6 @@ function LiveDrawCubicBezierVisualizerForLiveCurve(divId, x1, y1, x2, y2) {
         });
     }
 
-    // Initialiser la valeur
     document.getElementById("Curve_Val_live").value =
         Number(L_setNewX1).toFixed(2) + " | " + Number(L_setNewY1).toFixed(2) + " | " +
         Number(L_setNewX2).toFixed(2) + " | " + Number(L_setNewY2).toFixed(2);
@@ -1895,7 +1846,7 @@ function LiveDrawCubicBezierVisualizer(divId, x1, y1, x2, y2) {
 
         ctx.beginPath();
         ctx.arc(points[0], points[1], width / 30, 0, Math.PI * 2);
-        ctx.fillStyle = getCSSVar('--accent-light'); // CORRIGÉ
+        ctx.fillStyle = getCSSVar('--accent-light');
         ctx.fill();
 
         ctx.beginPath();
@@ -2072,7 +2023,6 @@ function LoadCustomCurves() {
             const displayName = formatCurveName(curve.name);
             buttonElement.innerHTML = `<span class="curve_label">${displayName}</span>`;
 
-            // S'assurer que le div est réinitialisé avant de dessiner
             setTimeout(() => {
                 resetDiv(buttonId);
                 drawCubicBezierVisualizer(
@@ -2090,11 +2040,8 @@ function LoadCustomCurves() {
     }
 }
 
-// Fonction pour s'assurer que tous les presets sont bien rendus
 function forceRedrawAllPresets() {
-    // Redessiner tous les presets avec un petit délai
     setTimeout(() => {
-        // S'assurer que les éléments existent avant de dessiner
         if (document.getElementById("CUR_In_Preset")) {
             resetDiv("CUR_In_Preset");
             drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
@@ -2116,11 +2063,9 @@ function forceRedrawAllPresets() {
             drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
         }
 
-        // Recharger les custom curves aussi
         LoadCustomCurves();
     }, 100);
 
-    // Double rendu pour être sûr
     setTimeout(() => {
         if (document.getElementById("CUR_In_Preset")) {
             drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
@@ -2155,7 +2100,6 @@ function openCurveEditor(slotIndex, existingCurve) {
     currentEditingSlot = slotIndex;
     isEditMode = existingCurve !== null;
 
-    // Animer l'ouverture de l'éditeur
     CloseDashBoard();
 
     set_custom_curveTab.style.transition = margin_time_min + ", " + opacity_time;
@@ -2307,7 +2251,6 @@ function CheckForButtonPress() {
         tab1.style.marginTop = "-10vh";
     }
 
-    // Configuration des 20 slots - UNE SEULE FOIS
     for (var i = 0; i < 20; i++) {
         (function (index) {
             var button_text = "custom_" + (index + 1);
@@ -2341,7 +2284,6 @@ function CheckForButtonPress() {
         })(i);
     }
 
-    // Boutons Remove, Apply, GoBack - UNE SEULE FOIS
     if (ButtonRemove) {
         ButtonRemove.addEventListener("click", function () {
             if (GlobalsCurrentTab != 1) return;
@@ -2444,8 +2386,3 @@ function PresetsButtons() {
     Preset4.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0.6, 0, 0.3, 1)`); });
     None.addEventListener("click", function () { if (GlobalsCurrentTab != 1) return; if (document.getElementById("create_curve").style.opacity === '1') return; interfaceEntrypoint.evalScript(`ApplyCurveToKeyFramesExcalibur(0, 0, 1, 1)`); });
 }
-
-
-
-
-

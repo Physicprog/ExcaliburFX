@@ -22,7 +22,7 @@ header {
     height: calc(100vh);
     position: relative;
     border-right: 1px solid #525252;
-    color: #6243e06b;
+    color: var(--accent-shadow);
     user-select: none;
 }
 
@@ -60,8 +60,8 @@ header h1 span {
 
     4% {
         transform: translateY(-2vh);
-        color: rgb(118, 97, 255);
-        text-shadow: 0px 0px 2vw #6f00ff57;
+        color: var(--accent);
+        text-shadow: 0px 0px 2vw var(--accent-shadow);
         text-decoration: underline;
     }
 }
@@ -133,8 +133,8 @@ header nav ul li:hover {
     background-size: 30px;
     border-top: 1px solid #525252 !important;
     border-bottom: 1px solid #525252 !important;
-    color: rgb(118, 97, 255) !important;
-    text-shadow: 0px 0px 1vw #6243e06b;
+    color: var(--accent) !important;
+    text-shadow: 0px 0px 1vw var(--accent-shadow);
     opacity: 100% !important;
 }
 
@@ -169,30 +169,32 @@ header nav ul li:hover {
 
 #NoteButton {
     position: absolute;
-    background-image: url("./../../Assets/img/note.png");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    top: calc(100vh - 3.75vw);
-    left: 1.625vw;
     width: 2.5vw;
     height: 2.5vw;
+    top: calc(100vh - 3.75vw);
+    left: 1.625vw;
     cursor: pointer;
+
+    background-color: var(--accent);
+    -webkit-mask: url("./../../Assets/img/note.png") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("./../../Assets/img/note.png") no-repeat center;
+    mask-size: contain;
 }
 
 #NoteButton:hover {
     opacity: 70%;
 }
 
-/* tabs visibility */
+
 .eff_active {
     background-color: rgba(28, 28, 28, 0.2);
-    border-bottom: 0.5vh solid rgb(118, 97, 255);
+    border-bottom: 0.5vh solid var(--accent-light);
 }
 
 .eff_active:hover {
-    border-bottom: 0.5vh solid #8060ff;
-    background-color: rgb(118, 97, 255);
+    border-bottom: 0.5vh solid var(--accent-light);
+    background-color: var(--accent);
 }
 
 .not_eff_active {
@@ -201,6 +203,6 @@ header nav ul li:hover {
 }
 
 .not_eff_active:hover {
-    border-bottom: 0.5vh solid #8060ff;
-    background-color: rgb(118, 97, 255);
+    border-bottom: 0.5vh solid var(--accent-light);
+    background-color: var(--accent);
 }

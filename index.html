@@ -90,7 +90,6 @@
          </div>
       </header>
       <main id="theOneAndOnlyMain">
-         <!--Pour créer -->
          <div id="create_curve">
             <div id="curveWrapper">
                <div id="CurvePreview"></div>
@@ -148,7 +147,6 @@
 
 
             <div id="liveCurves">
-               <!-- Curves instants-->
                <h3 id="LiveCurve">Instant Curve</h3>
                <div id="CurvePreview_Live"></div>
                <div id="doubleNav_live">
@@ -159,7 +157,7 @@
                <button id="Apply_LiveCurve">Apply Curve</button>
                <button id="CurvePresetSwitcher" class="InstatCurveSwitcher"><- Curve Presets</button>
             </div>
-            <!-- faire les speedramps -->
+
             <div id="speedrampSection">
                <h3 id="SpeedrampTitle">Speedramps</h3>
                <div class="speedramp-layout">
@@ -234,66 +232,113 @@
                <h1>Shortcut Content</h1>
             </div>
          </div>
+
+
          <div id="tab_7">
             <div id="tab_inside7">
-               <h1>Settings Content</h1>
-            </div>
-         </div>
 
-         <div id="QuickNoteSection">
-            <div id="NoteContainer">
-               <div id="lineNumber">1</div>
-               <div id="hightlightLine"></div>
-               <textarea name="QuickNotes" id="QuickNotes" cols="" rows=""
-                  placeholder="Write what you want here idk..."></textarea>
-               <div id="FixCorner"></div>
-            </div>
-         </div>
-
-         <div id="BluredBG"></div>
-         <div id="LoginScreen">
-            <div id="LoginContainer">
-               <h1>ExcaliburFx</h1>
-               <h3>Enter your username to continue</h3>
-               <div id="LoginInputContainer">
-                  <input type="text" id="UsernameInput" placeholder="Username" maxlength="20">
-                  <button id="LoginButton">Enter</button>
+               <div id="tab7_1">
+                  <h2>Layer color</h2>
+                  <div class="normal_underline"></div>
+                  <p>content</p>
                </div>
-               <div id="LoginError"></div>
+
+               <div id="tab7_2">
+                  <h2>Ui Settings</h2>
+                  <div class="normal_underline"></div>
+
+                  <div class="slider-container">
+                     <label class="slider-label">Hue</label>
+                     <div class="sliderfix" id="hueShiftCool">
+                        <input type="range" class="sliders" id="hueSlider" min="0" max="360" value="270" step="1">
+                     </div>
+                     <div id="CoolExcaliburHue">
+                        <div id="ColorPicker"></div>
+                     </div>
+                  </div>
+
+                  <div class="slider-container">
+                     <label class="slider-label">Saturation</label>
+                     <div class="sliderfix" id="SaturationCool">
+                        <input type="range" class="sliders" id="satSlider" min="0" max="100" value="100" step="1">
+                     </div>
+                     <div id="CoolExcaliburSat">
+                        <div id="ColorPickerForSat"></div>
+                     </div>
+                  </div>
+
+               </div>
+
+               <div id="tab7_3">
+                  <h2 id="GetAfterEffectsVersion">After Effects</h2>
+                  <div class="normal_underline"></div>
+                  <p>content</p>
+               </div>
+
             </div>
          </div>
 
 
-         <div id="Loading">
-            <div id="dancingDuck"></div>
-            <h1>ExcaliburFx</h1>
-            <h3 id="WhatIsLoading">All files can only be loaded in After effects</h3>
-            <h4 id="x1111293"></h4>
-            <div id="StartLoadingbar">
-               <div id="StartLoadingbarProgress"></div>
-            </div>
+   </div>
+
+
+
+
+
+
+   <div id="QuickNoteSection">
+      <div id="NoteContainer">
+         <div id="lineNumber">1</div>
+         <div id="hightlightLine"></div>
+         <textarea name="QuickNotes" id="QuickNotes" cols="" rows=""
+            placeholder="Write what you want here idk..."></textarea>
+         <div id="FixCorner"></div>
+      </div>
+   </div>
+
+   <div id="BluredBG"></div>
+   <div id="LoginScreen">
+      <div id="LoginContainer">
+         <h1>ExcaliburFx</h1>
+         <h3>Enter your username to continue</h3>
+         <div id="LoginInputContainer">
+            <input type="text" id="UsernameInput" placeholder="Username" maxlength="20">
+            <button id="LoginButton">Enter</button>
          </div>
+         <div id="LoginError"></div>
+      </div>
+   </div>
 
 
-         <!--<div id="NewVersionRelease">
+   <div id="Loading">
+      <div id="dancingDuck"></div>
+      <h1>ExcaliburFx</h1>
+      <h3 id="WhatIsLoading">All files can only be loaded in After effects</h3>
+      <h4 id="x1111293"></h4>
+      <div id="StartLoadingbar">
+         <div id="StartLoadingbarProgress"></div>
+      </div>
+   </div>
+
+
+   <!--<div id="NewVersionRelease">
             <div class="CenterUpdate">
                <h1>Please update your <span>ExcaliburFx</span> to the latest version.</h1>
                <p id="CopyLinkWebsite">Click the text to copy the link (Download)</p>
             </div>
          </div>-->
 
-         <div id="dashboard">
-            <h1>Dashboard</h1>
-         </div>
-         <div id="OfflineScreen">
-            <h1>You are offline, <span>connect ExcaliburFx to the Internet</span> in preferences (Scripts → Allow).</h1>
-         </div>
-         <div id="HowToUsePanel">
-            <h1>How to use</h1>
-         </div>
-         <div id="notification">
-            <h1 id="theNotification">Bruh</h1>
-         </div>
+   <div id="dashboard">
+      <h1>Dashboard</h1>
+   </div>
+
+   <div id="HowToUsePanel">
+      <h1>How to use</h1>
+   </div>
+
+   <div id="notification">
+      <h1 id="theNotification">Bruh</h1>
+   </div>
 
 
 
@@ -302,16 +347,9 @@
 
 
 
-         <div class="slider-container">
-            <input type="range" id="hueSlider" min="0" max="360" value="250" step="1">
-         </div>
-
-         <div class="slider-container">
-            <input type="range" id="satSlider" min="0" max="100" value="70" step="1">
-         </div>
 
 
-         <div id="NoteButton"></div>
+   <div id="NoteButton"></div>
 
 
 </body>
