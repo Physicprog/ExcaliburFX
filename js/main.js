@@ -19,6 +19,327 @@ let NotetimeoutIDs = [];
 const fs = require('fs');
 const path = require('path');
 
+// === FONCTIONS DE GESTION DES FICHIERS ET DOSSIERS ===
+
+function getConfigPaths() {
+    const cs = new CSInterface();
+    const documentsFolder = cs.getSystemPath(SystemPath.MY_DOCUMENTS);
+    const baseFolder = path.join(documentsFolder, 'Excalibur');
+
+    return {
+        baseFolder,
+        assetsFolder: path.join(baseFolder, 'Assets'),
+        settingsCurves: path.join(baseFolder, 'settingsCurves.json'),
+        userConfig: path.join(baseFolder, 'userConfig.json'),
+        notesFile: path.join(baseFolder, 'notes.txt')
+    };
+}
+
+function readOrCreateUserConfig() {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        if (!fs.existsSync(paths.userConfig)) {
+            const initialConfig = {
+                username: "",
+                lastLogin: null,
+                firstTime: true,
+                sliders: {
+                    hue: 250,
+                    saturation: 80,
+                    animationSpeed: 300
+                }
+            };
+
+            fs.writeFileSync(
+                paths.userConfig,
+                JSON.stringify(initialConfig, null, 2),
+                'utf-8'
+            );
+            return initialConfig;
+        }
+
+        const configData = fs.readFileSync(paths.userConfig, 'utf-8');
+        let config = JSON.parse(configData);
+
+        // Ensure sliders object exists with default values
+        if (!config.sliders) {
+            config.sliders = {
+                hue: 250,
+                saturation: 80,
+                animationSpeed: 300
+            };
+            fs.writeFileSync(paths.userConfig, JSON.stringify(config, null, 2), 'utf-8');
+        }
+
+        return config;
+
+    } catch (e) {
+        console.error('readOrCreateUserConfig error:', e);
+        return {
+            username: "",
+            lastLogin: null,
+            firstTime: true,
+            sliders: {
+                hue: 250,
+                saturation: 80,
+                animationSpeed: 300
+            }
+        };
+    }
+}
+
+function sanitizeUsername(username) {
+    if (!username || typeof username !== 'string') {
+        return '';
+    }
+
+    return username
+        .trim()
+        .replace(/[<>:"/\\|?*]/g, '') //supprimer les caractères interdits
+        .replace(/\s+/g, '_') //remplacer les espaces par des underscores
+        .substring(0, 20);
+}
+
+function updateUserConfig(newConfig) {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        const currentConfig = readOrCreateUserConfig();
+
+        const cleanedConfig = { ...newConfig };
+        if (cleanedConfig.username) {
+            cleanedConfig.username = sanitizeUsername(cleanedConfig.username);
+        }
+
+        const updatedConfig = {
+            ...currentConfig,
+            ...cleanedConfig,
+            lastLogin: new Date().toISOString()
+        };
+
+        fs.writeFileSync(
+            paths.userConfig,
+            JSON.stringify(updatedConfig, null, 2),
+            'utf-8'
+        );
+
+        console.log('User config updated successfully:', updatedConfig);
+        return true;
+    } catch (e) {
+        console.error('updateUserConfig error:', e);
+        return false;
+    }
+}
+
+function hasValidUserSession() {
+    try {
+        // Vérifier d'abord si on peut accéder aux fonctions de fichier
+        if (typeof getConfigPaths !== 'function' || typeof readOrCreateUserConfig !== 'function') {
+            console.log('File functions not available');
+            return false;
+        }
+
+        const userConfig = readOrCreateUserConfig();
+
+        if (!userConfig) {
+            console.log('No user config found');
+            return false;
+        }
+
+        if (!userConfig.username || typeof userConfig.username !== 'string') {
+            console.log('Invalid or missing username');
+            return false;
+        }
+
+        const trimmedUsername = userConfig.username.trim();
+        if (trimmedUsername === '' || trimmedUsername.length < 2) {
+            console.log('Username too short or empty');
+            return false;
+        }
+
+        if (userConfig.firstTime !== false) {
+            console.log('First time user');
+            return false;
+        }
+
+        return true;
+
+    } catch (e) {
+        console.error('hasValidUserSession error:', e);
+        return false;
+    }
+}
+
+function customFileReadOrCreate() {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+        if (!fs.existsSync(paths.assetsFolder)) {
+            fs.mkdirSync(paths.assetsFolder, { recursive: true });
+        }
+
+        if (!fs.existsSync(paths.settingsCurves)) {
+            const initialCurves = Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }));
+
+            fs.writeFileSync(
+                paths.settingsCurves,
+                JSON.stringify(initialCurves, null, 2),
+                'utf-8'
+            );
+            return { curves: initialCurves };
+        }
+
+        const curvesData = fs.readFileSync(paths.settingsCurves, 'utf-8');
+        let curves = JSON.parse(curvesData);
+
+        if (!Array.isArray(curves) || curves.length !== 20) {
+            curves = Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }));
+        } else {
+            curves = curves.map((curve, i) => ({
+                id: i + 1,
+                active: curve?.active || false,
+                name: curve?.name || "",
+                x1: parseFloat(curve?.x1) || 0.2,
+                y1: parseFloat(curve?.y1) || 0.8,
+                x2: parseFloat(curve?.x2) || 0.8,
+                y2: parseFloat(curve?.y2) || 0.2
+            }));
+        }
+
+        return { curves };
+
+    } catch (e) {
+        console.error('customFileReadOrCreate error:', e);
+        SendNotification('Error loading curves data', true, false);
+
+        return {
+            curves: Array(20).fill(null).map((_, i) => ({
+                id: i + 1,
+                active: false,
+                name: "",
+                x1: 0.2,
+                y1: 0.8,
+                x2: 0.8,
+                y2: 0.2
+            }))
+        };
+    }
+}
+
+function updateSettingsCurves(newCurves) {
+    const paths = getConfigPaths();
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        const validatedCurves = newCurves.map((curve, i) => ({
+            id: i + 1,
+            active: Boolean(curve.active),
+            name: String(curve.name || ""),
+            x1: parseFloat(curve.x1) || 0,
+            y1: parseFloat(curve.y1) || 0,
+            x2: parseFloat(curve.x2) || 1,
+            y2: parseFloat(curve.y2) || 1
+        }));
+
+        fs.writeFileSync(
+            paths.settingsCurves,
+            JSON.stringify(validatedCurves, null, 2),
+            'utf-8'
+        );
+
+        return true;
+    } catch (e) {
+        console.error('updateSettingsCurves error:', e);
+        SendNotification('Error saving curves', true, false);
+        return false;
+    }
+}
+
+function saveNotesToFile() {
+    const paths = getConfigPaths();
+    const textarea = document.getElementById('QuickNotes');
+
+    if (!textarea) return false;
+
+    try {
+        if (!fs.existsSync(paths.baseFolder)) {
+            fs.mkdirSync(paths.baseFolder, { recursive: true });
+        }
+
+        const notesContent = textarea.value;
+        const timestamp = new Date().toISOString();
+        const fileHeader = `// Notes ExcaliburFX - Dernière sauvegarde: ${timestamp}\n\n`;
+
+        fs.writeFileSync(
+            paths.notesFile,
+            fileHeader + notesContent,
+            'utf-8'
+        );
+
+        SendNotification('Notes sauvegardées avec succès', true, true);
+        return true;
+    } catch (e) {
+        console.error('saveNotesToFile error:', e);
+        SendNotification('Erreur lors de la sauvegarde des notes', true, false);
+        return false;
+    }
+}
+
+function loadNotesFromFile() {
+    const paths = getConfigPaths();
+    const textarea = document.getElementById('QuickNotes');
+
+    if (!textarea) return false;
+
+    try {
+        if (fs.existsSync(paths.notesFile)) {
+            const fileContent = fs.readFileSync(paths.notesFile, 'utf-8');
+            const contentWithoutHeader = fileContent.replace(/^\/\/ Notes ExcaliburFX.*?\n\n/, '');
+            textarea.value = contentWithoutHeader;
+            UpdateLineNumbers();
+            return true;
+        }
+    } catch (e) {
+        console.error('loadNotesFromFile error:', e);
+        SendNotification('Erreur lors du chargement des notes', true, false);
+    }
+    return false;
+}
+
+
+
+
 var setNewX1 = 0.2;
 var setNewY1 = 0.8;
 var setNewX2 = 0.8;
@@ -106,7 +427,27 @@ function SendNotification(noti, returnit = true, color_green = true, center_to_M
 }
 
 function Restarter() {
+    console.log('Restarting application...');
+
+    // Nettoyer tous les timeouts
     clearALLNoteTimeouts();
+
+    // Nettoyer les intervals
+    if (typeof drawCurve_live_Inverval !== 'undefined') {
+        clearInterval(drawCurve_live_Inverval);
+    }
+    if (typeof drawCurve_live2_Inverval !== 'undefined') {
+        clearInterval(drawCurve_live2_Inverval);
+    }
+
+    // Réinitialiser les variables globales
+    NotePadOpen = false;
+    HelloIamRetarted = false;
+    currentCurveTab = "";
+    currentEditingSlot = null;
+    isEditMode = false;
+
+    // Recharger la page
     location.reload();
 }
 
@@ -162,11 +503,27 @@ function newTabAnims(newTab) {
     ];
 
     const animHeight = "5vh";
-    const SlideInAnim = opacityTimerIN + ", " + topTimerIN;
-    const SlideOutAnim = opacityTimerOUT + ", " + topTimerOUT;
 
-    tabs.forEach((tab) => {
-        if (tab) {
+    // Get current animation speed for dynamic delay
+    let currentAnimSpeed = 300;
+    try {
+        const match = opacity_time.match(/\d+/);
+        if (match) {
+            currentAnimSpeed = parseInt(match[0]);
+        }
+    } catch (e) {
+        currentAnimSpeed = 300;
+    }
+
+    const SlideInAnim = `opacity ${currentAnimSpeed}ms cubic-bezier(.7,0,.3,1), top ${currentAnimSpeed}ms cubic-bezier(.7,0,.3,1)`;
+    const SlideOutAnim = `opacity ${currentAnimSpeed}ms cubic-bezier(.7,0,.3,1), top ${currentAnimSpeed}ms cubic-bezier(.7,0,.3,1)`;
+
+    // Use proper delay based on animation speed
+    const dynamicDelay = Math.max(currentAnimSpeed * 0.6, 50);
+
+    // Hide other tabs
+    tabs.forEach((tab, index) => {
+        if (tab && index !== newTab - 1) {
             tab.style.transition = SlideOutAnim;
             tab.style.top = animHeight;
             tab.style.opacity = "0%";
@@ -174,16 +531,21 @@ function newTabAnims(newTab) {
         }
     });
 
+    // Show target tab with proper delay
     if (tabs[newTab - 1]) {
         MenuTimeOut = setTimeout(() => {
             tabs[newTab - 1].style.transition = SlideInAnim;
             tabs[newTab - 1].style.top = '0vh';
             tabs[newTab - 1].style.opacity = "100%";
             tabs[newTab - 1].style.zIndex = "1";
-        }, waitForAnim);
+
+            // Remove transition after completion to prevent issues
+            setTimeout(() => {
+                tabs[newTab - 1].style.transition = "";
+            }, currentAnimSpeed + 100);
+        }, dynamicDelay);
     }
 }
-
 
 function OpenNotes() {
     clearTimeout(MenuTimeOut3);
@@ -234,7 +596,11 @@ function UpdateLineNumbers() {
     const lineNumbersArray = [];
 
     for (let i = 0; i < lineCount; i++) {
-        lineNumbersArray.push(`${i + 1}<br>`);
+        if (i + 1 === currentLine) {
+            lineNumbersArray.push(`<span style="color: var(--accent);">${i + 1}</span><br>`);
+        } else {
+            lineNumbersArray.push(`${i + 1}<br>`);
+        }
     }
 
     lineNumbers.innerHTML = lineNumbersArray.join('');
@@ -246,16 +612,23 @@ function HighLightCurrentLine() {
 
     const textarea = document.getElementById('QuickNotes');
     const newLine = document.getElementById('hightlightLine');
+    const lineNumbers = document.getElementById('lineNumber');
 
     if (!textarea || !newLine) return;
 
     const lines = textarea.value.substr(0, textarea.selectionStart).split('\n');
     const currentLine = lines.length;
     const scrollOffset = textarea.scrollTop;
-    const lineHeight = 18;
+
+    // Calculer la hauteur de ligne basée sur le style réel
+    const computedStyle = window.getComputedStyle(textarea);
+    const fontSize = parseInt(computedStyle.fontSize);
+    const lineHeight = fontSize + 2; // 16px + 2px pour l'espacement
+
     const topPosition = (currentLine - 1) * lineHeight - scrollOffset;
 
     newLine.style.top = `${topPosition}px`;
+    newLine.style.color = getCSSVar('--accent');
 }
 
 function syncScroll() {
@@ -270,35 +643,59 @@ function syncScroll() {
 
 
 function UpdateNotePad() {
-    HighLightCurrentLine();
-    const textarea = document.getElementById('QuickNotes');
+    try {
+        HighLightCurrentLine();
+        const textarea = document.getElementById('QuickNotes');
 
-    textarea.addEventListener('keydown', function (event) {
-        if (event.keyCode === 33 || event.keyCode === 34) {
-            event.preventDefault();
+        if (!textarea) {
+            console.warn('QuickNotes textarea not found');
+            return;
         }
 
-        if (event.keyCode === 9) {
-            event.preventDefault();
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            textarea.value = textarea.value.substring(0, start) + '\t' + textarea.value.substring(end);
-            textarea.selectionStart = textarea.selectionEnd = start + 1;
-        }
+        textarea.addEventListener('keydown', function (event) {
+            if (event.keyCode === 33 || event.keyCode === 34) {
+                event.preventDefault();
+            }
 
-    });
+            if (event.keyCode === 9) {
+                event.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                textarea.value = textarea.value.substring(0, start) + '\t' + textarea.value.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 1;
+            }
 
-    textarea.addEventListener('click', UpdateLineNumbers);
-    textarea.addEventListener('scroll', syncScroll);
-    textarea.addEventListener('input', function () {
-        UpdateLineNumbers();
-    });
+            // Ctrl+S pour sauvegarder les notes
+            if (event.ctrlKey && event.keyCode === 83) {
+                event.preventDefault();
+                saveNotesToFile();
+            }
 
-    setInterval(HighLightCurrentLine, 1);
+            // Ctrl+O pour charger les notes
+            if (event.ctrlKey && event.keyCode === 79) {
+                event.preventDefault();
+                loadNotesFromFile();
+            }
+        });
+
+        textarea.addEventListener('click', UpdateLineNumbers);
+        textarea.addEventListener('scroll', syncScroll);
+        textarea.addEventListener('input', function () {
+            UpdateLineNumbers();
+        });
+
+        setInterval(HighLightCurrentLine, 1);
+
+        // Charger automatiquement les notes au démarrage
+        setTimeout(() => {
+            loadNotesFromFile();
+        }, 100);
+
+        console.log('NotePad initialized successfully');
+    } catch (error) {
+        console.error('Error initializing NotePad:', error);
+    }
 }
-
-UpdateNotePad();
-
 
 
 
@@ -330,25 +727,39 @@ function resetCurveViews() {
     const liveCurves = document.getElementById("liveCurves");
     const speedrampSection = document.getElementById("speedrampSection");
 
+    // Get dynamic timing once
+    let dynamicTiming = 300;
+    try {
+        const match = opacity_time.match(/(\d+)/);
+        if (match) {
+            dynamicTiming = parseInt(match[0]);
+        }
+    } catch (e) {
+        dynamicTiming = 300;
+    }
+
+    const transition = `transform ${dynamicTiming}ms cubic-bezier(.7,0,.3,1), opacity ${dynamicTiming}ms cubic-bezier(.7,0,.3,1)`;
+
     if (setCurvePos) {
-        setCurvePos.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
+        setCurvePos.style.transition = transition;
         setCurvePos.style.transform = "scale(0)";
-        setCurvePos.style.opacity = "0%";
+        setCurvePos.style.opacity = "0";
         setCurvePos.style.zIndex = "0";
     }
     if (liveCurves) {
-        liveCurves.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-        liveCurves.style.transform = "translateX(-50%) scale(0)";
-        liveCurves.style.opacity = "0%";
+        liveCurves.style.transition = transition;
+        liveCurves.style.transform = "scale(0)";
+        liveCurves.style.opacity = "0";
         liveCurves.style.zIndex = "0";
     }
     if (speedrampSection) {
-        speedrampSection.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-        speedrampSection.style.transform = "translateX(-50%) scale(0)";
-        speedrampSection.style.opacity = "0%";
+        speedrampSection.style.transition = transition;
+        speedrampSection.style.transform = "scale(0)";
+        speedrampSection.style.opacity = "0";
         speedrampSection.style.zIndex = "0";
     }
 }
+
 
 
 function showCurvePresets() {
@@ -357,22 +768,46 @@ function showCurvePresets() {
 
     resetCurveViews();
 
-    setTimeout(() => {
+    // Get timing once
+    let dynamicTiming = 300;
+    try {
+        const match = opacity_time.match(/(\d+)/);
+        if (match) {
+            dynamicTiming = parseInt(match[0]);
+        }
+    } catch (e) {
+        dynamicTiming = 300;
+    }
+
+    requestAnimationFrame(() => {
         const setCurvePos = document.getElementById("set_curve_pos");
         if (setCurvePos) {
-            setCurvePos.style.transition = "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
-            setCurvePos.style.transform = "scale(1)";
-            setCurvePos.style.opacity = "100%";
-            setCurvePos.style.zIndex = "1";
+            setCurvePos.style.transition = `transform ${dynamicTiming}ms cubic-bezier(.7,0,.3,1), opacity ${dynamicTiming}ms cubic-bezier(.7,0,.3,1)`;
 
+            requestAnimationFrame(() => {
+                setCurvePos.style.transform = "scale(1)";
+                setCurvePos.style.opacity = "1";
+                setCurvePos.style.zIndex = "1";
+            });
+
+            // Redraw after transition is complete
             setTimeout(() => {
-                forceRedrawAllPresets();
-            }, 350);
+                if (typeof forceRedrawAllPresets === 'function') {
+                    forceRedrawAllPresets();
+                } else {
+                    console.warn('forceRedrawAllPresets function not available in showCurvePresets');
+                }
+            }, dynamicTiming + 50);
         }
-    }, 50);
+    });
 
     activate_speedramp = false;
 }
+
+
+
+
+
 function showLiveCurves() {
     if (currentCurveTab === "instant") return;
     currentCurveTab = "instant";
@@ -382,39 +817,52 @@ function showLiveCurves() {
     const liveCurves = document.getElementById("liveCurves");
     if (!liveCurves) return;
 
-    liveCurves.style.transition =
-        "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
+    // Get timing once
+    let dynamicTiming = 300;
+    try {
+        const match = opacity_time.match(/(\d+)/);
+        if (match) {
+            dynamicTiming = parseInt(match[0]);
+        }
+    } catch (e) {
+        dynamicTiming = 300;
+    }
+
+    liveCurves.style.transition = `transform ${dynamicTiming}ms cubic-bezier(.7,0,.3,1), opacity ${dynamicTiming}ms cubic-bezier(.7,0,.3,1)`;
 
     requestAnimationFrame(() => {
-        liveCurves.style.transform = "scale(1)";
-        liveCurves.style.opacity = "1";
+        requestAnimationFrame(() => {
+            liveCurves.style.transform = "scale(1)";
+            liveCurves.style.opacity = "1";
+            liveCurves.style.zIndex = "1";
+        });
     });
 
     activate_speedramp = false;
 
-    liveCurves.addEventListener(
-        "transitionend",
-        () => {
-            try {
-                clearInterval(drawCurve_live_Inverval);
-                resetDiv("CurvePreview_Live");
+    // Wait for transition to complete before drawing
+    setTimeout(() => {
+        try {
+            clearInterval(drawCurve_live_Inverval);
+            resetDiv("CurvePreview_Live");
 
-                if (typeof LiveDrawCubicBezierVisualizerForLiveCurve === "function") {
-                    LiveDrawCubicBezierVisualizerForLiveCurve(
-                        "CurvePreview_Live",
-                        L_setNewX1,
-                        L_setNewY1,
-                        L_setNewX2,
-                        L_setNewY2
-                    );
-                }
-            } catch (error) {
-                console.warn("Erreur lors de l'initialisation de la courbe live:", error);
+            if (typeof LiveDrawCubicBezierVisualizerForLiveCurve === "function") {
+                LiveDrawCubicBezierVisualizerForLiveCurve(
+                    "CurvePreview_Live",
+                    L_setNewX1,
+                    L_setNewY1,
+                    L_setNewX2,
+                    L_setNewY2
+                );
             }
-        },
-        { once: true }
-    );
+        } catch (error) {
+            console.warn("Erreur lors de l'initialisation de la courbe live:", error);
+        }
+    }, dynamicTiming + 50);
 }
+
+
+
 
 function showSpeedramps() {
     if (currentCurveTab === "speedramp") return;
@@ -425,12 +873,25 @@ function showSpeedramps() {
     const speedrampSection = document.getElementById("speedrampSection");
     if (!speedrampSection) return;
 
-    speedrampSection.style.transition =
-        "transform 300ms cubic-bezier(.7,0,.3,1), opacity 300ms cubic-bezier(.7,0,.3,1)";
+    // Get timing once
+    let dynamicTiming = 300;
+    try {
+        const match = opacity_time.match(/(\d+)/);
+        if (match) {
+            dynamicTiming = parseInt(match[0]);
+        }
+    } catch (e) {
+        dynamicTiming = 300;
+    }
+
+    speedrampSection.style.transition = `transform ${dynamicTiming}ms cubic-bezier(.7,0,.3,1), opacity ${dynamicTiming}ms cubic-bezier(.7,0,.3,1)`;
 
     requestAnimationFrame(() => {
-        speedrampSection.style.transform = "scale(1)";
-        speedrampSection.style.opacity = "1";
+        requestAnimationFrame(() => {
+            speedrampSection.style.transform = "scale(1)";
+            speedrampSection.style.opacity = "1";
+            speedrampSection.style.zIndex = "1";
+        });
     });
 
     activate_speedramp = true;
@@ -456,6 +917,43 @@ function setupRightClickHandler() {
     });
 }
 
+
+function setupTabRightClickHandlers() {
+    const tabs = [
+        document.getElementById("tab_2"),
+        document.getElementById("tab_3"),
+        document.getElementById("tab_4"),
+        document.getElementById("tab_5"),
+        document.getElementById("tab_6"),
+        document.getElementById("tab_7")
+    ];
+
+    tabs.forEach(tabButton => {
+        if (!tabButton) return;
+
+        tabButton.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+
+            CloseDashBoard();
+            CloseNotes();
+
+            if (currentCurveTab === "instant") {
+                showCurvePresets();
+                closeDashBoard();
+                closeNotes();
+            } else if (currentCurveTab === "presets") {
+                showLiveCurves();
+                closeDashBoard();
+                closeNotes();
+            }
+
+            newTabAnims(1);
+            GlobalsCurrentTab = 1;
+            updateNavActiveClasses(1);
+        });
+    });
+}
+
 function NavBar() {
     if (HelloIamRetarted) return;
 
@@ -472,7 +970,6 @@ function NavBar() {
             } else {
                 OpenDashBoard();
                 CloseNotes();
-
             }
         });
     }
@@ -508,7 +1005,7 @@ function NavBar() {
         curvePresetSwitcher.addEventListener("click", showCurvePresets);
     }
 
-    setupRightClickHandler();
+    setupTabRightClickHandlers();
 
     function switchToTab(tabNumber) {
         if (current_tab === tabNumber) {
@@ -533,13 +1030,34 @@ function NavBar() {
             CloseDashBoard();
             switchToTab(1);
         });
+
+        tabButton1.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+            console.log("Right click detected on Curves button");
+
+            if (GlobalsCurrentTab !== 1) {
+                CloseDashBoard();
+                CloseNotes();
+                newTabAnims(1);
+                current_tab = 1;
+                GlobalsCurrentTab = 1;
+                updateNavActiveClasses(1);
+            }
+
+            if (currentCurveTab === "instant") {
+                console.log("Switching to presets");
+                showCurvePresets();
+            } else {
+                console.log("Switching to instant");
+                showLiveCurves();
+            }
+        });
     }
 
     const tabButton2 = document.getElementById("tabButton2");
     if (tabButton2) {
         tabButton2.addEventListener("click", function () {
             switchToTab(2);
-
         });
     }
 
@@ -578,28 +1096,43 @@ function NavBar() {
         });
     }
 }
+
+
+
 function redrawAllVisibleCurves() {
-    const setCurvePos = document.getElementById("set_curve_pos");
-    if ((setCurvePos && setCurvePos.style.opacity === "100%") || currentCurveTab === "presets") {
-        forceRedrawAllPresets();
-    }
+    try {
+        const setCurvePos = document.getElementById("set_curve_pos");
+        if ((setCurvePos && setCurvePos.style.opacity === "100%") || currentCurveTab === "presets") {
+            if (typeof forceRedrawAllPresets === 'function') {
+                forceRedrawAllPresets();
+            } else {
+                console.warn('forceRedrawAllPresets function not available');
+            }
+        }
 
-    const createCurve = document.getElementById("create_curve");
-    if (createCurve && createCurve.style.opacity === "100%") {
-        resetDiv("CurvePreview");
-        LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
-    }
+        const createCurve = document.getElementById("create_curve");
+        if (createCurve && createCurve.style.opacity === "100%") {
+            if (typeof resetDiv === 'function' && typeof LiveDrawCubicBezierVisualizer === 'function') {
+                resetDiv("CurvePreview");
+                LiveDrawCubicBezierVisualizer("CurvePreview", setNewX1, setNewY1, setNewX2, setNewY2);
+            }
+        }
 
-    const liveCurves = document.getElementById("liveCurves");
-    if (liveCurves && (liveCurves.style.opacity === "1" || currentCurveTab === "instant")) {
-        resetDiv("CurvePreview_Live");
-        LiveDrawCubicBezierVisualizerForLiveCurve(
-            "CurvePreview_Live",
-            L_setNewX1,
-            L_setNewY1,
-            L_setNewX2,
-            L_setNewY2
-        );
+        const liveCurves = document.getElementById("liveCurves");
+        if (liveCurves && (liveCurves.style.opacity === "1" || currentCurveTab === "instant")) {
+            if (typeof resetDiv === 'function' && typeof LiveDrawCubicBezierVisualizerForLiveCurve === 'function') {
+                resetDiv("CurvePreview_Live");
+                LiveDrawCubicBezierVisualizerForLiveCurve(
+                    "CurvePreview_Live",
+                    L_setNewX1,
+                    L_setNewY1,
+                    L_setNewX2,
+                    L_setNewY2
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Error in redrawAllVisibleCurves:', error);
     }
 }
 
@@ -612,9 +1145,24 @@ function colorUpdate() {
     const hueBackground = document.getElementById("CoolExcaliburHue");
     const satBackground = document.getElementById("CoolExcaliburSat");
 
+    // Compteurs de valeurs
+    const hueCounter = document.getElementById("hue-counter");
+    const satCounter = document.getElementById("sat-counter");
+
     if (!hueSlider || !satSlider || !huePicker || !satPicker) return;
 
     const root = document.documentElement;
+
+    // Charger les valeurs sauvegardées
+    const userConfig = readOrCreateUserConfig();
+    if (userConfig.sliders) {
+        if (userConfig.sliders.hue !== undefined) {
+            hueSlider.value = userConfig.sliders.hue;
+        }
+        if (userConfig.sliders.saturation !== undefined) {
+            satSlider.value = userConfig.sliders.saturation;
+        }
+    }
 
     let currentHue = hueSlider.value;
     let currentSat = satSlider.value;
@@ -656,6 +1204,45 @@ function colorUpdate() {
         root.style.setProperty('--accent-shadow', `hsla(${currentHue}, ${currentSat}%, 60%, 0.4)`);
     }
 
+    // Appliquer les valeurs chargées immédiatement
+    updatePickerPosition(hueSlider, huePicker);
+    updatePickerPosition(satSlider, satPicker);
+    updateHueThumb();
+    updateSatThumb();
+    updateHueBackground(currentHue, currentSat);
+    updateSatBackground(currentHue);
+    updateRootColor();
+
+    function updateHueThumb() {
+        huePicker.style.backgroundColor = '#fff';
+    }
+
+    function updateSatThumb() {
+        satPicker.style.backgroundColor = '#fff';
+    }
+
+    function updateHueBackground(hue, sat) {
+        if (hueBackground) {
+            let gradient = [];
+            for (let deg = 0; deg <= 360; deg += 60) {
+                gradient.push(`hsl(${deg}, ${sat}%, 50%)`);
+            }
+            hueBackground.style.background = `linear-gradient(to right, ${gradient.join(', ')})`;
+        }
+    }
+
+    function updateSatBackground(hue) {
+        if (satBackground) {
+            satBackground.style.background = `linear-gradient(to right, hsl(${hue}, 0%, 50%), hsl(${hue}, 100%, 50%))`;
+        }
+    }
+
+    function updateRootColor() {
+        root.style.setProperty('--accent', `hsl(${currentHue}, ${currentSat}%, 50%)`);
+        root.style.setProperty('--accent-light', `hsl(${currentHue}, ${currentSat}%, 70%)`);
+        root.style.setProperty('--accent-shadow', `hsla(${currentHue}, ${currentSat}%, 60%, 0.4)`);
+    }
+
     updatePickerPosition(hueSlider, huePicker);
     updatePickerPosition(satSlider, satPicker);
     updateHueThumb();
@@ -666,47 +1253,171 @@ function colorUpdate() {
 
     hueSlider.addEventListener('input', () => {
         currentHue = hueSlider.value;
+        if (hueCounter) hueCounter.textContent = currentHue + '°';
         updatePickerPosition(hueSlider, huePicker);
         updateHueThumb();
         updateHueBackground(currentHue, currentSat);
         updateSatBackground(currentHue);
         updateRootColor();
-        redrawAllVisibleCurves();
+        if (typeof redrawAllVisibleCurves === 'function') {
+            redrawAllVisibleCurves();
+        }
+
+        // Sauvegarder la valeur
+        const userConfig = readOrCreateUserConfig();
+        userConfig.sliders.hue = parseInt(currentHue);
+        updateUserConfig(userConfig);
     });
 
     satSlider.addEventListener('input', () => {
         currentSat = satSlider.value;
+        if (satCounter) satCounter.textContent = currentSat + '%';
         updatePickerPosition(satSlider, satPicker);
         updateSatThumb();
         updateHueBackground(currentHue, currentSat);
         updateSatBackground(currentHue);
         updateRootColor();
-        redrawAllVisibleCurves();
+        if (typeof redrawAllVisibleCurves === 'function') {
+            redrawAllVisibleCurves();
+        }
+
+        // Sauvegarder la valeur
+        const userConfig = readOrCreateUserConfig();
+        userConfig.sliders.saturation = parseInt(currentSat);
+        updateUserConfig(userConfig);
     });
+}
+
+
+function initAnimationSpeed() {
+    const animSpeedSlider = document.getElementById('AnimSpeed_val');
+    const animSpeedDisplay = document.getElementById('AnimSpeed_display');
+    const speedPicker = document.getElementById('AnimSpeedPicker');
+    const speedCounter = document.getElementById('speed-counter');
+
+    if (animSpeedSlider) {
+        // Charger la valeur sauvegardée
+        const userConfig = readOrCreateUserConfig();
+        if (userConfig.sliders && userConfig.sliders.animationSpeed) {
+            animSpeedSlider.value = userConfig.sliders.animationSpeed;
+        }
+
+        function updateSpeedPicker() {
+            const min = parseFloat(animSpeedSlider.min) || 0;
+            const max = parseFloat(animSpeedSlider.max) || 400;
+            const percentage = ((animSpeedSlider.value - min) / (max - min)) * 100;
+
+            if (speedPicker) {
+                speedPicker.style.left = percentage + '%';
+            }
+
+            if (speedCounter) {
+                speedCounter.textContent = animSpeedSlider.value + 'ms';
+            }
+
+            if (animSpeedDisplay) {
+                animSpeedDisplay.textContent = animSpeedSlider.value;
+            }
+        }
+
+        updateSpeedPicker();
+
+        animSpeedSlider.addEventListener('input', () => {
+            const newSpeed = parseInt(animSpeedSlider.value);
+
+            updateSpeedPicker();
+
+            opacity_time = `opacity ${newSpeed}ms cubic-bezier(.7,0,.3,1)`;
+            top_time_min = `top ${newSpeed}ms cubic-bezier(.7,0,.3,1)`;
+            margin_time_min = `margin ${newSpeed}ms cubic-bezier(.7,0,.3,1)`;
+
+            updateCurrentTransitions(newSpeed);
+
+            // Sauvegarder la valeur
+            const userConfig = readOrCreateUserConfig();
+            userConfig.sliders.animationSpeed = newSpeed;
+            updateUserConfig(userConfig);
+        });
+
+        const initialSpeed = parseInt(animSpeedSlider.value);
+        opacity_time = `opacity ${initialSpeed}ms cubic-bezier(.7,0,.3,1)`;
+        top_time_min = `top ${initialSpeed}ms cubic-bezier(.7,0,.3,1)`;
+        margin_time_min = `margin ${initialSpeed}ms cubic-bezier(.7,0,.3,1)`;
+    }
+}
+
+
+function updateCurrentTransitions(newSpeed) {
+    const tabs = [
+        document.getElementById("tab_1"),
+        document.getElementById("tab_2"),
+        document.getElementById("tab_3"),
+        document.getElementById("tab_4"),
+        document.getElementById("tab_5"),
+        document.getElementById("tab_6"),
+        document.getElementById("tab_7")
+    ];
+
+    tabs.forEach(tab => {
+        if (tab && tab.style.opacity !== "0%" && tab.style.opacity !== "0") {
+            const newTransition = `opacity ${newSpeed}ms cubic-bezier(.7,0,.3,1), top ${newSpeed}ms cubic-bezier(.7,0,.3,1)`;
+            tab.style.transition = newTransition;
+        }
+    });
+
+    const setCurvePos = document.getElementById("set_curve_pos");
+    const liveCurves = document.getElementById("liveCurves");
+    const speedrampSection = document.getElementById("speedrampSection");
+
+    const transitionString = `transform ${newSpeed}ms cubic-bezier(.7,0,.3,1), opacity ${newSpeed}ms cubic-bezier(.7,0,.3,1)`;
+
+    if (setCurvePos && setCurvePos.style.opacity !== "0%" && setCurvePos.style.opacity !== "0") {
+        setCurvePos.style.transition = transitionString;
+    }
+    if (liveCurves && liveCurves.style.opacity !== "0%" && liveCurves.style.opacity !== "0") {
+        liveCurves.style.transition = transitionString;
+    }
+    if (speedrampSection && speedrampSection.style.opacity !== "0%" && speedrampSection.style.opacity !== "0") {
+        speedrampSection.style.transition = transitionString;
+    }
 }
 
 
 
 function initUI() {
-    NavBar();
-    UpdateNotePad();
-    newTabAnims(1);
-    updateNavActiveClasses(1);
-    showLiveCurves();
-    colorUpdate();
+    console.log('Initializing UI...');
 
-    setTimeout(() => {
-        const setCurvePos = document.getElementById("set_curve_pos");
-        if (setCurvePos) {
-            setCurvePos.style.opacity = "100%";
-            setCurvePos.style.transform = "scale(1)";
-            setCurvePos.style.zIndex = "1";
-            forceRedrawAllPresets();
+    try {
+        NavBar();
+        UpdateNotePad();
+        newTabAnims(1);
+        updateNavActiveClasses(1);
+        showLiveCurves();
+        colorUpdate();
+        initAnimationSpeed();
+
+        setTimeout(() => {
+            const setCurvePos = document.getElementById("set_curve_pos");
+            if (setCurvePos) {
+                setCurvePos.style.opacity = "100%";
+                setCurvePos.style.transform = "scale(1)";
+                setCurvePos.style.zIndex = "1";
+
+                if (typeof forceRedrawAllPresets === 'function') {
+                    forceRedrawAllPresets();
+                } else {
+                    console.warn('forceRedrawAllPresets function not found');
+                }
+            }
+        }, 200);
+
+        if (isDashboardOpenOnStart) {
+            OpenDashboardOnStart();
         }
-    }, 200);
 
-    if (isDashboardOpenOnStart) {
-        OpenDashboardOnStart();
+        console.log('UI initialization complete');
+    } catch (error) {
+        console.error('Error during UI initialization:', error);
     }
 }
 
@@ -793,14 +1504,51 @@ async function showSystemInfoInLoader() {
 }
 
 
-/*
-setTimeout(() => { //Securite si rien s'ouvre  (jsx ou CS marche pas)
-    const Loading = document.getElementById("Loading");
-    if (Loading && Loading.style.display !== "none") {
-        console.warn("Forced loader release");
-        Loading.style.display = "none";
+setTimeout(() => {
+    try {
+        const Loading = document.getElementById("Loading");
+        const BluredBG = document.getElementById("BluredBG");
+        const LoginScreen = document.getElementById("LoginScreen");
+
+        const isLoadingVisible = Loading && (
+            Loading.style.display !== "none" &&
+            Loading.style.opacity !== "0" &&
+            Loading.offsetParent !== null
+        );
+
+        if (isLoadingVisible) {
+            console.warn("Forced loader release - timeout reached");
+
+            if (Loading) Loading.style.display = "none";
+            if (BluredBG) BluredBG.style.display = "none";
+
+            let hasSession = false;
+            try {
+                hasSession = hasValidUserSession();
+            } catch (error) {
+                console.warn('Error checking user session:', error);
+                hasSession = false;
+            }
+
+            if (!hasSession && LoginScreen) {
+                try {
+                    showLoginScreen();
+                } catch (error) {
+                    console.error('Failed to show login screen:', error);
+                    setTimeout(() => initUI(), 100);
+                }
+            } else {
+                try {
+                    setTimeout(() => initUI(), 100);
+                } catch (error) {
+                    console.error('Failed to initialize UI in timeout:', error);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error in safety timeout:', error);
     }
-}, 5000);*/
+}, 10000);
 
 
 function readSetGo() {
@@ -808,27 +1556,39 @@ function readSetGo() {
     const BluredBG = document.getElementById("BluredBG");
     const WhatIsLoading = document.getElementById("WhatIsLoading");
 
-    WhatIsLoading.textContent = "LOADED";
-    WhatIsLoading.style.color = "#5eff24";
+    console.log('Finalizing application startup...');
 
-    Loading.style.transition = "opacity 500ms";
-    Loading.style.opacity = "0";
+    if (WhatIsLoading) {
+        WhatIsLoading.textContent = "LOADED";
+        WhatIsLoading.style.color = "#5eff24";
+    }
 
-    BluredBG.style.transition = "opacity 500ms";
-    BluredBG.style.opacity = "0";
+    if (Loading) {
+        Loading.style.transition = "opacity 500ms";
+        Loading.style.opacity = "0";
+    }
+
+    if (BluredBG) {
+        BluredBG.style.transition = "opacity 500ms";
+        BluredBG.style.opacity = "0";
+    }
 
     setTimeout(() => {
-        Loading.style.display = "none";
-        BluredBG.style.display = "none";
+        if (Loading) Loading.style.display = "none";
+        if (BluredBG) BluredBG.style.display = "none";
 
         setTimeout(() => {
-            resetCurveViews();
+            try {
+                resetCurveViews();
+                currentCurveTab = "";
 
-            currentCurveTab = "";
-
-            setTimeout(() => {
-                showLiveCurves();
-            }, 50);
+                setTimeout(() => {
+                    showLiveCurves();
+                    console.log('Application startup complete');
+                }, 50);
+            } catch (error) {
+                console.error('Error during final initialization:', error);
+            }
         }, 100);
     }, 500);
 }
@@ -1009,61 +1769,131 @@ function setupLoginEvents() {
 }
 
 async function startMainApp() {
-    await CheckAndLoad();
-    await showSystemInfoInLoader();
+    console.log('Starting main application...');
 
-    customFileReadOrCreate();
+    try {
+        await CheckAndLoad();
+        await showSystemInfoInLoader();
 
-    setTimeout(() => {
-        drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
-        drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
-        drawCubicBezierVisualizer("CUR_SpeedRamp_Preset", 0.20, 0.80, 0.80, 0.20);
-        drawCubicBezierVisualizer("CUR_S_Preset", 0.6, 0, 0.3, 1);
-        drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
-        LoadCustomCurves();
-    }, 100);
-
-    LiveCurveStuff();
-    CheckForButtonPress();
-    PresetsButtons();
-
-    const userConfig = readOrCreateUserConfig();
-    const isNewUser = userConfig && userConfig.lastLogin &&
-        (new Date() - new Date(userConfig.lastLogin)) < 60000;
-
-    if (isNewUser) {
-        SendNotification(`Welcome to ExcaliburFx, ${userConfig.username}!`, true, true);
-    } else {
-        SendNotification('Welcome Back', true, true);
-    }
-
-    setTimeout(() => {
-        readSetGo();
+        customFileReadOrCreate();
 
         setTimeout(() => {
-            forceRedrawAllPresets();
-        }, 600);
-    }, 500);
+            if (typeof drawCubicBezierVisualizer === 'function') {
+                drawCubicBezierVisualizer("CUR_In_Preset", 0, 0, 0, 1);
+                drawCubicBezierVisualizer("CUR_Out_Preset", 1, 0, 1, 1);
+                drawCubicBezierVisualizer("CUR_SpeedRamp_Preset", 0.20, 0.80, 0.80, 0.20);
+                drawCubicBezierVisualizer("CUR_S_Preset", 0.6, 0, 0.3, 1);
+                drawCubicBezierVisualizer("CUR_Reset", 0, 0, 1, 1);
+            } else {
+                console.warn('drawCubicBezierVisualizer function not available yet');
+            }
+
+            if (typeof LoadCustomCurves === 'function') {
+                LoadCustomCurves();
+            } else {
+                console.warn('LoadCustomCurves function not found');
+            }
+        }, 100);
+
+        if (typeof LiveCurveStuff === 'function') {
+            LiveCurveStuff();
+        } else {
+            console.warn('LiveCurveStuff function not found');
+        }
+
+        if (typeof CheckForButtonPress === 'function') {
+            CheckForButtonPress();
+        } else {
+            console.warn('CheckForButtonPress function not found');
+        }
+
+        if (typeof PresetsButtons === 'function') {
+            PresetsButtons();
+        } else {
+            console.warn('PresetsButtons function not found');
+        }
+
+        const userConfig = readOrCreateUserConfig();
+        const isNewUser = userConfig && userConfig.lastLogin &&
+            (new Date() - new Date(userConfig.lastLogin)) < 60000;
+
+        if (isNewUser) {
+            SendNotification(`Welcome to ExcaliburFx, ${userConfig.username}!`, true, true);
+        } else {
+            SendNotification('Welcome Back', true, true);
+        }
+
+        setTimeout(() => {
+            readSetGo();
+
+            setTimeout(() => {
+                if (typeof forceRedrawAllPresets === 'function') {
+                    forceRedrawAllPresets();
+                } else {
+                    console.warn('forceRedrawAllPresets function not available for final redraw');
+                }
+            }, 600);
+        }, 500);
+
+        console.log('Main application startup complete');
+    } catch (error) {
+        console.error('Error in startMainApp:', error);
+        readSetGo();
+    }
 }
 
 (async function startApp() {
-    initUI();
+    try {
+        console.log('Starting ExcaliburFX application...');
 
-    document.getElementById("StartLoadingbarProgress").style.width = "0%";
+        initUI();
 
-    while (typeof CSInterface === "undefined") {
-        await new Promise(r => setTimeout(r, 10));
-    }
+        const progressBar = document.getElementById("StartLoadingbarProgress");
+        if (progressBar) {
+            progressBar.style.width = "0%";
+        }
 
-    if (!hasValidUserSession()) {
-        showLoginScreen();
-    } else {
-        hideLoginScreen();
-        const userConfig = readOrCreateUserConfig();
-        const welcomeText = document.getElementById("Loading").querySelector("h1");
-        welcomeText.textContent = `Welcome back, ${userConfig.username}!`;
+        let retryCount = 0;
+        while (typeof CSInterface === "undefined" && retryCount < 500) {
+            await new Promise(r => setTimeout(r, 10));
+            retryCount++;
+        }
 
-        await startMainApp();
+        if (typeof CSInterface === "undefined") {
+            console.error('CSInterface not available after timeout');
+        }
+
+        if (!hasValidUserSession()) {
+            console.log('No valid session found, showing login screen');
+            showLoginScreen();
+        } else {
+            console.log('Valid session found, starting main app');
+            hideLoginScreen();
+
+            const userConfig = readOrCreateUserConfig();
+            const loadingElement = document.getElementById("Loading");
+            if (loadingElement) {
+                const welcomeText = loadingElement.querySelector("h1");
+                if (welcomeText && userConfig && userConfig.username) {
+                    welcomeText.textContent = `Welcome back, ${userConfig.username}!`;
+                }
+            }
+
+            await startMainApp();
+        }
+    } catch (error) {
+        console.error('Error in startApp:', error);
+
+        try {
+            showLoginScreen();
+        } catch (loginError) {
+            console.error('Failed to show login screen:', loginError);
+
+            const loading = document.getElementById("Loading");
+            const bluredBG = document.getElementById("BluredBG");
+            if (loading) loading.style.display = "none";
+            if (bluredBG) bluredBG.style.display = "none";
+        }
     }
 })();
 
@@ -1216,241 +2046,6 @@ async function StartGetParams() {
 
 
 
-function getConfigPaths() {
-    const cs = new CSInterface();
-    const documentsFolder = cs.getSystemPath(SystemPath.MY_DOCUMENTS);
-    const baseFolder = path.join(documentsFolder, 'Excalibur');
-
-    return {
-        baseFolder,
-        assetsFolder: path.join(baseFolder, 'Assets'),
-        settingsCurves: path.join(baseFolder, 'settingsCurves.json'),
-        userConfig: path.join(baseFolder, 'userConfig.json')
-    };
-}
-
-function readOrCreateUserConfig() {
-    const paths = getConfigPaths();
-
-    try {
-        if (!fs.existsSync(paths.baseFolder)) {
-            fs.mkdirSync(paths.baseFolder, { recursive: true });
-        }
-
-        if (!fs.existsSync(paths.userConfig)) {
-            const initialConfig = {
-                username: "",
-                lastLogin: null,
-                firstTime: true
-            };
-
-            fs.writeFileSync(
-                paths.userConfig,
-                JSON.stringify(initialConfig, null, 2),
-                'utf-8'
-            );
-            return initialConfig;
-        }
-
-        const configData = fs.readFileSync(paths.userConfig, 'utf-8');
-        let config = JSON.parse(configData);
-        return config;
-
-    } catch (e) {
-        console.error('readOrCreateUserConfig error:', e);
-    }
-}
-
-function sanitizeUsername(username) {
-    if (!username || typeof username !== 'string') {
-        return '';
-    }
-
-    return username
-        .trim()
-        .replace(/[<>:"/\\|?*]/g, '') //supprimer les caractères interdits
-        .replace(/\s+/g, '_') //remplacer les espaces par des underscores
-        .substring(0, 20);
-}
-
-function updateUserConfig(newConfig) {
-    const paths = getConfigPaths();
-
-    try {
-        if (!fs.existsSync(paths.baseFolder)) {
-            fs.mkdirSync(paths.baseFolder, { recursive: true });
-        }
-
-        const currentConfig = readOrCreateUserConfig();
-
-        const cleanedConfig = { ...newConfig };
-        if (cleanedConfig.username) {
-            cleanedConfig.username = sanitizeUsername(cleanedConfig.username);
-        }
-
-        const updatedConfig = {
-            ...currentConfig,
-            ...cleanedConfig,
-            lastLogin: new Date().toISOString()
-        };
-
-        fs.writeFileSync(
-            paths.userConfig,
-            JSON.stringify(updatedConfig, null, 2),
-            'utf-8'
-        );
-
-        console.log('User config updated successfully:', updatedConfig);
-        return true;
-    } catch (e) {
-        console.error('updateUserConfig error:', e);
-        return false;
-    }
-}
-
-function hasValidUserSession() {
-    try {
-        const userConfig = readOrCreateUserConfig();
-
-        if (!userConfig) {
-            console.log('No user config found');
-            return false;
-        }
-
-        if (!userConfig.username || typeof userConfig.username !== 'string') {
-            console.log('Invalid or missing username');
-            return false;
-        }
-
-        const trimmedUsername = userConfig.username.trim();
-        if (trimmedUsername === '' || trimmedUsername.length < 2) {
-            console.log('Username too short or empty');
-            return false;
-        }
-
-        if (userConfig.firstTime !== false) {
-            console.log('First time user');
-            return false;
-        }
-
-        return true;
-
-    } catch (e) {
-        console.error('hasValidUserSession error:', e);
-        return false;
-    }
-}
-
-
-
-function customFileReadOrCreate() {
-    const paths = getConfigPaths();
-
-    try {
-        if (!fs.existsSync(paths.baseFolder)) {
-            fs.mkdirSync(paths.baseFolder, { recursive: true });
-        }
-        if (!fs.existsSync(paths.assetsFolder)) {
-            fs.mkdirSync(paths.assetsFolder, { recursive: true });
-        }
-
-        if (!fs.existsSync(paths.settingsCurves)) {
-            const initialCurves = Array(20).fill(null).map((_, i) => ({
-                id: i + 1,
-                active: false,
-                name: "",
-                x1: 0.2,
-                y1: 0.8,
-                x2: 0.8,
-                y2: 0.2
-            }));
-
-            fs.writeFileSync(
-                paths.settingsCurves,
-                JSON.stringify(initialCurves, null, 2),
-                'utf-8'
-            );
-            return { curves: initialCurves };
-        }
-
-        const curvesData = fs.readFileSync(paths.settingsCurves, 'utf-8');
-        let curves = JSON.parse(curvesData);
-
-        if (!Array.isArray(curves) || curves.length !== 20) {
-            curves = Array(20).fill(null).map((_, i) => ({
-                id: i + 1,
-                active: false,
-                name: "",
-                x1: 0.2,
-                y1: 0.8,
-                x2: 0.8,
-                y2: 0.2
-            }));
-        } else {
-            curves = curves.map((curve, i) => ({
-                id: i + 1,
-                active: curve?.active || false,
-                name: curve?.name || "",
-                x1: parseFloat(curve?.x1) || 0.2,
-                y1: parseFloat(curve?.y1) || 0.8,
-                x2: parseFloat(curve?.x2) || 0.8,
-                y2: parseFloat(curve?.y2) || 0.2
-            }));
-        }
-
-        return { curves };
-
-    } catch (e) {
-        console.error('customFileReadOrCreate error:', e);
-        SendNotification('Error loading curves data', true, false);
-
-        return {
-            curves: Array(20).fill(null).map((_, i) => ({
-                id: i + 1,
-                active: false,
-                name: "",
-                x1: 0.2,
-                y1: 0.8,
-                x2: 0.8,
-                y2: 0.2
-            }))
-        };
-    }
-}
-
-
-
-function updateSettingsCurves(newCurves) {
-    const paths = getConfigPaths();
-
-    try {
-        if (!fs.existsSync(paths.baseFolder)) {
-            fs.mkdirSync(paths.baseFolder, { recursive: true });
-        }
-
-        const validatedCurves = newCurves.map((curve, i) => ({
-            id: i + 1,
-            active: Boolean(curve.active),
-            name: String(curve.name || ""),
-            x1: parseFloat(curve.x1) || 0,
-            y1: parseFloat(curve.y1) || 0,
-            x2: parseFloat(curve.x2) || 1,
-            y2: parseFloat(curve.y2) || 1
-        }));
-
-        fs.writeFileSync(
-            paths.settingsCurves,
-            JSON.stringify(validatedCurves, null, 2),
-            'utf-8'
-        );
-
-        return true;
-    } catch (e) {
-        console.error('updateSettingsCurves error:', e);
-        SendNotification('Error saving curves', true, false);
-        return false;
-    }
-}
 
 
 function resetDiv(divId) {
@@ -2355,6 +2950,96 @@ if (ButtomRandom) {
             `${Number(setNewX1).toFixed(2)}, ${Number(setNewY1).toFixed(2)}, ${Number(setNewX2).toFixed(2)}, ${Number(setNewY2).toFixed(2)}`;
     });
 }
+
+// === FONCTIONS DE FALLBACK POUR ÉVITER LES ERREURS ===
+
+// Fonction de fallback pour forceRedrawAllPresets
+if (typeof forceRedrawAllPresets === 'undefined') {
+    function forceRedrawAllPresets() {
+        console.log('forceRedrawAllPresets: Fallback function called');
+        try {
+            const presetCurves = ['CUR_In_Preset', 'CUR_Out_Preset', 'CUR_SpeedRamp_Preset', 'CUR_S_Preset', 'CUR_Reset'];
+            presetCurves.forEach(curveId => {
+                const element = document.getElementById(curveId);
+                if (element && typeof drawCubicBezierVisualizer === 'function') {
+                    switch (curveId) {
+                        case 'CUR_In_Preset':
+                            drawCubicBezierVisualizer(curveId, 0, 0, 0, 1);
+                            break;
+                        case 'CUR_Out_Preset':
+                            drawCubicBezierVisualizer(curveId, 1, 0, 1, 1);
+                            break;
+                        case 'CUR_SpeedRamp_Preset':
+                            drawCubicBezierVisualizer(curveId, 0.20, 0.80, 0.80, 0.20);
+                            break;
+                        case 'CUR_S_Preset':
+                            drawCubicBezierVisualizer(curveId, 0.6, 0, 0.3, 1);
+                            break;
+                        case 'CUR_Reset':
+                            drawCubicBezierVisualizer(curveId, 0, 0, 1, 1);
+                            break;
+                    }
+                }
+            });
+        } catch (error) {
+            console.warn('Error in forceRedrawAllPresets fallback:', error);
+        }
+    }
+}
+
+// Fonction de fallback pour LiveCurveStuff
+if (typeof LiveCurveStuff === 'undefined') {
+    function LiveCurveStuff() {
+        console.log('LiveCurveStuff: Fallback function called');
+        try {
+            if (typeof LiveDrawCubicBezierVisualizerForLiveCurve === 'function') {
+                setTimeout(() => {
+                    const liveCurveDiv = document.getElementById('CurvePreview_Live');
+                    if (liveCurveDiv) {
+                        resetDiv('CurvePreview_Live');
+                        LiveDrawCubicBezierVisualizerForLiveCurve(
+                            'CurvePreview_Live',
+                            L_setNewX1, L_setNewY1, L_setNewX2, L_setNewY2
+                        );
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.warn('Error in LiveCurveStuff fallback:', error);
+        }
+    }
+}
+
+// Fonction de fallback pour CheckForButtonPress
+if (typeof CheckForButtonPress === 'undefined') {
+    function CheckForButtonPress() {
+        console.log('CheckForButtonPress: Fallback function called');
+    }
+}
+
+// Fonction de fallback pour PresetsButtons
+if (typeof PresetsButtons === 'undefined') {
+    function PresetsButtons() {
+        console.log('PresetsButtons: Fallback function called');
+    }
+}
+
+// Fonction de fallback pour LoadCustomCurves
+if (typeof LoadCustomCurves === 'undefined') {
+    function LoadCustomCurves() {
+        console.log('LoadCustomCurves: Fallback function called');
+        try {
+            const data = customFileReadOrCreate();
+            if (data && data.curves) {
+                console.log('Loaded', data.curves.length, 'custom curves');
+            }
+        } catch (error) {
+            console.warn('Error in LoadCustomCurves fallback:', error);
+        }
+    }
+}
+
+console.log('ExcaliburFX main.js loaded successfully with fallbacks');
 
 
 

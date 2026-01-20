@@ -236,19 +236,23 @@
 
          <div id="tab_7">
             <div id="tab_inside7">
+               <h3 id="SettingsText">Settings</h3>
 
                <div id="tab7_1">
-                  <h2>Layer color</h2>
+                  <h2>Layer Color</h2>
                   <div class="normal_underline"></div>
-                  <p>content</p>
+                  <p>Coming soon...</p>
                </div>
 
                <div id="tab7_2">
-                  <h2>Ui Settings</h2>
+                  <h2>UI Settings</h2>
                   <div class="normal_underline"></div>
 
                   <div class="slider-container">
-                     <label class="slider-label">Hue</label>
+                     <label class="slider-label">
+                        Hue
+                        <span class="slider-value-counter" id="hue-counter">270°</span>
+                     </label>
                      <div class="sliderfix" id="hueShiftCool">
                         <input type="range" class="sliders" id="hueSlider" min="0" max="360" value="270" step="1">
                      </div>
@@ -258,7 +262,10 @@
                   </div>
 
                   <div class="slider-container">
-                     <label class="slider-label">Saturation</label>
+                     <label class="slider-label">
+                        Saturation
+                        <span class="slider-value-counter" id="sat-counter">100%</span>
+                     </label>
                      <div class="sliderfix" id="SaturationCool">
                         <input type="range" class="sliders" id="satSlider" min="0" max="100" value="100" step="1">
                      </div>
@@ -267,12 +274,24 @@
                      </div>
                   </div>
 
+
+                  <div class="slider-container">
+                     <label class="slider-label">
+                        Animation Speed
+                        <span class="slider-value-counter" id="speed-counter">175ms</span>
+                     </label>
+                     <div class="sliderfix">
+                        <input type="range" id="AnimSpeed_val" class="sliders" min="0" max="400" value="175" step="5" />
+                     </div>
+                     <div id="AnimSpeedPicker"></div>
+                  </div>
                </div>
 
                <div id="tab7_3">
-                  <h2 id="GetAfterEffectsVersion">After Effects</h2>
+                  <h2>About ExcaliburFx</h2>
                   <div class="normal_underline"></div>
-                  <p>content</p>
+                  <p>Version 1.0</p>
+                  <p>Advanced After Effects Panel</p>
                </div>
 
             </div>
@@ -291,7 +310,7 @@
          <div id="lineNumber">1</div>
          <div id="hightlightLine"></div>
          <textarea name="QuickNotes" id="QuickNotes" cols="" rows=""
-            placeholder="Write what you want here idk..."></textarea>
+            placeholder="Write notes here (CTRL + S to save)"></textarea>
          <div id="FixCorner"></div>
       </div>
    </div>
@@ -332,22 +351,13 @@
       <h1>Dashboard</h1>
    </div>
 
-   <div id="HowToUsePanel">
+   <!--<div id="HowToUsePanel">
       <h1>How to use</h1>
-   </div>
+   </div>-->
 
    <div id="notification">
       <h1 id="theNotification">Bruh</h1>
    </div>
-
-
-
-
-
-
-
-
-
 
    <div id="NoteButton"></div>
 
