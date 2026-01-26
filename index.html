@@ -80,7 +80,7 @@
                <li id="tabButton2" class="Sound">Sound</li>
                <li id="tabButton3" class="Effect">Effects</li>
                <li id="tabButton4" class="Shakes">Shakes</li>
-               <li id="tabButton5" class="Script">Script</li>
+               <li id="tabButton5" class="Compos">Compos</li>
                <li id="tabButton6" class="Shortcut">Shortcut</li>
                <li id="tabButton7" class="Settings">Settings</li>
             </ul>
@@ -248,17 +248,13 @@
                   <h2>UI Settings</h2>
                   <div class="normal_underline"></div>
 
+
                   <div class="slider-container">
                      <label class="slider-label">
                         Hue
                         <span class="slider-value-counter" id="hue-counter">270°</span>
                      </label>
-                     <div class="sliderfix" id="hueShiftCool">
-                        <input type="range" class="sliders" id="hueSlider" min="0" max="360" value="270" step="1">
-                     </div>
-                     <div id="CoolExcaliburHue">
-                        <div id="ColorPicker"></div>
-                     </div>
+                     <input type="range" class="sliders" id="hueSlider" min="0" max="360" value="270" step="1">
                   </div>
 
                   <div class="slider-container">
@@ -266,26 +262,19 @@
                         Saturation
                         <span class="slider-value-counter" id="sat-counter">100%</span>
                      </label>
-                     <div class="sliderfix" id="SaturationCool">
-                        <input type="range" class="sliders" id="satSlider" min="0" max="100" value="100" step="1">
-                     </div>
-                     <div id="CoolExcaliburSat">
-                        <div id="ColorPickerForSat"></div>
-                     </div>
+                     <input type="range" class="sliders" id="satSlider" min="0" max="100" value="100" step="1">
                   </div>
-
 
                   <div class="slider-container">
                      <label class="slider-label">
                         Animation Speed
                         <span class="slider-value-counter" id="speed-counter">175ms</span>
                      </label>
-                     <div class="sliderfix">
-                        <input type="range" id="AnimSpeed_val" class="sliders" min="0" max="400" value="175" step="5" />
-                     </div>
-                     <div id="AnimSpeedPicker"></div>
+                     <input type="range" id="AnimSpeed_val" class="sliders" min="0" max="400" value="175" step="5" />
                   </div>
                </div>
+
+
 
                <div id="tab7_3">
                   <h2>About ExcaliburFx</h2>

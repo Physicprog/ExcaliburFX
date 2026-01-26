@@ -118,7 +118,6 @@ header nav ul li:hover {
     transition: opacity 25ms, color 125ms;
 }
 
-/* États actifs - avec le pattern background */
 .CurveActive,
 .ScriptActive,
 .ShortcutActive,
@@ -138,7 +137,6 @@ header nav ul li:hover {
     opacity: 100% !important;
 }
 
-/* États non actifs */
 .Curve,
 .Script,
 .Shortcut,
@@ -149,7 +147,6 @@ header nav ul li:hover {
     color: rgba(255, 255, 255, 0.75);
 }
 
-/* Footer */
 #navFooter {
     height: 5vw;
     position: fixed;
