@@ -25,6 +25,8 @@ const LOGS_FILE = hasNodeFS ? path.join(ROOT_DIR, "logs.txt") : null;
 const PREFS_FILE = hasNodeFS ? path.join(ROOT_DIR, "preferences.json") : null;
 const DEFAULTS_FILE = hasNodeFS ? path.join(ROOT_DIR, "defaults.json") : null;
 
+export const VERSION_URL = "https://api.github.com/repos/Physicprog/ExcaliburFX/releases";
+
 export const DEFAULTS = {
   version: "1.0.0",
   preferences: {
@@ -75,7 +77,6 @@ export function init() {
     fs.writeFileSync(PREFS_FILE, JSON.stringify(DEFAULTS.preferences, null, 2), "utf-8");
   }
 
-  // defaults.json = copie de référence, réécrite à chaque init pour rester à jour
   fs.writeFileSync(DEFAULTS_FILE, JSON.stringify(DEFAULTS, null, 2), "utf-8");
 
   log("system", "Ouverture de l'application");
@@ -222,6 +223,7 @@ export function callJSX(functionName, ...args) {
 export default {
   DEFAULTS,
   ROOT_DIR,
+  VERSION_URL,
   init,
   log,
   getLogsAsText,

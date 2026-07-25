@@ -1,13 +1,9 @@
 <script>
   import { checkForUpdate } from "../../logic.js";
-  import ExcaliburUtils from "../../../lib/utils/main.js";
   import { updateInfo, CURRENT_VERSION } from "../../stores.js";
 </script>
 
-<a
-  href="javascript:void(0)"
-  on:click={() => checkForUpdate(ExcaliburUtils.VERSION_URL)}
->
+<a href="javascript:void(0)" on:click={() => checkForUpdate()}>
   <div class="update-exca">
     <span>Check for update</span>
   </div>
