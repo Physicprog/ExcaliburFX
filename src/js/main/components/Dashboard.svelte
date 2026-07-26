@@ -7,30 +7,34 @@
 
 {#if $showDashboard}
   <div class="dashboard-panel" class:closing={$dashboardClosing}>
-    <div class="dashboard-sub-menu">
-      <button
-        type="button"
-        class:active={$dashboardTab === "informations"}
-        on:click={() => dashboardTab.set("informations")}
-      >
-        Informations
-      </button>
-      <button
-        type="button"
-        class:active={$dashboardTab === "notes"}
-        on:click={() => dashboardTab.set("notes")}
-      >
-        Notes
-      </button>
-
-      <button
-        type="button"
-        class:active={$dashboardTab === "credit"}
-        on:click={() => dashboardTab.set("credit")}
-      >
-        Credit
-      </button>
-    </div>
+    <nav class="dashboard-sub-menu">
+      <div class="nav-grid">
+        <button
+          type="button"
+          class:eff_active={$dashboardTab === "informations"}
+          class:not_eff_active={$dashboardTab !== "informations"}
+          on:click={() => dashboardTab.set("informations")}
+        >
+          <span>Informations</span>
+        </button>
+        <button
+          type="button"
+          class:eff_active={$dashboardTab === "notes"}
+          class:not_eff_active={$dashboardTab !== "notes"}
+          on:click={() => dashboardTab.set("notes")}
+        >
+          <span>Notes</span>
+        </button>
+        <button
+          type="button"
+          class:eff_active={$dashboardTab === "credit"}
+          class:not_eff_active={$dashboardTab !== "credit"}
+          on:click={() => dashboardTab.set("credit")}
+        >
+          <span>Credit</span>
+        </button>
+      </div>
+    </nav>
     <div class="dashboard-content">
       <div class="dashboard-inner">
         {#if $dashboardTab === "informations"}
@@ -55,70 +59,123 @@
     z-index: 150;
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 6px 15px 15px 15px;
     border-radius: 10px;
-
     will-change: transform;
     backface-visibility: hidden;
-
     animation: slideInRight var(--transition-ms, 0.3s)
       cubic-bezier(0.25, 1, 0.5, 1) forwards;
-
     &.closing {
       animation: slideOutRight var(--transition-ms, 0.3s) ease-in forwards;
     }
   }
 
   .dashboard-sub-menu {
+    width: 100%;
+    height: 32px;
+    background-color: rgb(37, 37, 37);
+    border: 1px solid rgb(65, 65, 65);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .dashboard-sub-menu .nav-grid {
+    width: calc(100% - 8px);
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin: 0px 4px;
+    padding: 0;
+  }
+  .dashboard-sub-menu button {
+    /* Reset des styles par défaut du bouton */
+    appearance: none;
+    border: none;
+    outline: none;
+    padding: 0;
+    font-family: inherit;
+
+    /* Ton style d'origine */
     display: flex;
-    flex-direction: row;
-    justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #2b2b2b;
+    justify-content: center;
+    font-size: 11px;
+    border-radius: 4px;
+    font-weight: bold;
+    margin: 3px 0px;
+    transition: all 0.15s ease-in-out;
+    color: #fff;
+  }
+  .dashboard-sub-menu button:hover {
+    cursor: pointer;
+    text-shadow: 2px 2px 5px black;
+    font-weight: bold;
+  }
 
-    button {
-      background-color: var(--primaryColour);
-      color: var(--secondaryColour);
-      border: 0.5px solid #5c5c5c;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      width: 110px;
-      padding: 6px 0;
-      line-height: 1;
-      cursor: pointer;
-      outline: none;
-      transition:
-        transform 0.15s ease,
-        opacity 0.15s ease,
-        box-shadow 0.15s ease;
+  .dashboard-sub-menu button span {
+    margin-top: 1px;
+  }
 
-      &:hover {
-        opacity: 1;
-        transform: scale(1.03);
-        color: #fff;
-      }
+  .dashboard-sub-menu ul {
+    width: calc(100% - 8px);
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin: 0px 4px;
+    padding: 0;
+  }
+  .dashboard-sub-menu ul li {
+    text-decoration: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    border-radius: 4px;
+    font-weight: bold;
+    margin: 3px 0px;
+    transition: all 0.15s ease-in-out;
+    color: #fff;
+  }
 
-      &.active {
-        opacity: 1;
-        color: #fff;
-        font-weight: 600;
-        border-color: var(--activeColour);
-        box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
-      }
-    }
+  .dashboard-sub-menu ul li:hover {
+    cursor: pointer;
+    text-shadow: 2px 2px 5px black;
+    font-weight: bold;
+  }
+  .dashboard-sub-menu ul li span {
+    margin-top: 1px;
+  }
+
+  .eff_active {
+    background-color: #191919;
+    border-top: 2.5px solid var(--activeColour) !important;
+  }
+
+  .eff_active:hover {
+    background-color: var(--activeColour);
+    border-top: 2.5px solid var(--activeColour) !important;
+    filter: brightness(1.2);
+  }
+
+  .not_eff_active {
+    background-color: #191919;
+    border-top: 2.5px solid transparent !important;
+  }
+
+  .not_eff_active:hover {
+    background-color: var(--activeColour);
+    border-top: 2.5px solid var(--activeColour) !important;
+    filter: brightness(1.2);
   }
 
   .dashboard-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px;
+    padding: 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -142,6 +199,18 @@
       filter: brightness(1.15);
     }
   }
+  @media (max-width: 450px) {
+    .dashboard-sub-menu {
+      height: 28px;
+    }
+    .dashboard-sub-menu .nav-grid {
+      gap: 2px;
+    }
+    .dashboard-sub-menu button {
+      font-size: 9.5px;
+      margin: 2px 0px;
+    }
+  }
 
   .dashboard-inner {
     width: 100%;
@@ -160,24 +229,6 @@
   @keyframes slideOutRight {
     to {
       transform: translateX(100%);
-    }
-  }
-
-  @media (max-width: 450px) {
-    .dashboard-panel {
-      padding: 10px;
-    }
-    .dashboard-sub-menu {
-      gap: 10px;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-
-      button {
-        flex: 1;
-        width: auto;
-        padding: 6px 10px;
-        font-size: 11px;
-      }
     }
   }
 </style>

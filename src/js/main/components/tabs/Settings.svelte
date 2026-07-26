@@ -8,8 +8,102 @@
     EnableRGBMode,
     RgbSpeed,
   } from "../../stores.js";
-
+  import { resetPreferences } from "../../../lib/utils/main.js";
+  import { csi } from "../../../lib/utils/bolt.ts";
+  import { sendNotif } from "../../logic.js";
+  import { callJSX } from "../../../lib/utils/main.js";
   let enableQuickActions = true;
+  import {
+    clearCacheWithVerification,
+    saveIncremental,
+  } from "../../../lib/utils/main.js";
+
+  function handleResetPreferences() {
+    resetPreferences();
+
+    setTimeout(() => {
+      if (
+        typeof window !== "undefined" &&
+        typeof window.location !== "undefined"
+      ) {
+        window.location.reload();
+      }
+    }, 400);
+  }
+
+  function handleReloadExtension() {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.location !== "undefined"
+    ) {
+      window.location.reload();
+    }
+  }
+
+  function handleClearCache() {
+    clearCacheWithVerification(sendNotif, callJSX);
+  }
+
+  function handleSaveIncremental() {
+    saveIncremental(sendNotif, callJSX);
+  }
+
+  function SortProjectLayers() {
+    if (typeof window !== "undefined" && window.__adobe_cep__) {
+      callJSX("sortProject")
+        .then(() => sendNotif("Projet trié avec succès !", true))
+        .catch((err) =>
+          sendNotif("Échec du tri du projet : " + err.message, false),
+        );
+    } else {
+      sendNotif("Échec du tri du projet.", false);
+    }
+  }
+
+  function handleReduceProject() {
+    if (typeof window !== "undefined" && window.__adobe_cep__) {
+      csi.evalScript(
+        `function reduceToActiveComp() {
+          var activeItem = app.project.activeItem;
+          if (!activeItem || !(activeItem instanceof CompItem)) {
+            return "NO_COMP_SELECTED";
+          }
+          app.beginUndoGroup("Reduce Project (ExFX)");
+          try {
+            var success = app.project.reduceProject([activeItem]);
+            app.endUndoGroup();
+            return success ? "REDUCED:" + activeItem.name : "NO_CHANGE";
+          } catch (e) {
+            app.endUndoGroup();
+            return "ERROR:" + e.toString();
+          }
+        }
+        reduceToActiveComp();`,
+        (result) => {
+          if (result === "NO_COMP_SELECTED") {
+            sendNotif(
+              "Sélectionnez d'abord la comp à conserver dans le panneau Projet.",
+              false,
+            );
+          } else if (
+            typeof result === "string" &&
+            result.indexOf("REDUCED:") === 0
+          ) {
+            sendNotif(
+              "Projet réduit à : " + result.slice(8) + " (Ctrl+Z pour annuler)",
+              true,
+            );
+          } else if (result === "NO_CHANGE") {
+            sendNotif("Aucun élément superflu à retirer.", true);
+          } else {
+            sendNotif("Échec de la réduction du projet.", false);
+          }
+        },
+      );
+    } else {
+      sendNotif("Échec de la réduction du projet.", false);
+    }
+  }
 
   $: speedLabel = getSpeedLabel($AnimationSpeed);
 
@@ -54,7 +148,6 @@
   }
 
   onMount(() => {
-    // Mesure immédiate dès le montage pour éviter d'attendre un mouvement (drag)
     if (wrapperEl) {
       const rect = wrapperEl.getBoundingClientRect();
       if (rect.width > 0) availW = rect.width;
@@ -112,7 +205,7 @@
       <section class="panel">
         <h2 class="panel-title">Ui Settings</h2>
 
-        <div class="ctrl">
+        <div class="ctrl" class:disabled={$EnableRGBMode}>
           <label for="hue-slider">UI color: {$Hue}</label>
           <input
             id="hue-slider"
@@ -122,19 +215,7 @@
             max="360"
             step="1"
             bind:value={$Hue}
-          />
-        </div>
-
-        <div class="ctrl">
-          <label for="saturation-slider">UI saturation: {$Saturation}</label>
-          <input
-            id="saturation-slider"
-            class="slider slider-saturation"
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            bind:value={$Saturation}
+            disabled={$EnableRGBMode}
           />
         </div>
 
@@ -142,7 +223,7 @@
           <span class="checkbox" class:checked={$EnableRGBMode}>
             <input type="checkbox" bind:checked={$EnableRGBMode} />
           </span>
-          <span>Enable RGB mode ({$RgbSpeed}ms)</span>
+          <span>Enable RGB mode</span>
         </label>
 
         <div class="ctrl" class:disabled={!$EnableRGBMode}>
@@ -156,6 +237,19 @@
             step="10"
             bind:value={$RgbSpeed}
             disabled={!$EnableRGBMode}
+          />
+        </div>
+
+        <div class="ctrl">
+          <label for="saturation-slider">UI saturation: {$Saturation}%</label>
+          <input
+            id="saturation-slider"
+            class="slider slider-saturation"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            bind:value={$Saturation}
           />
         </div>
 
@@ -179,17 +273,47 @@
           />
         </div>
 
-        <label class="check-row">
+        <label class="check-row check-row-last-child">
           <span class="checkbox" class:checked={enableQuickActions}>
             <input type="checkbox" bind:checked={enableQuickActions} />
           </span>
-          <span>future add maybe </span>
+          <span>future add maybe</span>
         </label>
       </section>
 
       <section class="panel">
-        <h2 class="panel-title">Panneau 2</h2>
-        <p class="placeholder">À venir</p>
+        <h2 class="panel-title">Shortcuts</h2>
+
+        <div class="action-buttons-col">
+          <button class="mini-btn cache-btn" on:click={handleClearCache}>
+            Clear Ae Disk Cache
+          </button>
+          <div class="action-buttons-col">
+            <button class="mini-btn" on:click={handleSaveIncremental}
+              >Open in a new instance</button
+            >
+            <button class="mini-btn" on:click={handleReduceProject}
+              >Delete unused items</button
+            >
+            <button class="mini-btn" on:click={SortProjectLayers}
+              >Sort Project</button
+            >
+            <div class="action-buttons-row">
+              <button
+                class="mini-btn reset-btn"
+                on:click={handleResetPreferences}
+              >
+                Reset
+              </button>
+              <button
+                class="mini-btn reload-btn"
+                on:click={handleReloadExtension}
+              >
+                Restart ExFX</button
+              >
+            </div>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -243,6 +367,49 @@
     padding: 6px;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
     box-sizing: border-box;
+  }
+
+  .action-buttons-col {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 0px;
+  }
+
+  .action-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 3px;
+    width: 94%;
+    margin: 0 auto; /* Remplace margin: 0px 3% pour un centrage plus propre */
+  }
+
+  .mini-btn {
+    width: 90%;
+    height: 19px;
+    margin: 0 auto;
+    color: white;
+    background-color: #313131;
+    border-radius: 4px;
+    outline: none;
+    font-size: 8px;
+    border: 1px solid rgba(104, 104, 104, 0.609);
+
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .mini-btn:hover {
+    border-color: var(--activeColour);
+    background-color: var(--activeColour);
+    transform: scale(1.03);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  }
+
+  .mini-btn:active {
+    border-color: var(--activeColour);
+    background-color: var(--activeColour);
+    transform: scale(0.97);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   }
 
   section.panel.panel-wide {
@@ -301,6 +468,10 @@
     }
   }
 
+  .check-row-last-child {
+    margin-top: 6px;
+  }
+
   .check-row {
     display: flex;
     align-items: center;
@@ -348,7 +519,7 @@
   .slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 100%;
+    width: 95%;
     height: 5px;
     border-radius: 2.5px;
     outline: none;
@@ -379,11 +550,7 @@
   }
 
   .slider-default {
-    background: linear-gradient(
-      to right,
-      #333 0%,
-      var(--activeColour, #ff007f) 100%
-    );
+    background: var(--activeColour);
   }
 
   .slider-hue {
@@ -400,6 +567,121 @@
   }
 
   .slider-saturation {
-    background: linear-gradient(to right, #000000, #ffffff);
+    background: linear-gradient(to right, #fff, var(--activeColour));
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes popIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .PopUp {
+    position: relative;
+    width: 280px;
+    max-width: 90vw;
+    background-color: #1c1c1e;
+    border: 1px solid #333;
+    border-radius: 10px;
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    padding: 20px 18px 16px;
+    box-sizing: border-box;
+    animation: popIn 0.15s ease-out;
+    font-family: "Museo Sans", sans-serif;
+  }
+
+  .popup-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .PopUp h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.1px;
+  }
+
+  .PopUp p {
+    color: #9a9a9e;
+    font-size: 11.5px;
+    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .confirm-actions .mini-btn {
+    flex: 1;
+    width: auto;
+    height: 32px;
+    margin: 0;
+    font-size: 11.5px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition:
+      filter 0.12s ease,
+      transform 0.08s ease;
+  }
+
+  .confirm-actions .mini-btn:hover {
+    transform: none;
+    filter: brightness(1.12);
+  }
+
+  .confirm-actions .mini-btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-cancel {
+    background: #2c2c2e;
+    color: #ddd;
+    border: 1px solid #3a3a3c;
+  }
+
+  .btn-confirm {
+    background: #ef4444;
+    color: #fff;
+    border: 1px solid #ef4444;
+    font-weight: 600;
   }
 </style>

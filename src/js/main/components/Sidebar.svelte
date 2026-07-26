@@ -8,7 +8,9 @@
     isCollapsed,
     LogoStatic,
     FPS,
+    CURRENT_VERSION,
   } from "../stores.js";
+
   import {
     selectTab,
     toggleDashboard,
@@ -47,7 +49,7 @@
           <span class="brand-title">
             EXCALIBUR <span class="brand-fx">FX</span>
           </span>
-          <span class="brand-version">Version 1.0</span>
+          <span class="brand-version">Version {$CURRENT_VERSION}</span>
         </div>
       {/if}
     </button>
@@ -84,12 +86,13 @@
         class="btn-settings"
         class:active={$activeTab === "settings" && !$showDashboard}
         on:click={() => selectTab("settings")}
+        title={$tabLabels.settings.full}
       >
-        <img
-          src="../../assets/settings.png"
-          alt="Settings"
-          class="settings-img"
-        />
+        <span
+          class="icon-mask nav-icon"
+          style={maskStyle($tabLabels.settings.short)}
+          aria-label={$tabLabels.settings.full}
+        ></span>
       </button>
       <div class="volume-control">
         <button
@@ -295,12 +298,16 @@
       color: #fff;
     }
 
+    &:active {
+      transform: scale(0.95);
+    }
+
     &.active {
       opacity: 1;
       color: #fff;
       background-color: var(--activeColour);
       border-color: var(--activeColour);
-      box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
     }
 
     &.active .icon-mask {
@@ -322,6 +329,15 @@
     text-align: center;
     z-index: 5000;
 
+    .footer-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+    }
+
     .btn-collapse-trigger {
       background: none;
       border: 1px solid transparent;
@@ -339,10 +355,9 @@
     }
   }
 
-  .sidebar:not(.collapsed) .btn-settings {
-    width: 32px !important;
-    min-width: 32px !important;
-    height: 26px !important;
+  .sidebar.collapsed .sidebar-footer .footer-row {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .settings-row {
@@ -393,6 +408,17 @@
     }
   }
 
+  .nav-buttons .btn-settings {
+    width: 55px;
+    height: 30px;
+  }
+
+  .nav-buttons .btn-settings .icon-mask {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.6));
+  }
+
   .sidebar.collapsed {
     .nav-buttons button,
     .btn-settings {
@@ -401,15 +427,19 @@
       font-size: 11px;
       margin: 5px auto;
 
+      &:active {
+        transform: scale(0.95);
+      }
+
       &.active {
         background-color: var(--primaryColour);
         border-color: var(--activeColour);
-        box-shadow: 0 0 8px
-          color-mix(in srgb, var(--activeColour) 40%, transparent);
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
       }
 
       &.active .icon-mask {
         background-color: var(--activeColour);
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
       }
     }
 
@@ -420,6 +450,11 @@
     }
 
     .settings-row {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-footer .footer-row {
       flex-direction: column;
       gap: 4px;
     }

@@ -5,11 +5,11 @@ export const order = [
   'curves',
   'workflow',
   'effects',
-  'ffmpeg',
   'colors',
   'transitions',
   'scripts',
   'settings',
+  'ffmpeg',
 ];
 
 export const putGifToPNG = writable(getPreference('putGifToPNG'));
@@ -34,12 +34,54 @@ export const getTabLabels = (isPng) => ({
       : '../../assets/SideBarIcon/WorkFlow.gif',
     isIcon: true,
   },
-  effects: { full: 'Effects', short: 'EF', isIcon: false },
-  ffmpeg: { full: 'FFMPEG', short: 'FF', isIcon: false },
-  colors: { full: 'Colors', short: 'CL', isIcon: false },
-  transitions: { full: 'Transition', short: 'TR', isIcon: false },
-  scripts: { full: 'Scripts', short: 'SC', isIcon: false },
+
+  effects: {
+    full: 'Effects',
+    short: isPng
+      ? '../../assets/SideBarIcon/Effects.png'
+      : '../../assets/SideBarIcon/Effects.gif',
+    isIcon: true,
+  },
+  colors: {
+    full: 'Colors',
+    short: isPng
+      ? '../../assets/SideBarIcon/Colors.png'
+      : '../../assets/SideBarIcon/Colors.gif',
+    isIcon: true,
+  },
+
+    transitions: {
+    full: 'Transitions',
+    short: isPng
+      ? '../../assets/SideBarIcon/Transitions.png'
+      : '../../assets/SideBarIcon/Transitions.gif',
+    isIcon: true,
+  },
+
+  scripts: {
+    full: 'Scripts',
+    short: isPng
+      ? '../../assets/SideBarIcon/Script.png'
+      : '../../assets/SideBarIcon/Script.gif',
+    isIcon: true,
+  },
+  ffmpeg: {
+    full: 'FFMPEG',
+    short: isPng
+      ? '../../assets/SideBarIcon/FFMPEG.png'
+      : '../../assets/SideBarIcon/FFMPEG.gif',
+    isIcon: true,
+  },
+
+settings: {
+    full: '../../assets/SideBarIcon/Settings.png',
+    short: isPng
+      ? '../../assets/SideBarIcon/Settings.png'
+      : '../../assets/SideBarIcon/Settings.gif',
+    isIcon: true,
+  }
 });
+
 
 export const tabLabels = derived(
   putGifToPNG,
@@ -70,7 +112,7 @@ export const activeTab = writable('curves');
 export const prevTab = writable(null);
 export const transitioning = writable(false);
 export const direction = writable(1);
-export const showDashboard = writable(false);
+export const showDashboard = writable(true);
 export const dashboardClosing = writable(false);
 export const dashboardTab = writable('informations');
 export const isCollapsed = writable(getPreference('isCollapsed'));
@@ -111,7 +153,8 @@ export function applyHueRotation(hue, saturation = 70) {
   root.style.setProperty('--thumb-colour', themeColour);
 }
 
-let rgbInterval;
+let rgbRafId;
+let lastTime = 0;
 let rgbCurrentHue = 0;
 let isRgbActive = false;
 let currentRgbSpeed = 100;
@@ -119,13 +162,18 @@ let currentSaturation = 70;
 
 function updateRgbLoop() {
   if (typeof window === 'undefined') return;
-  clearInterval(rgbInterval);
-
+  if (rgbRafId) cancelAnimationFrame(rgbRafId);
   if (isRgbActive) {
-    rgbInterval = setInterval(() => {
-      rgbCurrentHue = (rgbCurrentHue + 5) % 360;
+    lastTime = performance.now();
+    const loop = (currentTime) => {
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      const hueStep = (5 / currentRgbSpeed) * deltaTime;
+      rgbCurrentHue = (rgbCurrentHue + hueStep) % 360;
       applyHueRotation(rgbCurrentHue, currentSaturation);
-    }, currentRgbSpeed);
+      rgbRafId = requestAnimationFrame(loop);
+    };
+    rgbRafId = requestAnimationFrame(loop);
   } else {
     const manualHue = get(Hue);
     applyHueRotation(manualHue, currentSaturation);

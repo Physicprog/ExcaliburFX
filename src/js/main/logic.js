@@ -17,7 +17,7 @@ import {
   notification,
   FPS,
 } from './stores.js';
-import { VERSION_URL } from '../lib/utils/main.js';
+import { checkForUpdate as checkForUpdateRemote } from '../lib/utils/main.js';
 
 let NotetimeoutIDs = [];
 let transitionTimeout = null;
@@ -38,21 +38,11 @@ export function isNewer(local, remote) {
 
 export async function checkForUpdate() {
   try {
-    const res = await fetch(VERSION_URL, { cache: 'no-store' });
-    if (!res.ok) return;
-    const releases = await res.json();
-    
-    const stableReleases = releases.filter(r => !r.draft && !r.prerelease);
-    
-    if (!stableReleases.length) return;
-    
-    const latestRelease = stableReleases[0];
-    const remoteVersion = latestRelease.tag_name.replace(/^v/, '');
-    
-    if (isNewer(get(CURRENT_VERSION), remoteVersion)) {
-      updateInfo.set({ version: remoteVersion, changelog: latestRelease.body });
-      showUpdateModal.set(true);
-    }
+    const remoteVersion = await checkForUpdateRemote(get(CURRENT_VERSION));
+    if (!remoteVersion) return;
+
+    updateInfo.set({ version: remoteVersion, changelog: null });
+    showUpdateModal.set(true);
   } catch (e) {
     console.error('[Excalibur] Error checking for update:', e);
   }
@@ -249,3 +239,5 @@ function convertSeconds(totalSeconds) {
     };
 }
 */
+
+

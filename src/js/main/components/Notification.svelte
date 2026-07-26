@@ -63,7 +63,6 @@
     left: 50%;
     transform: translateX(-40%);
 
-    user-select: none;
     border-radius: 1.2vh;
     border: none;
     outline: none;

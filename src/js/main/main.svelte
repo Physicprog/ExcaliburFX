@@ -1,15 +1,15 @@
 <script>
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import Sidebar from "./components/Sidebar.svelte";
   import ContentPane from "./components/ContentPane.svelte";
   import Dashboard from "./components/Dashboard.svelte";
   import UpdateModal from "./components/UpdateModal.svelte";
-  import { checkForUpdate, monitorFPS } from "./logic.js";
-  import ExcaliburUtils from "../lib/utils/main.js";
+  import { monitorFPS } from "./logic.js";
+  import * as ExcaliburUtils from "../lib/utils/main.js";
+  import { CURRENT_VERSION, updateInfo, showUpdateModal } from "./stores.js";
   import Notification from "./components/Notification.svelte";
 
-  const VERSION_URL =
-    "https://api.github.com/repos/TON_USER/TON_REPO/releases/latest";
   const MIN_LOADER_MS = 250;
 
   let isLoaded = false;
@@ -17,10 +17,13 @@
   async function loadApp() {
     const start = performance.now();
 
-    await ExcaliburUtils.init();
+    const remoteVersion = await ExcaliburUtils.initApp(get(CURRENT_VERSION));
     await document.fonts.ready;
 
-    checkForUpdate(VERSION_URL);
+    if (remoteVersion) {
+      updateInfo.set({ version: remoteVersion, changelog: null });
+      showUpdateModal.set(true);
+    }
 
     const elapsed = performance.now() - start;
     if (elapsed < MIN_LOADER_MS) {
@@ -110,7 +113,6 @@
       sans-serif;
     font-size: 13px;
     font-weight: bold;
-    user-select: none;
     height: calc(100vh - 10px) !important;
   }
 
