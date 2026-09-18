@@ -6,3 +6,5 @@ dist-ssr
 dist
 yarn-error.log
 .media
+src/js/main/bin/win/
+src/js/main/bin/mac/

@@ -2,7 +2,7 @@
 </script>
 
 <div class="tab-view">
-  <h1>Transitions</h1>
+  <h1>TRANSITIONS</h1>
 </div>
 
 <style lang="scss">

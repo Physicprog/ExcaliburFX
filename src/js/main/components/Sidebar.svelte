@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from "svelte";
   import {
     order,
     tabLabels,
@@ -9,6 +10,7 @@
     LogoStatic,
     FPS,
     CURRENT_VERSION,
+    tabVisibility,
   } from "../stores.js";
 
   import {
@@ -18,11 +20,52 @@
     cycleVolume,
   } from "../logic.js";
 
+  import volumeMuteImg from "../../assets/volume/volume-mute.png";
+  import volumeLowImg from "../../assets/volume/volume-low.png";
+  import volumeHighImg from "../../assets/volume/volume-high.png";
   const Volume = {
-    mute: { img: "../../assets/Volume/volume-mute.png", alt: "Volume Mute" },
-    low: { img: "../../assets/Volume/volume-low.png", alt: "Volume Low" },
-    high: { img: "../../assets/Volume/volume-high.png", alt: "Volume High" },
+    mute: { img: volumeMuteImg, alt: "Volume Mute" },
+    low: { img: volumeLowImg, alt: "Volume Low" },
+    high: { img: volumeHighImg, alt: "Volume High" },
   };
+
+  import SidebarSoundUrl from "../../assets/volume/click.mp3";
+  let sidebarClickAudio = null;
+
+  function ensureSidebarAudio() {
+    if (typeof window === "undefined") return null;
+
+    if (!sidebarClickAudio) {
+      sidebarClickAudio = new Audio(SidebarSoundUrl);
+      sidebarClickAudio.preload = "auto";
+      sidebarClickAudio.load();
+    }
+
+    return sidebarClickAudio;
+  }
+
+  onMount(() => {
+    ensureSidebarAudio();
+  });
+
+  function playSidebarSound() {
+    if ($volumeState === "mute") return;
+
+    const audio = ensureSidebarAudio();
+    if (!audio) return;
+
+    audio.volume = $volumeState === "low" ? 0.3 : 1;
+    audio.currentTime = 0;
+    audio.play().catch((error) => {
+      console.warn("[Excalibur] Sidebar click sound failed:", error);
+    });
+  }
+
+  function handleSidebarAction(action) {
+    playSidebarSound();
+    action();
+  }
+
   function maskStyle(path) {
     return `-webkit-mask-image:url(${path});mask-image:url(${path});`;
   }
@@ -36,7 +79,7 @@
       type="button"
       class="btn-dashboard-trigger"
       class:active={$showDashboard}
-      on:click={toggleDashboard}
+      on:click={() => handleSidebarAction(toggleDashboard)}
     >
       {#if $isCollapsed}
         <span
@@ -54,14 +97,13 @@
       {/if}
     </button>
   </div>
-
   <div class="nav-buttons">
     {#each order as tab}
-      {#if tab !== "settings"}
+      {#if tab !== "settings" && $tabVisibility[tab] !== false}
         <button
           type="button"
           class:active={$activeTab === tab && !$showDashboard}
-          on:click={() => selectTab(tab)}
+          on:click={() => handleSidebarAction(() => selectTab(tab))}
         >
           {#if $isCollapsed}
             {#if $tabLabels[tab].isIcon}
@@ -85,7 +127,7 @@
         type="button"
         class="btn-settings"
         class:active={$activeTab === "settings" && !$showDashboard}
-        on:click={() => selectTab("settings")}
+        on:click={() => handleSidebarAction(() => selectTab("settings"))}
         title={$tabLabels.settings.full}
       >
         <span
@@ -98,13 +140,14 @@
         <button
           type="button"
           class="btn-volume"
-          on:click={cycleVolume}
+          on:click={() => handleSidebarAction(cycleVolume)}
           aria-label="Volume"
         >
           <img
             src={Volume[$volumeState].img}
             alt={Volume[$volumeState].alt}
             class="volume-img"
+            decoding="async"
           />
         </button>
       </div>
@@ -116,7 +159,7 @@
       <button
         type="button"
         class="btn-collapse-trigger"
-        on:click={toggleCollapse}
+        on:click={() => handleSidebarAction(toggleCollapse)}
       >
         {$isCollapsed ? "Expand" : "Collapse"}
       </button>
@@ -144,7 +187,6 @@
     flex-shrink: 0;
     position: relative;
     z-index: 200;
-    transition: all 0.15s ease;
     padding-top: 15px;
 
     &.collapsed {
@@ -173,8 +215,7 @@
     pointer-events: none;
     transition:
       opacity 0.15s ease,
-      transform 0.15s ease,
-      background-color 0.15s ease;
+      transform 0.15s ease;
   }
 
   .logo-icon {
@@ -225,7 +266,7 @@
     font-weight: 900;
     color: var(--secondaryColour);
     paint-order: stroke fill;
-    transition: all 0.15s ease;
+    transition: filter 0.15s ease;
 
     &:hover {
       filter: brightness(1.2);
@@ -368,12 +409,6 @@
     gap: 0px;
   }
 
-  .settings-img {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
-  }
-
   .volume-control {
     display: flex;
     align-items: center;
@@ -439,7 +474,6 @@
 
       &.active .icon-mask {
         background-color: var(--activeColour);
-        box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
       }
     }
 

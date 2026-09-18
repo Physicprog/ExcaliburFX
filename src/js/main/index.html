@@ -8,8 +8,11 @@
   </head>
   <body>
     <div id="app"></div>
-    
-    <!-- SUPPRIMEZ la ligne script csinterface.js ici -->
+    <script>
+      if (typeof window !== 'undefined' && typeof window.cep_node === 'undefined') {
+        window.cep_node = { require: function() { return {}; } };
+      }
+    </script>
     <script type="module" src="./index-svelte.ts"></script>
   </body>
 </html>

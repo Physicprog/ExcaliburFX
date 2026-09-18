@@ -1,1009 +1,635 @@
 <script>
-  import { onMount } from "svelte";
-  import { csi } from "../../../lib/utils/bolt";
-  import { fs } from "../../../lib/cep/node";
+  import { applyFillColor } from "../../../lib/utils/main.js";
+  import Switch from "../../../assets/ui/switch.svg";
+  import { TRANSITION_MS } from "../../stores.js";
 
-  let canvasEl;
-  let gl;
-  let shaderProgram;
-  let texture;
-  let positionLocation;
-  let texCoordLocation;
-
-  let status = "En attente...";
-  let isImageLoaded = false;
-  let isApplying = false;
-
-  // --- Input ---
-  let inputSpace = 0; // 0 = Rec.709, 1 = S-Log3, 2 = V-Log
-
-  // --- Balance des blancs ---
-  let temperature = 0.0; // -100 (bleu) à 100 (orange)
-  let tint = 0.0; // -100 (magenta) à 100 (vert)
-
-  // --- Tonalité ---
-  let exposure = 0.0; // en stops, -3 à 3
-  let highlights = 0.0; // -100 à 100
-  let shadows = 0.0; // -100 à 100
-  let whites = 0.0; // -100 à 100
-  let blacks = 0.0; // -100 à 100
-
-  // --- Roues primaires (CDL) ---
-  let lift = 0.0;
-  let gamma = 1.0;
-  let gain = 1.0;
-
-  // --- Contraste / Courbe ---
-  let contrast = 1.0;
-  let sCurve = 0.0; // 0 = désactivé, jusqu'à 2 = courbe en S marquée
-
-  // --- Couleur ---
-  let saturation = 1.0;
-  let vibrance = 0.0; // -100 à 100
-  let hueShift = 0.0; // -180 à 180 degrés
-
-  // IMPORTANT : Svelte détermine les dépendances d'un bloc `$:` par analyse
-  // STATIQUE du code écrit DIRECTEMENT dans ce bloc. Appeler une fonction
-  // externe (ex: allParams()) ne suffit pas : Svelte ne regarde pas à
-  // l'intérieur de cette fonction pour savoir quelles variables elle lit.
-  // Solution : construire un objet littéral qui référence chaque variable
-  // directement ici, ce qui force Svelte à les tracker toutes.
-  $: gradeParams = {
-    inputSpace,
-    temperature,
-    tint,
-    exposure,
-    highlights,
-    shadows,
-    whites,
-    blacks,
-    lift,
-    gamma,
-    gain,
-    contrast,
-    sCurve,
-    saturation,
-    vibrance,
-    hueShift,
+  import {
+    colorHarmonyMode,
+    colorPresetMode,
+    colorHue,
+    colorSat,
+    colorLight,
+    colorActiveSource,
+    colorApplyDirect,
+    colorInverted,
+  } from "../../stores.js";
+ 
+  const PRESETS = {
+    Blue: ["#00215E", "#023087", "#0D47A1", "#1565C0", "#1976D2", "#1E88E5", "#2196F3", "#42A5F5", "#64B5F6", "#90CAF9", "#BBDEFB", "#E3F2FD", "#3498DB", "#2980B9", "#1B4F72"],
+    Green: ["#003300", "#084A12", "#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#4CAF50", "#66BB6A", "#81C784", "#A5D6A7", "#C8E6C9", "#E8F5E9", "#27AE60", "#2ECC71", "#145A32"],
+    Red: ["#4A0000", "#7D0000", "#B71C1C", "#C62828", "#D32F2F", "#E53935", "#F44336", "#EF5350", "#E74C3C", "#C0392B", "#FF1744", "#D50000", "#FF8A80", "#FFCDD2", "#FFEBEE"],
+    "Orange/Yellow": ["#E65100", "#EF6C00", "#F57C00", "#FB8C00", "#FF9800", "#FFA726", "#FFB74D", "#FFCC80", "#FFE0B2", "#FFF3E0", "#F1C40F", "#F39C12", "#E67E22", "#FFC107", "#FFF8E1"],
+    Purple: ["#4A148C", "#6A1B9A", "#7B1FA2", "#8E24AA", "#9C27B0", "#AB47BC", "#BA68C8", "#CE93D8", "#E1BEE7", "#F3E5F5", "#9B59B6", "#8E44AD", "#673AB7", "#5E35B1", "#311B92"],
+    Pink: ["#880E4F", "#AD1457", "#C2185B", "#D81B60", "#E91E63", "#EC407A", "#F06292", "#F48FB1", "#F8BBD0", "#FCE4EC", "#FD79A8", "#FF4081", "#F50057", "#C51162", "#4A0024"],
+    Brown: ["#3E2723", "#4E342E", "#5D4037", "#6D4C41", "#795548", "#8D6E63", "#A1887F", "#BCAAA4", "#D7CCC8", "#EFEBE9", "#8C6B5D", "#705346", "#543C33", "#382620", "#1E120D"],
+    Neutrals: ["#000000", "#1A1A1A", "#333333", "#4D4D4D", "#666666", "#808080", "#999999", "#B3B3B3", "#CCCCCC", "#E6E6E6", "#F2F2F2", "#FFFFFF", "#2B2B2B", "#595959", "#A6A6A6"]
   };
 
-  $: if (isImageLoaded && gl && shaderProgram && gradeParams) {
-    renderWebGL();
+  const HARMONIES = ["Monochromatic", "Analogous", "Complementary", "Triadic", "Tetradic"];
+
+  let hexDisplay = "SELECT";
+  let ringEl;
+  let wheelEl;
+  let wrapperWidth = 400;
+  let draggingWheel = false;
+  let draggingRing = false;
+  let isLeftSemicircle = false;
+
+  $: isPreset =$colorActiveSource === "preset";
+  $: isSmall = wrapperWidth <= 350;
+
+  function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.min(100, Math.max(0, s)) / 100;
+    l = Math.min(100, Math.max(0, l)) / 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+
+    const toHex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0").toUpperCase();
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
-  // 1. EXTRAIRE L'IMAGE
-  function loadFrameFromAE() {
-    if (!window.__adobe_cep__) {
-      status = "Erreur: Ouvrez cette extension dans After Effects.";
-      return;
-    }
+  function buildHueSet(f, h) {
+    if (f === "Monochromatic") return [h];
+    if (f === "Analogous") return [h - 40, h - 20, h, h + 20, h + 40];
+    if (f === "Complementary") return [h, h + 180];
+    if (f === "Triadic") return [h, h + 120, h + 240];
+    if (f === "Tetradic") return [h, h + 90, h + 180, h + 270];
+    return [h];
+  }
 
-    status = "Extraction en cours...";
-    const jsxScript =
-      '(function(){ var comp = app.project.activeItem; if (!comp || !(comp instanceof CompItem)) { return "ERROR: Aucune comp active."; } var time = comp.time; var tempFile = new File(Folder.temp.absoluteURI + "/ae_temp_frame.png"); try { comp.saveFrameToPng(time, tempFile); return tempFile.fsName; } catch(e) { return "ERROR: " + e.toString(); } })();';
-
-    csi.evalScript(jsxScript, (result) => {
-      if (result === "EvalScript error." || result.startsWith("ERROR")) {
-        status = result;
-        return;
-      }
-
-      status = "Chargement...";
-      const formattedPath = result.replace(/\\/g, "/");
-
-      setTimeout(() => {
-        try {
-          if (!fs.existsSync(formattedPath)) return;
-          const buffer = fs.readFileSync(formattedPath);
-          if (buffer.length === 0) {
-            status = "Erreur : Image vide.";
-            return;
-          }
-
-          const base64Image = buffer.toString("base64");
-          loadImageIntoWebGL(`data:image/png;base64,${base64Image}`);
-        } catch (err) {
-          status = "Erreur FS: " + err.message;
-        }
-      }, 150);
+  function generateHarmony(f, h, s, l) {
+    const hues = buildHueSet(f, h);
+    const perHue = Math.ceil(20 / hues.length);
+    const spread = 45;
+    const steps = Array.from({ length: perHue }, (_, i) => {
+      if (perHue === 1) return l;
+      const t = i / (perHue - 1);
+      return Math.min(95, Math.max(5, l - spread / 2 + t * spread));
     });
+    
+    const colors = [];
+    hues.forEach((hh) => steps.forEach((ll) => colors.push(hslToHex(hh, s, ll))));
+    return colors.slice(0, 20);
   }
 
-  function loadImageIntoWebGL(dataUrl) {
-    const img = new Image();
-    img.onload = () => {
-      if (!gl) initWebGL();
-      if (!gl) return;
+  $: palette = isPreset ? PRESETS[$colorPresetMode] : generateHarmony($colorHarmonyMode,$colorHue, $colorSat,$colorLight);
+  $: baseHex = hslToHex($colorHue, $colorSat,$colorLight);
 
-      canvasEl.width = img.width;
-      canvasEl.height = img.height;
-      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-      if (texture) gl.deleteTexture(texture);
-      texture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
-      isImageLoaded = true;
-      status = "Prêt pour l'étalonnage";
-      renderWebGL();
-    };
-    img.src = dataUrl;
+  function selectHarmony(e) {
+    $colorHarmonyMode = e.target.value;
+    $colorActiveSource = "harmony";
   }
 
-  // 2. MOTEUR WEBGL
-  function initWebGL() {
-    gl =
-      canvasEl.getContext("webgl") || canvasEl.getContext("experimental-webgl");
-    if (!gl) return;
-
-    const vsSource = `
-      attribute vec2 a_position;
-      attribute vec2 a_texCoord;
-      varying vec2 v_texCoord;
-      void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
-        v_texCoord = vec2(a_texCoord.x, 1.0 - a_texCoord.y); 
-      }
-    `;
-
-    const fsSource = `
-      precision mediump float;
-      varying vec2 v_texCoord;
-      uniform sampler2D u_image;
-
-      uniform float u_inputSpace;
-
-      uniform float u_temperature;
-      uniform float u_tint;
-
-      uniform float u_exposure;
-      uniform float u_highlights;
-      uniform float u_shadows;
-      uniform float u_whites;
-      uniform float u_blacks;
-
-      uniform float u_lift;
-      uniform float u_gamma;
-      uniform float u_gain;
-
-      uniform float u_contrast;
-      uniform float u_sCurve;
-
-      uniform float u_saturation;
-      uniform float u_vibrance;
-      uniform float u_hueShift;
-
-      vec3 slog3ToLinear(vec3 x) {
-        vec3 result;
-        for (int i = 0; i < 3; i++) {
-          float v = x[i];
-          if (v >= 171.2102946929/1023.0) {
-            result[i] = (pow(10.0, (v*1023.0 - 420.0) / 261.5) * (0.18 + 0.01)) - 0.01;
-          } else {
-            result[i] = (v*1023.0 - 95.0) * 0.01125 / (171.2102946929 - 95.0);
-          }
-        }
-        return max(result, vec3(0.0));
-      }
-
-      vec3 vlogToLinear(vec3 x) {
-        float cutInv = 0.181, b = 0.00873, c = 0.241514, d = 0.598206;
-        vec3 result;
-        for (int i = 0; i < 3; i++) {
-          float v = x[i];
-          if (v >= cutInv) {
-            result[i] = pow(10.0, (v - d) / c) - b;
-          } else {
-            result[i] = (v - 0.125) / 5.6;
-          }
-        }
-        return max(result, vec3(0.0));
-      }
-
-      vec3 rgb2hsv(vec3 c) {
-        vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-        vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-        vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-        float d = q.x - min(q.w, q.y);
-        float e = 1.0e-10;
-        return vec3(abs(q.z + (q.w - q.y) / (6.0*d + e)), d / (q.x + e), q.x);
-      }
-
-      vec3 hsv2rgb(vec3 c) {
-        vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-      }
-
-      vec3 applySCurve(vec3 x, float strength) {
-        vec3 s1 = x*x*(3.0 - 2.0*x);
-        if (strength <= 1.0) {
-          return mix(x, s1, strength);
-        }
-        vec3 s2 = s1*s1*(3.0 - 2.0*s1);
-        return mix(s1, s2, strength - 1.0);
-      }
-
-      float maskShadows(float l) { return 1.0 - smoothstep(0.0, 0.5, l); }
-      float maskHighlights(float l) { return smoothstep(0.5, 1.0, l); }
-      float maskWhites(float l) { return smoothstep(0.75, 1.0, l); }
-      float maskBlacks(float l) { return 1.0 - smoothstep(0.0, 0.25, l); }
-
-      void main() {
-        vec4 color = texture2D(u_image, v_texCoord);
-
-        // A. Color Space Transform (CST)
-        if (u_inputSpace == 1.0) {
-          color.rgb = slog3ToLinear(color.rgb);
-          color.rgb = pow(color.rgb, vec3(1.0/2.4));
-        } else if (u_inputSpace == 2.0) {
-          color.rgb = vlogToLinear(color.rgb);
-          color.rgb = pow(color.rgb, vec3(1.0/2.4));
-        }
-
-        // B. Balance des blancs
-        float t = u_temperature * 0.01;
-        float ti = u_tint * 0.01;
-        color.r *= (1.0 + t * 0.3);
-        color.b *= (1.0 - t * 0.3);
-        color.g *= (1.0 + ti * 0.3);
-        color.rgb = max(color.rgb, vec3(0.0));
-
-        // C. Exposition
-        color.rgb *= pow(2.0, u_exposure);
-
-        // D. Highlights / Shadows / Whites / Blacks
-        float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        color.rgb += vec3(u_shadows * 0.01) * maskShadows(luma);
-        color.rgb += vec3(u_highlights * 0.01) * maskHighlights(luma);
-        color.rgb += vec3(u_whites * 0.01) * maskWhites(luma);
-        color.rgb += vec3(u_blacks * 0.01) * maskBlacks(luma);
-        color.rgb = max(color.rgb, vec3(0.0));
-
-        // E. Primaries (CDL)
-        color.rgb = (color.rgb * u_gain) + u_lift;
-        color.rgb = max(color.rgb, vec3(0.0));
-        color.rgb = pow(color.rgb, vec3(1.0 / max(u_gamma, 0.001)));
-
-        // F. Contraste + Courbe en S
-        color.rgb = (color.rgb - 0.5) * max(u_contrast, 0.0) + 0.5;
-        color.rgb = clamp(color.rgb, 0.0, 1.0);
-        if (u_sCurve > 0.001) {
-          color.rgb = applySCurve(color.rgb, u_sCurve);
-        }
-
-        // G. Saturation + Vibrance
-        float lum2 = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        color.rgb = mix(vec3(lum2), color.rgb, u_saturation);
-
-        float maxc = max(color.r, max(color.g, color.b));
-        float minc = min(color.r, min(color.g, color.b));
-        float currentSat = maxc - minc;
-        float vibAmt = (u_vibrance * 0.01) * (1.0 - currentSat);
-        color.rgb = mix(vec3(lum2), color.rgb, 1.0 + vibAmt);
-
-        // H. Décalage de teinte
-        if (abs(u_hueShift) > 0.001) {
-          vec3 hsv = rgb2hsv(clamp(color.rgb, 0.0, 1.0));
-          hsv.x = fract(hsv.x + u_hueShift / 360.0);
-          color.rgb = hsv2rgb(hsv);
-        }
-
-        gl_FragColor = vec4(clamp(color.rgb, 0.0, 1.0), color.a);
-      }
-    `;
-
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-    gl.useProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      console.error("Program link error:", gl.getProgramInfoLog(shaderProgram));
-    }
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-        -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
-      ]),
-      gl.STATIC_DRAW,
-    );
-
-    positionLocation = gl.getAttribLocation(shaderProgram, "a_position");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    const texCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0,
-      ]),
-      gl.STATIC_DRAW,
-    );
-
-    texCoordLocation = gl.getAttribLocation(shaderProgram, "a_texCoord");
-    gl.enableVertexAttribArray(texCoordLocation);
-    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+  function selectPreset(e) {
+    $colorPresetMode = e.target.value;
+    $colorActiveSource = "preset";
   }
 
-  function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error("Shader compile error:", gl.getShaderInfoLog(shader));
-    }
-    return shader;
+  function updateWheelFromPointer(clientX, clientY) {
+    $colorActiveSource = "harmony";
+    const rect = wheelEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const radius = rect.width / 2;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    $colorHue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+    $colorSat = Math.min(1, dist / radius) * 100;
   }
 
-  function u(name) {
-    return gl.getUniformLocation(shaderProgram, name);
+  function updateRingFromPointer(clientX, clientY) {
+    $colorActiveSource = "harmony";
+    const rect = ringEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const angle = Math.atan2(dy, dx);
+    
+    isLeftSemicircle = Math.cos(angle) < 0;
+    $colorLight = Math.max(0, Math.min(100, (1 - Math.sin(angle)) * 50));
   }
 
-  function renderWebGL() {
-    if (!gl) return;
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.uniform1f(u("u_inputSpace"), inputSpace);
-
-    gl.uniform1f(u("u_temperature"), temperature);
-    gl.uniform1f(u("u_tint"), tint);
-
-    gl.uniform1f(u("u_exposure"), exposure);
-    gl.uniform1f(u("u_highlights"), highlights);
-    gl.uniform1f(u("u_shadows"), shadows);
-    gl.uniform1f(u("u_whites"), whites);
-    gl.uniform1f(u("u_blacks"), blacks);
-
-    gl.uniform1f(u("u_lift"), lift);
-    gl.uniform1f(u("u_gamma"), gamma);
-    gl.uniform1f(u("u_gain"), gain);
-
-    gl.uniform1f(u("u_contrast"), contrast);
-    gl.uniform1f(u("u_sCurve"), sCurve);
-
-    gl.uniform1f(u("u_saturation"), saturation);
-    gl.uniform1f(u("u_vibrance"), vibrance);
-    gl.uniform1f(u("u_hueShift"), hueShift);
-
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  function onWheelPointerDown(e) {
+    e.stopPropagation();
+    draggingWheel = true;
+    updateWheelFromPointer(e.clientX, e.clientY);
   }
 
-  // ---------------------------------------------------------------------
-  // APPLICATION AU CALQUE — via Lumetri Color (natif, toujours présent).
-  // On abandonne l'approche LUT .cube / "Apply Color LUT" qui s'est avérée
-  // peu fiable selon les versions d'AE. Lumetri > Basic Correction expose
-  // Temperature/Tint/Exposure/Highlights/Shadows/Whites/Blacks/Saturation/
-  // Vibrance — un mapping quasi direct avec nos sliders.
-  //
-  // Le Color Space Transform (log→linéaire) n'est PAS appliqué ici :
-  // utilise "Color Profile Converter" toi-même sur le calque pour ça,
-  // c'est plus fiable que notre approximation et tu as déjà cet effet
-  // sous la main. inputSpace ne sert qu'à la preview live dans ce panel.
-  //
-  // La courbe en S n'a pas d'équivalent direct dans Basic Correction ;
-  // elle est repliée en un boost de Contraste supplémentaire (approximatif).
-  // Le décalage de teinte (Hue) n'est pas appliqué nativement (pas de
-  // contrôle stable équivalent dans Basic Correction) : reste preview-only.
-  // ---------------------------------------------------------------------
+  function onRingPointerDown(e) {
+    e.stopPropagation();
+    draggingRing = true;
+    updateRingFromPointer(e.clientX, e.clientY);
+  }
 
-  async function applyToTimeline() {
-    if (!window.__adobe_cep__) return;
-    if (isApplying) return;
+  function onPointerMove(e) {
+    if (draggingWheel) updateWheelFromPointer(e.clientX, e.clientY);
+    if (draggingRing) updateRingFromPointer(e.clientX, e.clientY);
+  }
 
-    isApplying = true;
-    status = "Application du grade (Lumetri)...";
+  function onPointerUp() {
+    draggingWheel = false;
+    draggingRing = false;
+  }
 
-    // Contraste effectif = contraste manuel + approximation de la courbe en S
-    const effectiveContrast = (contrast - 1) * 100 + sCurve * 15;
+  $: Y_norm = 1 -$colorLight / 50;
+  $: X_norm = Math.sqrt(Math.max(0, 1 - Y_norm * Y_norm)) * (isLeftSemicircle ? -1 : 1);
+  $: ringPointerX = 50 + X_norm * 46.5;
+  $: ringPointerY = 50 + Y_norm * 46.5;
 
-    const jsxApply = `
-      (function(){
-        app.beginUndoGroup("Excalibur Color Grade");
-        var comp = app.project.activeItem;
-        if (!comp || !(comp instanceof CompItem)) { app.endUndoGroup(); return "ERROR: Aucune composition active."; }
-        if (comp.selectedLayers.length === 0) { app.endUndoGroup(); return "ERROR: Sélectionnez un calque."; }
+  $: pointerX = 50 + ($colorSat / 100) * 50 * Math.cos(($colorHue * Math.PI) / 180);$: pointerY = 50 + ($colorSat / 100) * 50 * Math.sin(($colorHue * Math.PI) / 180);
 
-        var layer = comp.selectedLayers[0];
-        var lumetri;
-        try {
-          lumetri = layer.Effects.property("ADBE Lumetri");
-          if (!lumetri) lumetri = layer.Effects.addProperty("ADBE Lumetri");
-        } catch(e) {
-          app.endUndoGroup();
-          return "ERROR: Impossible d'ajouter Lumetri Color (" + e.toString() + ")";
-        }
+  function copyToClipboardFallback(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 
-        var applied = [];
-        var skipped = [];
-
-        function trySet(propName, value) {
-          try {
-            lumetri.property("Basic Correction").property(propName).setValue(value);
-            applied.push(propName);
-          } catch(e) {
-            try {
-              // Fallback : certaines versions/langues exposent les props
-              // directement à la racine de l'effet plutôt que sous un groupe.
-              lumetri.property(propName).setValue(value);
-              applied.push(propName);
-            } catch(e2) {
-              skipped.push(propName);
-            }
-          }
-        }
-
-        trySet("Temperature", ${temperature});
-        trySet("Tint", ${tint});
-        trySet("Exposure", ${exposure});
-        trySet("Contrast", ${effectiveContrast});
-        trySet("Highlights", ${highlights});
-        trySet("Shadows", ${shadows});
-        trySet("Whites", ${whites});
-        trySet("Blacks", ${blacks});
-        trySet("Saturation", ${saturation * 100});
-        trySet("Vibrance", ${vibrance});
-
-        app.endUndoGroup();
-        return "SUCCESS|" + applied.join(",") + "|" + skipped.join(",");
-      })();
-    `;
-
-    csi.evalScript(jsxApply, (res) => {
-      isApplying = false;
-      if (res.startsWith("ERROR")) {
-        status = res;
+  async function copyHex(hex) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(hex);
         return;
-      }
-      const parts = res.split("|");
-      const skippedList = parts[2] || "";
-      if (skippedList) {
-        status =
-          "Grade appliqué. Non réglés (noms de propriété différents dans ta version d'AE) : " +
-          skippedList;
-      } else {
-        status = "Grade appliqué avec succès sur Lumetri Color !";
-      }
-    });
+      } catch (e) {}
+    }
+    copyToClipboardFallback(hex);
   }
 
-  function resetAll() {
-    inputSpace = 0;
-    temperature = 0;
-    tint = 0;
-    exposure = 0;
-    highlights = 0;
-    shadows = 0;
-    whites = 0;
-    blacks = 0;
-    lift = 0;
-    gamma = 1;
-    gain = 1;
-    contrast = 1;
-    sCurve = 0;
-    saturation = 1;
-    vibrance = 0;
-    hueShift = 0;
+  async function applyFillToSelectedLayer(hex) {
+    try { await applyFillColor(hex); } catch (e) {}
+  }
+
+  function onSwatchClick(hex) {
+    hexDisplay = hex;
+    if ($colorApplyDirect) {
+      applyFillToSelectedLayer(hex);
+    } else {
+      copyHex(hex);
+    }
   }
 </script>
 
-<div class="tab-view responsive-layout">
-  <header>
-    <h1>Color Room</h1>
-    <div class="header-btns">
-      <button class="btn-secondary" on:click={loadFrameFromAE}
-        >Extraire Image</button
-      >
-      <button
-        class="btn-primary"
-        on:click={applyToTimeline}
-        disabled={!isImageLoaded || isApplying}
-        >{isApplying ? "..." : "Appliquer au Calque"}</button
-      >
-    </div>
-  </header>
+<svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} />
 
-  <p class="status">{status}</p>
-
-  <div class="workspace">
-    <div class="viewer">
-      <canvas bind:this={canvasEl}></canvas>
-      {#if !isImageLoaded}
-        <div class="placeholder">Aucune image chargée</div>
-      {/if}
-    </div>
-
-    <div class="controls-panel" class:disabled={!isImageLoaded}>
-      <div class="control-section">
-        <label for="input-space">Input Color Space</label>
-        <select id="input-space" bind:value={inputSpace}>
-          <option value={0}>Rec.709 (Standard)</option>
-          <option value={1}>Sony S-Log3</option>
-          <option value={2}>Panasonic V-Log</option>
+<div class="wrapper" bind:clientWidth={wrapperWidth} class:is-small={isSmall}>
+  <div class="header">
+    <div class="select-group">
+      <div class="select-col">
+        <span class="select-label">Harmonies</span>
+        <select value={$colorHarmonyMode} on:change={selectHarmony} class="mode-select" class:active={!isPreset}>
+          {#each HARMONIES as f}<option value={f}>{f}</option>{/each}
         </select>
       </div>
 
-      <details open>
-        <summary>Balance des Blancs</summary>
-        <div class="control-grid">
-          <div class="slider-group">
-            <label>Température <span>{temperature.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={temperature}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Teinte <span>{tint.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={tint}
-            />
-          </div>
-        </div>
-      </details>
+      <div class="select-col">
+        <span class="select-label">Presets</span>
+        <select value={$colorPresetMode} on:change={selectPreset} class="mode-select" class:active={isPreset}>
+          {#each Object.keys(PRESETS) as p}<option value={p}>{p}</option>{/each}
+        </select>
+      </div>
+    </div>
 
-      <details open>
-        <summary>Tonalité</summary>
-        <div class="control-grid">
-          <div class="slider-group">
-            <label>Exposition <span>{exposure.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="-3"
-              max="3"
-              step="0.05"
-              bind:value={exposure}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Hautes lumières <span>{highlights.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={highlights}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Ombres <span>{shadows.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={shadows}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Blancs <span>{whites.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={whites}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Noirs <span>{blacks.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={blacks}
-            />
-          </div>
+    <div class="header-actions">
+      {#if !isSmall}
+        <div class="hex-display" style="color:{isPreset ? palette[0] : baseHex}">
+          {hexDisplay}
         </div>
-      </details>
-
-      <details open>
-        <summary>Roues Primaires (CDL)</summary>
-        <div class="control-grid">
-          <div class="slider-group">
-            <label>Lift (Shadows) <span>{lift.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="-0.5"
-              max="0.5"
-              step="0.01"
-              bind:value={lift}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Gamma (Mids) <span>{gamma.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="0.1"
-              max="2.0"
-              step="0.01"
-              bind:value={gamma}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Gain (Highlights) <span>{gain.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="0.0"
-              max="2.0"
-              step="0.01"
-              bind:value={gain}
-            />
-          </div>
-        </div>
-      </details>
-
-      <details open>
-        <summary>Contraste &amp; Courbe</summary>
-        <div class="control-grid">
-          <div class="slider-group">
-            <label>Contraste <span>{contrast.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.01"
-              bind:value={contrast}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Courbe en S <span>{sCurve.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.01"
-              bind:value={sCurve}
-            />
-          </div>
-        </div>
-      </details>
-
-      <details open>
-        <summary>Couleur</summary>
-        <div class="control-grid">
-          <div class="slider-group">
-            <label>Saturation <span>{saturation.toFixed(2)}</span></label>
-            <input
-              type="range"
-              min="0"
-              max="3"
-              step="0.01"
-              bind:value={saturation}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Vibrance <span>{vibrance.toFixed(0)}</span></label>
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              bind:value={vibrance}
-            />
-          </div>
-          <div class="slider-group">
-            <label>Teinte (Hue) <span>{hueShift.toFixed(0)}°</span></label>
-            <input
-              type="range"
-              min="-180"
-              max="180"
-              step="1"
-              bind:value={hueShift}
-            />
-          </div>
-        </div>
-      </details>
-
-      <button class="reset-btn" on:click={resetAll}>
-        Réinitialiser le Grade
+      {/if}
+      <button class="icon-btn switch-btn" title="Invert wheel / colors" on:click={() => ($colorInverted = !$colorInverted)}>
+        <img src={Switch} alt="Switch" width="16" height="16" />
       </button>
     </div>
+  </div>
+
+  <div class="body" style="--anim-dur:{$TRANSITION_MS}ms;">
+    <div class="wheel-col" class:disabled={isPreset} style="order: {isSmall ? ($colorInverted ? 2 : 1) : 0}; transform: {isSmall ? 'none' : `translateX(${$colorInverted ? 'calc(100% + 15px)' : '0%'})`};">
+      <div class="wheel-container">
+        <div class="ring-track" bind:this={ringEl} on:pointerdown={onRingPointerDown} role="slider" aria-valuenow={$colorLight} aria-label="Luminosity"></div>
+        <div class="ring-pointer" style="left:{ringPointerX}%; top:{ringPointerY}%; background: hsl(0, 0%, {$colorLight}%);"></div>
+        <div class="wheel-core" bind:this={wheelEl} on:pointerdown={onWheelPointerDown} role="slider" aria-label="Chromatic wheel" aria-valuenow={$colorHue}>
+          <div class="wheel-pointer" style="left:{pointerX}%; top:{pointerY}%; background:{baseHex}"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="palette-col" style="order: {isSmall ? ($colorInverted ? 1 : 2) : 0}; transform: {isSmall ? 'none' : `translateX(${$colorInverted ? 'calc(-100% - 15px)' : '0%'})`};">
+      <div class="palette-grid">
+        {#each palette as hex}
+          <button class="swatch" style="background:{hex}" title={hex} on:click={() => onSwatchClick(hex)}></button>
+        {/each}
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <label class="toggle-wrapper" title="Apply Fill effect directly on selected layer">
+      <div class="switch" style="--anim-dur: {$TRANSITION_MS}ms">
+        <input type="checkbox" class="toggle" bind:checked={$colorApplyDirect} />
+        <span class="slider">
+          <span class="slider-text off">off</span>
+          <span class="slider-text on">on</span>
+          <span class="slider-thumb"></span>
+        </span>
+      </div>
+      <span class="label-text">{$colorApplyDirect ? "Copy the selected color enabled" : "Color the selected layer enabled"}</span>
+    </label>
   </div>
 </div>
 
 <style lang="scss">
-  .responsive-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    min-width: 260px;
-    padding: 10px;
+  * {
     box-sizing: border-box;
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    overflow: hidden;
+    min-width: 0;
   }
 
-  .workspace {
+  .wrapper {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    gap: 15px;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    gap: 12px;
+    font-family: "Museo Sans", sans-serif;
+    color: #fff;
+    background-color: transparent;
     overflow: hidden;
-    min-height: 0;
-
-    @media (min-width: 600px) {
-      flex-direction: row;
-    }
   }
 
-  header {
+  .header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: 8px;
     flex-shrink: 0;
-
-    h1 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: #fff;
-      white-space: nowrap;
-    }
-
-    .header-btns {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      flex: 1 1 auto;
-      justify-content: flex-end;
-    }
-
-    button {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.8rem;
-      white-space: nowrap;
-      transition: filter 0.2s;
-
-      &:hover {
-        filter: brightness(1.2);
-      }
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-
-    .btn-secondary {
-      background-color: #333;
-      color: white;
-      border: 1px solid #555;
-    }
-    .btn-primary {
-      background-color: var(--activeColour, #e33b6b);
-      color: white;
-    }
+    width: 100%;
   }
 
-  .status {
-    font-size: 0.75rem;
+  .select-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 120px;
+  }
+
+  .select-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 80px;
+  }
+
+  .select-label {
+    font-size: 10px;
     color: #999;
-    margin: 5px 0 10px;
-    flex-shrink: 0;
-    overflow-wrap: break-word;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .viewer {
-    flex: 1 1 auto;
-    background: #111;
-    position: relative;
-    border: 1px solid #333;
-    border-radius: 8px;
+  .mode-select {
+    width: 100%;
+    height: 28px;
+    padding: 0 6px;
+    background-color: #131313;
+    border: 1px solid rgb(65, 65, 65);
+    border-radius: 4px;
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 150ms, box-shadow 150ms;
+
+    &.active {
+      color: #fff;
+      border-color: var(--activeColour, #444);
+    }
+    &:hover {
+      border-color: #888;
+    }
+    &:focus {
+      border-color: var(--activeColour, #444);
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .hex-display {
+    font-weight: 800;
+    font-size: 13px;
+    text-align: right;
+    max-width: 80px;
+    height: 28px;
+    line-height: 28px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .icon-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid rgb(65, 65, 65);
+    background: #191919;
+    color: #fff;
+    cursor: pointer;
+    padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 150px;
-    overflow: hidden;
-
-    canvas {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-
-    .placeholder {
-      position: absolute;
-      color: #555;
-      font-style: italic;
-      font-size: 0.85rem;
-      text-align: center;
-      padding: 0 10px;
-    }
-  }
-
-  .controls-panel {
-    flex: 0 0 auto;
-    width: 100%;
-    max-height: 55%;
-    overflow-y: auto;
-    background: #252525;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    box-sizing: border-box;
-    transition: opacity 0.3s;
-
-    &.disabled {
-      opacity: 0.3;
-      pointer-events: none;
-    }
-
-    @media (min-width: 600px) {
-      width: 300px;
-      max-height: 100%;
-      flex-shrink: 0;
-    }
-  }
-
-  .controls-panel::-webkit-scrollbar {
-    width: 6px;
-  }
-  .controls-panel::-webkit-scrollbar-thumb {
-    background-color: #555;
-    border-radius: 3px;
-  }
-
-  .control-section {
-    margin-bottom: 12px;
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      color: #aaa;
-      margin-bottom: 5px;
-    }
-
-    select {
-      width: 100%;
-      background: #111;
-      color: #fff;
-      border: 1px solid #444;
-      padding: 6px;
-      border-radius: 4px;
-      font-family: inherit;
-      font-size: 0.8rem;
-    }
-  }
-
-  details {
-    margin-bottom: 10px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 8px;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
-
-    summary {
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: #ddd;
-      cursor: pointer;
-      padding: 4px 0;
-      list-style: none;
-      display: flex;
-      align-items: center;
-
-      &::-webkit-details-marker {
-        display: none;
-      }
-
-      &::before {
-        content: "▸";
-        display: inline-block;
-        margin-right: 6px;
-        color: var(--activeColour, #e33b6b);
-        transition: transform 0.15s;
-      }
-    }
-
-    &[open] summary::before {
-      transform: rotate(90deg);
-    }
-  }
-
-  .control-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 8px;
-
-    @media (min-width: 420px) and (max-width: 599px) {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px 14px;
-    }
-  }
-
-  .slider-group {
-    min-width: 0;
-
-    label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: #bbb;
-      margin-bottom: 5px;
-      white-space: nowrap;
-      overflow: hidden;
-
-      span {
-        color: var(--activeColour, #e33b6b);
-        font-family: monospace;
-        flex-shrink: 0;
-        margin-left: 6px;
-      }
-    }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      width: 100%;
-      background: transparent;
-
-      &::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        height: 14px;
-        width: 14px;
-        border-radius: 50%;
-        background: #fff;
-        cursor: pointer;
-        margin-top: -5px;
-        box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-      }
-
-      &::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 4px;
-        cursor: pointer;
-        background: #444;
-        border-radius: 2px;
-      }
-    }
-  }
-
-  .reset-btn {
-    width: 100%;
-    background: #333;
-    color: #ccc;
-    border: 1px solid #555;
-    padding: 8px;
-    border-radius: 4px;
-    margin-top: 12px;
-    cursor: pointer;
-    font-size: 0.8rem;
+    transition: transform 0.15s;
 
     &:hover {
-      background: #444;
-      color: white;
+      background: #252525;
+      transform: scale(1.05);
+      border-color: var(--activeColour, #888);
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .body {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 2px 0;
+    isolation: isolate;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgb(65, 65, 65);
+      border-radius: 3px;
+    }
+  }
+
+  .wheel-col,
+  .palette-col {
+    flex: 1 1 0;
+    min-width: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform var(--anim-dur, 300ms) cubic-bezier(0.65, 0, 0.35, 1);
+    will-change: transform;
+  }
+
+  .wheel-col.disabled {
+    opacity: 0.25;
+    pointer-events: none;
+    filter: grayscale(80%);
+    transition: transform var(--anim-dur, 300ms) cubic-bezier(0.65, 0, 0.35, 1), opacity 0.2s;
+  }
+
+  .wrapper.is-small .body {
+    flex-wrap: wrap;
+  }
+  .wrapper.is-small .palette-col,
+  .wrapper.is-small .wheel-col {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+
+  .wheel-container {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    flex-shrink: 0;
+  }
+
+  .ring-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #ffffff, #000000);
+    -webkit-mask: radial-gradient(closest-side, transparent 85%, black 86%);
+    mask: radial-gradient(closest-side, transparent 85%, black 86%);
+    cursor: pointer;
+    touch-action: none;
+    z-index: 1;
+  }
+
+  .ring-pointer {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .wheel-core {
+    position: absolute;
+    inset: 14%;
+    border-radius: 50%;
+    background: radial-gradient(circle closest-side, #ffffff 0%, rgba(255, 255, 255, 0) 35%), conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.6);
+    cursor: crosshair;
+    touch-action: none;
+    z-index: 3;
+  }
+
+  .wheel-pointer {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .palette-grid {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .swatch {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s, outline 0.1s;
+
+    &:hover {
+      transform: scale(1.08);
+      z-index: 2;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      outline: 2px solid #fff;
+      outline-offset: -1px;
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .footer {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-shrink: 0;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover .slider {
+      border-color: #666;
+    }
+
+    .label-text {
+      font-size: 11px;
+      color: #ccc;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  }
+
+  .switch {
+    --input-focus: var(--activeColour, #2d8cf0);
+    --bg-color: #191919;
+    --main-color: #444;
+    --input-out-of-focus: #151515;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 24px;
+  }
+
+  .toggle {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .slider {
+    box-sizing: border-box;
+    border-radius: 100px;
+    border: 2px solid var(--main-color);
+    box-shadow: 2px 2px var(--main-color);
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    background-color: var(--input-out-of-focus);
+  }
+
+  .slider-text {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    font-size: 8px;
+    font-weight: 700;
+    pointer-events: none;
+    transition: opacity var(--anim-dur, 0.3s) ease-in-out;
+
+    &.off {
+      right: 5px;
+      color: #888;
+      opacity: 1;
+    }
+    &.on {
+      left: 6px;
+      color: #fff;
+      opacity: 0;
+    }
+  }
+
+  .slider-thumb {
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 1px;
+    bottom: 1px;
+    border: 2px solid white;
+    border-radius: 100px;
+    background-color: var(--bg-color);
+    transition: transform var(--anim-dur, 0.3s) ease-in-out;
+  }
+
+  .toggle:checked + .slider {
+    background-color: var(--input-focus);
+    .slider-thumb {
+      transform: translateX(26px);
+    }
+    .slider-text.off {
+      opacity: 0;
+    }
+    .slider-text.on {
+      opacity: 1;
     }
   }
 </style>

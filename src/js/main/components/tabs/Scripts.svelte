@@ -2,7 +2,7 @@
 </script>
 
 <div class="tab-view">
-  <h1>Scripts</h1>
+  <h1>Script</h1>
 </div>
 
 <style lang="scss">

@@ -1,8 +1,38 @@
 <script>
-  import { showDashboard, dashboardClosing, dashboardTab } from "../stores.js";
+  import {
+    showDashboard,
+    dashboardClosing,
+    dashboardTab,
+    TRANSITION_MS,
+  } from "../stores.js";
   import DashboardTab from "./tabs/Dashboard.svelte";
   import NotesTab from "./tabs/Notes.svelte";
   import CreditTab from "./tabs/Credit.svelte";
+
+  const dashboardOrder = ["informations", "notes", "credit"];
+
+  let activeTab = $dashboardTab;
+  let prevTab = null;
+  let direction = 1;
+  let isTransitioning = false;
+  let transitionTimeout = null;
+
+  $: if ($dashboardTab !== activeTab) {
+    const fromIndex = dashboardOrder.indexOf(activeTab);
+    const toIndex = dashboardOrder.indexOf($dashboardTab);
+
+    direction = toIndex > fromIndex ? 1 : -1;
+
+    prevTab = activeTab;
+    activeTab = $dashboardTab;
+    isTransitioning = true;
+
+    clearTimeout(transitionTimeout);
+    transitionTimeout = setTimeout(() => {
+      isTransitioning = false;
+      prevTab = null;
+    }, $TRANSITION_MS);
+  }
 </script>
 
 {#if $showDashboard}
@@ -31,19 +61,43 @@
           class:not_eff_active={$dashboardTab !== "credit"}
           on:click={() => dashboardTab.set("credit")}
         >
-          <span>Credit</span>
+          <span>Credits</span>
         </button>
       </div>
     </nav>
+
     <div class="dashboard-content">
       <div class="dashboard-inner">
-        {#if $dashboardTab === "informations"}
-          <DashboardTab />
-        {:else if $dashboardTab === "notes"}
-          <NotesTab />
-        {:else if $dashboardTab === "credit"}
-          <CreditTab />
+        {#if isTransitioning && prevTab}
+          <div
+            class="tab-slide exit"
+            class:slide-left-exit={direction === 1}
+            class:slide-right-exit={direction === -1}
+          >
+            {#if prevTab === "informations"}
+              <DashboardTab />
+            {:else if prevTab === "notes"}
+              <NotesTab />
+            {:else if prevTab === "credit"}
+              <CreditTab />
+            {/if}
+          </div>
         {/if}
+
+        <div
+          class="tab-slide enter"
+          class:animating={isTransitioning}
+          class:slide-left-enter={isTransitioning && direction === 1}
+          class:slide-right-enter={isTransitioning && direction === -1}
+        >
+          {#if activeTab === "informations"}
+            <DashboardTab />
+          {:else if activeTab === "notes"}
+            <NotesTab />
+          {:else if activeTab === "credit"}
+            <CreditTab />
+          {/if}
+        </div>
       </div>
     </div>
   </div>
@@ -59,176 +113,194 @@
     z-index: 150;
     display: flex;
     flex-direction: column;
-    padding: 6px 15px 15px 15px;
-    border-radius: 10px;
+    padding: 1vh;
+    border-radius: 1.5vh;
     will-change: transform;
     backface-visibility: hidden;
-    animation: slideInRight var(--transition-ms, 0.3s)
+
+    transform: translateX(0);
+    animation: slideInRight var(--transition-ms, 300ms)
       cubic-bezier(0.25, 1, 0.5, 1) forwards;
+
     &.closing {
-      animation: slideOutRight var(--transition-ms, 0.3s) ease-in forwards;
+      animation: slideOutRight var(--transition-ms, 300ms) ease-in forwards;
+    }
+  }
+
+  .dashboard-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dashboard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .tab-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    &.exit,
+    &.enter {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    &.exit {
+      z-index: 1;
+      pointer-events: none;
+    }
+    &.enter {
+      z-index: 2;
+    }
+  }
+
+  .tab-slide > :global(*) {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slide-left-enter {
+    animation: slideInFromRight var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  .slide-left-exit {
+    animation: slideOutToLeft var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  .slide-right-enter {
+    animation: slideInFromLeft var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  .slide-right-exit {
+    animation: slideOutToRight var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slideOutToLeft {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slideOutToRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
     }
   }
 
   .dashboard-sub-menu {
     width: 100%;
-    height: 32px;
+    height: 30px;
     background-color: rgb(37, 37, 37);
     border: 1px solid rgb(65, 65, 65);
-    border-radius: 6px;
-    margin-bottom: 12px;
+    border-radius: 4px;
     flex-shrink: 0;
+    margin-bottom: 8px;
   }
   .dashboard-sub-menu .nav-grid {
-    width: calc(100% - 8px);
+    width: calc(100% - 1vh);
     height: 100%;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin: 0px 4px;
-    padding: 0;
+    gap: 0.5vh;
+    margin: 0px 0.5vh;
   }
   .dashboard-sub-menu button {
-    /* Reset des styles par défaut du bouton */
+    font-family: "Museo Sans", sans-serif;
     appearance: none;
     border: none;
-    outline: none;
-    padding: 0;
-    font-family: inherit;
-
-    /* Ton style d'origine */
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    border-radius: 4px;
-    font-weight: bold;
-    margin: 3px 0px;
-    transition: all 0.15s ease-in-out;
+    border-radius: 3px;
+    font-weight: 600;
+    margin: 2px 0;
     color: #fff;
+    cursor: pointer;
+    transition: all 0.1s ease;
   }
+
   .dashboard-sub-menu button:hover {
-    cursor: pointer;
-    text-shadow: 2px 2px 5px black;
-    font-weight: bold;
+    background-color: #191919 !important;
+    transform: translateY(-0.5vh);
+    border-top: 0.4vh solid var(--activeColour) !important;
   }
 
-  .dashboard-sub-menu button span {
-    margin-top: 1px;
+  .dashboard-sub-menu button:active {
+    background-color: #191919 !important;
+    transform: translateY(0vh) scale(0.98);
+    border-top: 0.4vh solid var(--activeColour) !important;
   }
-
-  .dashboard-sub-menu ul {
-    width: calc(100% - 8px);
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin: 0px 4px;
-    padding: 0;
-  }
-  .dashboard-sub-menu ul li {
-    text-decoration: none;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    border-radius: 4px;
-    font-weight: bold;
-    margin: 3px 0px;
-    transition: all 0.15s ease-in-out;
-    color: #fff;
-  }
-
-  .dashboard-sub-menu ul li:hover {
-    cursor: pointer;
-    text-shadow: 2px 2px 5px black;
-    font-weight: bold;
-  }
-  .dashboard-sub-menu ul li span {
-    margin-top: 1px;
-  }
-
   .eff_active {
-    background-color: #191919;
-    border-top: 2.5px solid var(--activeColour) !important;
+    background-color: #191919 !important;
+    border-top: 0.4vh solid var(--activeColour) !important;
   }
-
-  .eff_active:hover {
-    background-color: var(--activeColour);
-    border-top: 2.5px solid var(--activeColour) !important;
-    filter: brightness(1.2);
-  }
-
   .not_eff_active {
-    background-color: #191919;
-    border-top: 2.5px solid transparent !important;
-  }
-
-  .not_eff_active:hover {
-    background-color: var(--activeColour);
-    border-top: 2.5px solid var(--activeColour) !important;
-    filter: brightness(1.2);
-  }
-
-  .dashboard-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 5px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-
-    &::-webkit-scrollbar {
-      width: 12px;
-    }
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    &::-webkit-scrollbar-thumb {
-      background-color: var(--thumb-colour, blueviolet);
-      border-radius: 6px;
-      border: 3px solid #232323;
-      background-clip: padding-box;
-    }
-    &::-webkit-scrollbar-thumb:hover {
-      background-color: var(--thumb-colour, #b854ff);
-      filter: brightness(1.15);
-    }
-  }
-  @media (max-width: 450px) {
-    .dashboard-sub-menu {
-      height: 28px;
-    }
-    .dashboard-sub-menu .nav-grid {
-      gap: 2px;
-    }
-    .dashboard-sub-menu button {
-      font-size: 9.5px;
-      margin: 2px 0px;
-    }
-  }
-
-  .dashboard-inner {
-    width: 100%;
-    max-width: 800px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    text-align: left;
-  }
-
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-    }
-  }
-  @keyframes slideOutRight {
-    to {
-      transform: translateX(100%);
-    }
+    background-color: #191919 !important;
+    border-top: 0.4vh solid transparent !important;
   }
 </style>

@@ -1,6 +1,11 @@
 import type { EventTS } from "../../shared/universals";
 import { ns } from "../../shared/shared";
 
+// Ambient runtime objects for CEP/ExtendScript
+declare var ExternalObject: any;
+declare var CSXSEvent: any;
+declare var $: any;
+
 /**
  * @function dispatchTS Displatches an event to the CEP panel with Type-Safety
  * See listenTS() in the CEP panel for more info

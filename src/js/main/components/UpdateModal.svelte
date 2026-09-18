@@ -5,29 +5,22 @@
 
 {#if $showUpdateModal}
   <div class="modal-overlay">
-    <div class="modal-box" role="alertdialog" aria-modal="true">
-      <button type="button" class="btn-close" on:click={closeUpdateModal}
-        >×</button
-      >
+    <div class="modal-box">
+      <button class="btn-close" on:click={closeUpdateModal}>×</button>
       <h2>Mise à jour disponible</h2>
       <p>Une nouvelle version d'Excalibur FX est disponible.</p>
-      <button
-        type="button"
-        class="btn-update"
-        on:click={() =>
-          window.open(
-            "https://github.com/TON_USER/TON_REPO/releases/latest",
-            "_blank",
-          )}>Voir sur GitHub</button
-      >
+      <button class="btn-update" on:click={() => window.open("https://github.com/TON_USER/TON_REPO/releases/latest", "_blank")}>Voir sur GitHub</button>
     </div>
   </div>
 {/if}
 
-<style lang="scss">
+<style>
   .modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
@@ -44,17 +37,20 @@
     width: 90%;
     text-align: center;
     position: relative;
+  }
 
-    h2 {
-      color: #fff;
-      margin: 0 0 12px;
-      font-size: 18px;
-    }
-    p {
-      color: #999;
-      font-size: 13px;
-      margin: 0 0 16px;
-    }
+  .modal-box h2 {
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+  }
+
+  .modal-box p {
+    color: #999;
+    font-size: 13px;
+    margin-top: 0;
+    margin-bottom: 16px;
   }
 
   .btn-close {
@@ -66,10 +62,10 @@
     color: #999;
     font-size: 20px;
     cursor: pointer;
+  }
 
-    &:hover {
-      color: #fff;
-    }
+  .btn-close:hover {
+    color: #fff;
   }
 
   .btn-update {

@@ -1,22 +1,28 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
   import Sidebar from "./components/Sidebar.svelte";
   import ContentPane from "./components/ContentPane.svelte";
   import Dashboard from "./components/Dashboard.svelte";
   import UpdateModal from "./components/UpdateModal.svelte";
-  import { monitorFPS } from "./logic.js";
+  import { monitorFPS, sendNotif } from "./logic.js";
   import * as ExcaliburUtils from "../lib/utils/main.js";
-  import { CURRENT_VERSION, updateInfo, showUpdateModal } from "./stores.js";
+  import {
+    CURRENT_VERSION,
+    updateInfo,
+    showUpdateModal,
+    isOnlineStore,
+  } from "./stores.js";
   import Notification from "./components/Notification.svelte";
-
+  import { initDiscordRPC, watchDiscordRPCPreference } from "./discordRPC.js";
   const MIN_LOADER_MS = 250;
-
   let isLoaded = false;
+
+  let onlineInterval;
+  let previousOnlineState = null;
 
   async function loadApp() {
     const start = performance.now();
-
     const remoteVersion = await ExcaliburUtils.initApp(get(CURRENT_VERSION));
     await document.fonts.ready;
 
@@ -33,9 +39,62 @@
     isLoaded = true;
   }
 
+  async function isGoogleOnline() {
+    if (!navigator.onLine) return false;
+
+    try {
+      await fetch("https://www.google.com", {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async function checkOnlineStatus() {
+    const isCurrentlyOnline = await isGoogleOnline();
+    isOnlineStore.set(isCurrentlyOnline);
+
+    if (previousOnlineState !== isCurrentlyOnline) {
+      if (isCurrentlyOnline) {
+        sendNotif("You are online. Welcome back!", true);
+      } else {
+        sendNotif(
+          "Offline. Check internet & AE Scripting Preferences. ",
+          false,
+        );
+      }
+      previousOnlineState = isCurrentlyOnline;
+    }
+  }
+
   onMount(() => {
     loadApp();
     monitorFPS();
+
+    checkOnlineStatus();
+    function unlockAudio() {
+      const silent = new Audio();
+      silent.play().catch(() => {});
+      window.removeEventListener("pointerdown", unlockAudio);
+    }
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    onlineInterval = setInterval(() => {
+      if (document.hidden) return;
+      checkOnlineStatus();
+    }, 30000);
+
+    watchDiscordRPCPreference();
+    initDiscordRPC();
+  });
+
+  onDestroy(() => {
+    if (onlineInterval) {
+      clearInterval(onlineInterval);
+    }
   });
 </script>
 
@@ -65,12 +124,16 @@
     font-optical-sizing: auto;
     font-style: normal;
     color: white;
+    user-select: none;
     transform-style: flat;
-    image-rendering: crisp-edges;
-    shape-rendering: crispEdges;
     text-shadow: 0.25vh 0.25vh 0.5vh rgba(0, 0, 0, 0.5);
   }
-
+  /*canvas,
+  svg {
+    image-rendering: crisp-edges;
+    shape-rendering: crispEdges;
+  }
+  */
   :root {
     --primaryColour: #1a1a1a;
     --secondaryColour: #999;
@@ -79,21 +142,28 @@
 
   @font-face {
     font-family: "Tilt Warp";
-    src: url("../assets/TiltWarp.ttf") format("truetype");
+    src: url("../assets/fonts/TiltWarp.ttf") format("truetype");
   }
 
   @font-face {
     font-family: "Museo Sans";
-    src: url("../assets/museosans.ttf") format("truetype");
+    src: url("../assets/fonts/museosans.ttf") format("truetype");
   }
 
   @font-face {
     font-family: "CreamyChicken";
-    src: url("../assets/CreamyChicken.otf") format("truetype");
+    src: url("../assets/fonts/CreamyChicken.otf") format("truetype");
+  }
+
+  @font-face {
+    font-family: "Super Bouncer";
+    src: url("../assets/fonts/SuperBouncer.ttf") format("truetype");
   }
 
   :global(img) {
     cursor: pointer;
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 1px;
   }
 
   :global(html),

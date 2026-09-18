@@ -7,16 +7,44 @@
     Saturation,
     EnableRGBMode,
     RgbSpeed,
+    enableDiscordRPC,
+    isOnlineStore,
+    tabVisibility,
+    order,
+    tabLabels,
+    layerColors,
+    LAYER_TYPE_LABELS,
+    cameraFocalLength,
+    createLayerCompOnSelected,
   } from "../../stores.js";
   import { resetPreferences } from "../../../lib/utils/main.js";
-  import { csi } from "../../../lib/utils/bolt.ts";
   import { sendNotif } from "../../logic.js";
   import { callJSX } from "../../../lib/utils/main.js";
-  let enableQuickActions = true;
   import {
     clearCacheWithVerification,
     saveIncremental,
+    SortProjectLayers,
+    deleteUnusedItems,
   } from "../../../lib/utils/main.js";
+  import ColorPicker from "../utils/ColorPicker.svelte";
+
+  let showMenuDropdown = false;
+  let showColorsDropdown = false;
+
+  function toggleMenuDropdown() {
+    showMenuDropdown = !showMenuDropdown;
+    if (showMenuDropdown) showColorsDropdown = false;
+  }
+
+  function toggleColorsDropdown() {
+    showColorsDropdown = !showColorsDropdown;
+    if (showColorsDropdown) showMenuDropdown = false;
+  }
+
+  function closeAllDropdowns() {
+    showMenuDropdown = false;
+    showColorsDropdown = false;
+  }
 
   function handleResetPreferences() {
     resetPreferences();
@@ -48,61 +76,8 @@
     saveIncremental(sendNotif, callJSX);
   }
 
-  function SortProjectLayers() {
-    if (typeof window !== "undefined" && window.__adobe_cep__) {
-      callJSX("sortProject")
-        .then(() => sendNotif("Projet trié avec succès !", true))
-        .catch((err) =>
-          sendNotif("Échec du tri du projet : " + err.message, false),
-        );
-    } else {
-      sendNotif("Échec du tri du projet.", false);
-    }
-  }
-
   function handleReduceProject() {
-    if (typeof window !== "undefined" && window.__adobe_cep__) {
-      csi.evalScript(
-        `function reduceToActiveComp() {
-          var activeItem = app.project.activeItem;
-          if (!activeItem || !(activeItem instanceof CompItem)) {
-            return "NO_COMP_SELECTED";
-          }
-          app.beginUndoGroup("Reduce Project (ExFX)");
-          try {
-            var success = app.project.reduceProject([activeItem]);
-            app.endUndoGroup();
-            return success ? "REDUCED:" + activeItem.name : "NO_CHANGE";
-          } catch (e) {
-            app.endUndoGroup();
-            return "ERROR:" + e.toString();
-          }
-        }
-        reduceToActiveComp();`,
-        (result) => {
-          if (result === "NO_COMP_SELECTED") {
-            sendNotif(
-              "Sélectionnez d'abord la comp à conserver dans le panneau Projet.",
-              false,
-            );
-          } else if (
-            typeof result === "string" &&
-            result.indexOf("REDUCED:") === 0
-          ) {
-            sendNotif(
-              "Projet réduit à : " + result.slice(8) + " (Ctrl+Z pour annuler)",
-              true,
-            );
-          } else if (result === "NO_CHANGE") {
-            sendNotif("Aucun élément superflu à retirer.", true);
-          } else {
-            sendNotif("Échec de la réduction du projet.", false);
-          }
-        },
-      );
-    } else {
-      sendNotif("Échec de la réduction du projet.", false);
-    }
+    deleteUnusedItems();
   }
 
   $: speedLabel = getSpeedLabel($AnimationSpeed);
@@ -120,15 +95,11 @@
   let scaleFactor = 1;
 
   const REF_WIDTH = 340;
-  const REF_HEIGHT = 340;
+  const REF_HEIGHT = 520;
 
   let wrapperObserver;
   let contentObserver;
   let rafId = null;
-
-  let naturalHeight = REF_HEIGHT;
-  let availW = REF_WIDTH;
-  let availH = REF_HEIGHT;
 
   function updateScale() {
     const usableW = availW;
@@ -146,6 +117,10 @@
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(updateScale);
   }
+
+  let naturalHeight = REF_HEIGHT;
+  let availW = REF_WIDTH;
+  let availH = REF_HEIGHT;
 
   onMount(() => {
     if (wrapperEl) {
@@ -190,6 +165,15 @@
     if (contentObserver) contentObserver.disconnect();
     if (rafId) cancelAnimationFrame(rafId);
   });
+
+  function decreaseFocal() {
+    if ($cameraFocalLength > 1) cameraFocalLength.update((value) => value - 1);
+  }
+
+  function increaseFocal() {
+    if ($cameraFocalLength < 300)
+      cameraFocalLength.update((value) => value + 1);
+  }
 </script>
 
 <div class="settings-wrapper" bind:this={wrapperEl}>
@@ -274,10 +258,21 @@
         </div>
 
         <label class="check-row check-row-last-child">
-          <span class="checkbox" class:checked={enableQuickActions}>
-            <input type="checkbox" bind:checked={enableQuickActions} />
+          <span
+            class="checkbox"
+            class:checked={$enableDiscordRPC && $isOnlineStore}
+          >
+            <input
+              type="checkbox"
+              bind:checked={$enableDiscordRPC}
+              disabled={!$isOnlineStore}
+            />
           </span>
-          <span>future add maybe</span>
+          <span
+            >Enable Discord RPC {!$isOnlineStore
+              ? "(You are offline)"
+              : ""}</span
+          >
         </label>
       </section>
 
@@ -285,9 +280,24 @@
         <h2 class="panel-title">Shortcuts</h2>
 
         <div class="action-buttons-col">
+          <div class="action-buttons-row">
+            <button
+              class="mini-btn reset-btn"
+              on:click={handleResetPreferences}
+            >
+              Reset
+            </button>
+            <button
+              class="mini-btn reload-btn"
+              on:click={handleReloadExtension}
+            >
+              Restart EbFX</button
+            >
+          </div>
           <button class="mini-btn cache-btn" on:click={handleClearCache}>
             Clear Ae Disk Cache
           </button>
+
           <div class="action-buttons-col">
             <button class="mini-btn" on:click={handleSaveIncremental}
               >Open in a new instance</button
@@ -298,28 +308,130 @@
             <button class="mini-btn" on:click={SortProjectLayers}
               >Sort Project</button
             >
-            <div class="action-buttons-row">
-              <button
-                class="mini-btn reset-btn"
-                on:click={handleResetPreferences}
-              >
-                Reset
-              </button>
-              <button
-                class="mini-btn reload-btn"
-                on:click={handleReloadExtension}
-              >
-                Restart ExFX</button
-              >
-            </div>
           </div>
         </div>
       </section>
     </div>
 
-    <section class="panel panel-wide">
-      <h2 class="panel-title">Panneau 3</h2>
-      <p class="placeholder">À venir</p>
+    <section
+      class="panel panel-wide"
+      style="position: relative; overflow: visible; z-index: 9999;"
+    >
+      <h2 class="panel-title">Panel Options</h2>
+
+      <div class="dropdown-buttons-row">
+        <div class="menu-dropdown-container">
+          <button
+            class="mini-btn toggle-dropdown-btn"
+            on:click={toggleMenuDropdown}
+          >
+            Manage Menus
+          </button>
+
+          {#if showMenuDropdown}
+            <button
+              type="button"
+              class="dropdown-overlay"
+              aria-label="Close dropdown"
+              on:click={closeAllDropdowns}
+            ></button>
+
+            <div class="menus-popup popup-left">
+              <div class="menus-pills">
+                {#each order as tab}
+                  {#if tab !== "settings"}
+                    <button
+                      type="button"
+                      class="menu-pill"
+                      class:active={$tabVisibility[tab] !== false}
+                      on:click={() => {
+                        $tabVisibility = {
+                          ...$tabVisibility,
+                          [tab]: $tabVisibility[tab] === false ? true : false,
+                        };
+                      }}
+                    >
+                      {$tabLabels[tab].full}
+                    </button>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <div class="menu-dropdown-container">
+          <button
+            class="mini-btn toggle-dropdown-btn"
+            on:click={toggleColorsDropdown}
+          >
+            Layer Colors
+          </button>
+
+          {#if showColorsDropdown}
+            <button
+              type="button"
+              class="dropdown-overlay"
+              aria-label="Close dropdown"
+              on:click={closeAllDropdowns}
+            ></button>
+
+            <div class="menus-popup popup-right">
+              {#if $layerColors && LAYER_TYPE_LABELS}
+                <div class="layer-colors-grid">
+                  {#each Object.keys(LAYER_TYPE_LABELS) as key}
+                    {#if $layerColors[key] !== undefined}
+                      <ColorPicker
+                        bind:value={$layerColors[key]}
+                        label={LAYER_TYPE_LABELS[key]
+                          .replace(/all in one/i, "")
+                          .trim()}
+                      />
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <div class="loading-text">Loading Colors...</div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="ctrl focal-picker-ctrl">
+        <label for="focal-input">Focal camera length</label>
+        <div class="custom-number-picker">
+          <button
+            type="button"
+            class="picker-btn minus-btn"
+            aria-label="Decrease"
+            on:click={decreaseFocal}>-</button
+          >
+          <input
+            id="focal-input"
+            type="number"
+            class="picker-input"
+            bind:value={$cameraFocalLength}
+            min="1"
+            max="300"
+            step="1"
+          />
+          <button
+            type="button"
+            class="picker-btn plus-btn"
+            aria-label="Increase"
+            on:click={increaseFocal}>+</button
+          >
+        </div>
+      </div>
+      <div class="check-layer-comp">
+        <label class="check-row">
+          <span class="checkbox" class:checked={$createLayerCompOnSelected}>
+            <input type="checkbox" bind:checked={$createLayerCompOnSelected} />
+          </span>
+          <span>Create Layer on each selected</span>
+        </label>
+      </div>
     </section>
   </div>
 </div>
@@ -343,7 +455,7 @@
     flex-direction: column;
     gap: 6px;
     flex-shrink: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .panels-top {
@@ -381,7 +493,7 @@
     grid-template-columns: 1fr 1.8fr;
     gap: 3px;
     width: 94%;
-    margin: 0 auto; /* Remplace margin: 0px 3% pour un centrage plus propre */
+    margin: 0 auto;
   }
 
   .mini-btn {
@@ -394,7 +506,6 @@
     outline: none;
     font-size: 8px;
     border: 1px solid rgba(104, 104, 104, 0.609);
-
     transition: transform 0.2s ease-in-out;
   }
 
@@ -415,9 +526,205 @@
   section.panel.panel-wide {
     width: 100%;
     height: 130px;
-    overflow-y: auto;
     padding: 6px 8px;
     box-sizing: border-box;
+  }
+
+  .dropdown-buttons-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .focal-picker-ctrl {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+
+    gap: 6px;
+    margin-top: 10px;
+
+    label {
+      margin-bottom: 0;
+    }
+  }
+
+  .custom-number-picker {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(104, 104, 104, 0.609);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 15px;
+    background-color: #0d0d0d;
+  }
+
+  .picker-btn {
+    background-color: #313131;
+    border: none;
+    color: white;
+    font-size: 9px;
+    width: 16px;
+    height: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease;
+  }
+
+  .picker-btn:hover {
+    background-color: var(--activeColour, #ff007f);
+  }
+  .picker-btn:active {
+    background-color: var(--activeColour, #ff007f);
+    transform: scale(0.9);
+  }
+  .picker-input {
+    width: 35px;
+    height: 100%;
+    border: none;
+    background-color: #0d0d0d;
+    color: #fff;
+    text-align: center;
+    font-size: 8px;
+    font-weight: bold;
+    outline: none;
+  }
+
+  .picker-input::-webkit-outer-spin-button,
+  .picker-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .menu-dropdown-container {
+    position: relative;
+    display: flex;
+    flex: 1;
+  }
+
+  .toggle-dropdown-btn {
+    width: 100%;
+    cursor: pointer;
+    position: relative;
+    z-index: 102;
+  }
+
+  .dropdown-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    cursor: default;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+  }
+
+  .menus-popup {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    width: 220px;
+    background: #151515;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  }
+  .popup-left {
+    left: 0;
+    transform-origin: bottom left;
+    animation: popUpLeft var(--transition-ms, 150ms)
+      cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  }
+
+  .popup-right {
+    right: 0;
+    transform-origin: bottom right;
+    animation: popUpRight var(--transition-ms, 150ms)
+      cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  }
+
+  @keyframes popUpLeft {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes popUpRight {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .check-layer-comp {
+    margin-top: 6px;
+  }
+
+  .menus-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .menu-pill {
+    background-color: #222;
+    color: #666;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 7px;
+    font-weight: bold;
+    padding: 4px 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all var(--transition-ms, 100ms) ease;
+
+    &:hover {
+      background-color: #333;
+      color: #ccc;
+    }
+
+    &.active {
+      background-color: var(--activeColour);
+      border-color: var(--activeColour);
+      color: #fff;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+  }
+
+  .layer-colors-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .loading-text {
+    color: var(--activeColour, #ff007f);
+    font-size: 9px;
+    text-align: center;
+    margin-top: 2px;
   }
 
   .panel-title {
@@ -433,13 +740,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .placeholder {
-    font-size: 7px;
-    color: var(--secondaryColour, #999);
-    text-align: center;
-    margin: 3px 0;
   }
 
   .ctrl {
@@ -568,120 +868,5 @@
 
   .slider-saturation {
     background: linear-gradient(to right, #fff, var(--activeColour));
-  }
-
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    animation: fadeIn 0.15s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes popIn {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  .PopUp {
-    position: relative;
-    width: 280px;
-    max-width: 90vw;
-    background-color: #1c1c1e;
-    border: 1px solid #333;
-    border-radius: 10px;
-    box-shadow:
-      0 12px 32px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.03) inset;
-    padding: 20px 18px 16px;
-    box-sizing: border-box;
-    animation: popIn 0.15s ease-out;
-    font-family: "Museo Sans", sans-serif;
-  }
-
-  .popup-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: rgba(239, 68, 68, 0.12);
-    color: #ef4444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-  }
-
-  .PopUp h3 {
-    margin: 0 0 6px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    letter-spacing: -0.1px;
-  }
-
-  .PopUp p {
-    color: #9a9a9e;
-    font-size: 11.5px;
-    line-height: 1.5;
-    margin: 0 0 18px;
-  }
-
-  .confirm-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .confirm-actions .mini-btn {
-    flex: 1;
-    width: auto;
-    height: 32px;
-    margin: 0;
-    font-size: 11.5px;
-    font-weight: 500;
-    border-radius: 6px;
-    transition:
-      filter 0.12s ease,
-      transform 0.08s ease;
-  }
-
-  .confirm-actions .mini-btn:hover {
-    transform: none;
-    filter: brightness(1.12);
-  }
-
-  .confirm-actions .mini-btn:active {
-    transform: scale(0.98);
-  }
-
-  .btn-cancel {
-    background: #2c2c2e;
-    color: #ddd;
-    border: 1px solid #3a3a3c;
-  }
-
-  .btn-confirm {
-    background: #ef4444;
-    color: #fff;
-    border: 1px solid #ef4444;
-    font-weight: 600;
   }
 </style>

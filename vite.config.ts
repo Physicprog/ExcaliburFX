@@ -74,6 +74,8 @@ export default defineConfig({
     // },
     rollupOptions: {
       input,
+      external: ["uiohook-napi"], 
+
       output: {
         manualChunks: {},
         // esModule: false,

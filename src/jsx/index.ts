@@ -4,6 +4,10 @@ import { ns } from "../shared/shared";
 
 import * as aeft from "./aeft/aeft"; 
 
+// Ambient runtime variables available in ExtendScript/CEP
+declare var BridgeTalk: any;
+declare var app: any;
+
 //@ts-ignore
 const host = typeof $ !== "undefined" ? $ : window;
 

@@ -2,46 +2,32 @@
   import { onDestroy } from "svelte";
   import { notification } from "../stores.js";
 
-  let hideTimer;
-  let animationKey = 0;
-
-  let displayText = "";
-  let displayColor = "green";
-
-  $: notif = $notification;
-
-  $: if (notif.visible) {
-    displayText = notif.text;
-    displayColor = notif.color;
-    clearTimeout(hideTimer);
-    if (notif.autoHide !== false) {
-      animationKey++;
-      hideTimer = setTimeout(hide, 3000);
-    }
-  } else {
-    clearTimeout(hideTimer);
-  }
+  let timer;
 
   function hide() {
-    notification.set({ visible: false, text: notif.text, color: notif.color });
+    notification.set({ visible: false, text: $notification.text, color: $notification.color });
   }
 
-  onDestroy(() => clearTimeout(hideTimer));
+  $: if ($notification.visible) {
+    clearTimeout(timer);
+    timer = setTimeout(hide, 3000);
+  } else {
+    clearTimeout(timer);
+  }
+
+  onDestroy(() => clearTimeout(timer));
 </script>
 
 <button
   id="notification"
-  class="{displayColor} {notif.visible ? 'visible' : ''}"
-  type="button"
+  class="{$notification.color} {$notification.visible ? 'visible' : ''}"
   on:click={hide}
 >
-  {#if notif.autoHide !== false && notif.visible}
-    {#key animationKey}
-      <div id="progress-bar"></div>
-    {/key}
+  {#if $notification.visible}
+    <div id="progress-bar"></div>
   {/if}
   <div>
-    <h1 id="theNotification">{displayText}</h1>
+    <h1 id="theNotification">{$notification.text}</h1>
   </div>
 </button>
 
@@ -50,19 +36,15 @@
     position: absolute;
     text-align: center;
     height: auto;
-
     width: max-content;
     max-width: 60%;
-
     padding: 0px 3vh;
     padding-bottom: 2vh;
     background-color: #3d3d3db6;
     backdrop-filter: blur(6.5px);
     top: 0px;
-
     left: 50%;
     transform: translateX(-40%);
-
     border-radius: 1.2vh;
     border: none;
     outline: none;
@@ -73,10 +55,7 @@
     overflow: hidden;
     cursor: pointer;
     pointer-events: none;
-    transition:
-      opacity 400ms cubic-bezier(0.25, 1, 0.5, 1),
-      margin-top 400ms cubic-bezier(0.25, 1, 0.5, 1),
-      transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
+    transition: opacity 400ms, margin-top 400ms, transform 300ms;
   }
 
   #notification:hover {
@@ -105,13 +84,13 @@
     left: 0;
     height: 0.4vh;
     width: 100%;
-    transform-origin: left;
     animation: progress 3s linear forwards;
   }
 
   #notification.green #progress-bar {
     background-color: #72db1b;
   }
+
   #notification.red #progress-bar {
     background-color: #bd0000;
   }
