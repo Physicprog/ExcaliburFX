@@ -32,7 +32,6 @@
   let isToolbarOpen = getPreference("isCurveToolbarOpen");
   let showCopyPasteButtons = getPreference("showCurveCopyPaste");
 
-  // Variables pour éviter le bug des "||" dans le HTML
   $: durIn = $TRANSITION_MS ? $TRANSITION_MS : 300;
   $: durOut = $TRANSITION_MS ? $TRANSITION_MS : 200;
 
@@ -107,7 +106,7 @@
   let tabViewEl;
   let scaleFactor = 1;
 
-  const REF_WIDTH = 415;
+  const REF_WIDTH = 395;
   const REF_HEIGHT = 360;
 
   let wrapperObserver;

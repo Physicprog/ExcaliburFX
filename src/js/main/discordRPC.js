@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import { enableDiscordRPC, isOnlineStore } from './stores.js'; 
 import { log, callJSX } from '../lib/utils/main.js';
 
-log('discord_rpc', 'MODULE discordRPC.js chargé');
+log('discord_rpc', 'RPC Discord loaded');
 
 const CLIENT_ID = '1479541185361084507';
 const LARGE_IMAGE_KEY = 'exfx_logo';
@@ -97,7 +97,7 @@ function handleFrame(opcode, data) {
   if (opcode === OP_FRAME && data?.cmd === 'DISPATCH' && data?.evt === 'READY') {
     isConnected = true;
     isInitializing = false;
-    log('discord_rpc', 'Connecté avec succès');
+    log('discord_rpc', 'Logged in as ' + (data?.data?.user?.username || 'Unknown'));
     updateActivity();
 
     if (updateInterval === null) {
@@ -161,7 +161,7 @@ function scheduleReconnect() {
 
 async function buildActivityPayload() {
   let detailsText = "Projet After Effects";
-  let stateText = "ExcaliburFX actif";
+  let stateText = "ExcaliburFX active";
   let aeVersion = "20XX";
 
   try {
@@ -207,13 +207,13 @@ async function buildActivityPayload() {
 
 export function initDiscordRPC() {
   if (!get(enableDiscordRPC) || !get(isOnlineStore)) {
-    log('discord_rpc', 'Désactivé dans les préférences ou hors ligne');
+    log('discord_rpc', 'Disabled or offline, skipping Discord RPC initialization');
     return;
   }
   
   if (socket !== null || isInitializing) return;
   if (getBuffer() === null) {
-    log('discord_rpc', 'Buffer indisponible, abandon');
+    log('discord_rpc', 'Buffer module not available, cannot connect to Discord');
     return;
   }
 
@@ -223,7 +223,7 @@ export function initDiscordRPC() {
   
   if (paths.length === 0) {
     isInitializing = false;
-    log('discord_rpc', 'Impossible de déterminer les chemins IPC');
+    log('discord_rpc', 'No IPC paths available, cannot connect to Discord');
     return;
   }
 

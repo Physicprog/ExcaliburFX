@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from "svelte"; // Ajoute cet import
   import { activeTab, prevTab, transitioning, direction } from "../stores.js";
   import Dashboard from "./tabs/Dashboard.svelte";
 
@@ -28,6 +29,12 @@
       list = [...list, name];
     }
   }
+
+  onMount(() => {
+    Object.keys(loaders).forEach((tabName) => {
+      load(tabName);
+    });
+  });
 
   $: load($activeTab);
   $: if ($transitioning && $prevTab) load($prevTab);
