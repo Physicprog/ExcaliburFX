@@ -180,3 +180,27 @@ export function monitorFPS() {
 
   requestAnimationFrame(countFrame);
 }
+
+export function fuzzySearch(query, text) {
+  if (!query) return true;
+  query = query.toLowerCase();
+  text = text.toLowerCase();
+
+  if (text.includes(query)) return true;
+  
+  if (query.length >= 4) {
+    for (let i = 0; i <= text.length - query.length; i++) {
+      let fautes = 0;
+
+      for (let j = 0; j < query.length; j++) {
+        if (text[i + j] !== query[j]) {
+          fautes++;
+        }
+      }
+
+      if (fautes <= 2) return true;
+    }
+  }
+
+  return false;
+}

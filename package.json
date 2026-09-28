@@ -36,13 +36,16 @@
     "@types/trusted-types": "^2.0.2",
     "babel-plugin-transform-scss": "^1.2.0",
     "babel-preset-env": "^1.7.0",
+    "baseline-browser-mapping": "^2.11.26",
     "core-js": "3",
     "cross-env": "^7.0.3",
     "fs-extra": "^10.0.0",
+    "javascript-obfuscator": "^5.8.0",
     "rimraf": "^3.0.2",
     "rollup": "^4.42.0",
     "rollup-plugin-multi-input": "^1.5.0",
     "rollup-plugin-node-copy": "^1.0.4",
+    "rollup-plugin-obfuscator": "^1.1.0",
     "rollup-plugin-scss": "^4.0.1",
     "sass": "^1.89.1",
     "source-map": "^0.7.4",
@@ -53,6 +56,7 @@
     "types-for-adobe-extras": "^0.0.9",
     "typescript": "^6.0.3",
     "vite": "^6.3.5",
-    "vite-cep-plugin": "^2.2.3"
+    "vite-cep-plugin": "^2.2.3",
+    "vite-plugin-javascript-obfuscator": "^3.1.0"
   }
 }

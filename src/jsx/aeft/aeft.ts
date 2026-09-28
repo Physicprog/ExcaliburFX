@@ -8,6 +8,7 @@ declare const SolidSource: any;
 declare const FileSource: any;
 declare const PurgeTarget: any;
 declare const File: any;
+declare const ImportOptions: any;
 declare const $: any;
 declare const console: any;
 
@@ -92,6 +93,86 @@ function getPrecompCount(): number {
 export function getActiveCompName(): string | null {
   var comp = resolveActiveComp();
   return comp ? comp.name : null;
+}
+
+export function getSelectedLayerInfo(): string {
+  var comp = resolveActiveComp();
+  if (!comp || !comp.selectedLayers || comp.selectedLayers.length !== 1) {
+    return "null";
+  }
+
+  var layer = comp.selectedLayers[0];
+  if (!layer.source || !layer.source.file) {
+    return "null";
+  }
+
+  return JSON.stringify({
+    sourcePath: layer.source.file.fsName || layer.source.file.fullName,
+    layerIndex: layer.index,
+    inPoint: layer.inPoint,
+    outPoint: layer.outPoint,
+    startTime: layer.startTime,
+    compName: comp.name
+  });
+}
+
+export function importAndPlaceFile(importData: any): string {
+  if (typeof app === "undefined" || !app.project) {
+    return fail("No After Effects project is open.");
+  }
+
+  var data = typeof importData === "string" ? JSON.parse(importData) : importData;
+  var comp = null;
+  for (var i = 1; i <= app.project.numItems; i++) {
+    var item = app.project.item(i);
+    if (item instanceof CompItem && item.name === data.compName) {
+      comp = item;
+      break;
+    }
+  }
+  if (!comp) {
+    return fail("Composition not found.");
+  }
+
+  var originalLayer = comp.layer(data.layerIndex);
+  if (!originalLayer) {
+    return fail("Original layer not found.");
+  }
+
+  var imported = app.project.importFile(new ImportOptions(new File(data.filePath)));
+  var layer = comp.layers.add(imported);
+  layer.startTime = data.startTime;
+  layer.inPoint = data.inPoint;
+  layer.outPoint = data.outPoint;
+  layer.moveBefore(originalLayer);
+
+  var sourceTransform = originalLayer.property("ADBE Transform Group");
+  var targetTransform = layer.property("ADBE Transform Group");
+  var transformProperties = [
+    "ADBE Anchor Point",
+    "ADBE Position",
+    "ADBE Scale",
+    "ADBE Orientation",
+    "ADBE Rotate X",
+    "ADBE Rotate Y",
+    "ADBE Rotate Z",
+    "ADBE Opacity"
+  ];
+  for (var propertyIndex = 0; propertyIndex < transformProperties.length; propertyIndex++) {
+    var propertyName = transformProperties[propertyIndex];
+    var sourceProperty = sourceTransform.property(propertyName);
+    var targetProperty = targetTransform.property(propertyName);
+    if (sourceProperty && targetProperty) {
+      try {
+        targetProperty.setValue(sourceProperty.value);
+      } catch (propertyError) {
+      }
+    }
+  }
+
+  layer.enabled = originalLayer.enabled;
+  layer.label = originalLayer.label;
+  return ok({ layerIndex: layer.index });
 }
 
 export function getAeVersion(): string {
@@ -740,28 +821,53 @@ export function moveAnchor(position: string): string {
 
   for (var i = 0; i < comp.selectedLayers.length; i++) {
     var layer = comp.selectedLayers[i];
+
     try {
       var rect;
-      try { rect = layer.sourceRectAtTime(comp.time, true); } 
-      catch (err) { rect = { left: 0, top: 0, width: layer.width, height: layer.height }; }
+      try {
+        rect = layer.sourceRectAtTime(comp.time, true);
+      }
+      catch (err) {
+        rect = { left: 0, top: 0, width: layer.width, height: layer.height };
+      }
 
-      var x = horizontal === "left" ? rect.left : (horizontal === "center" ? rect.left + rect.width / 2 : rect.left + rect.width);
-      var y = vertical === "top" ? rect.top : (vertical === "center" ? rect.top + rect.height / 2 : rect.top + rect.height);
+      var x, y;
+
+      if (horizontal === "left") x = rect.left;
+      else if (horizontal === "center") x = rect.left + rect.width / 2;
+      else x = rect.left + rect.width;
+
+      if (vertical === "top") y = rect.top;
+      else if (vertical === "center") y = rect.top + rect.height / 2;
+      else y = rect.top + rect.height;
 
       var oldAnchor = layer.anchorPoint.value;
       var oldPos = layer.position.value;
+
       var newAnchor = [x, y];
+
       var deltaX = newAnchor[0] - oldAnchor[0];
       var deltaY = newAnchor[1] - oldAnchor[1];
 
       layer.anchorPoint.setValue(newAnchor);
-      if (oldPos.length === 2) layer.position.setValue([oldPos[0] + deltaX, oldPos[1] + deltaY]);
-      else layer.position.setValue([oldPos[0] + deltaX, oldPos[1] + deltaY, oldPos[2]]);
-    } catch (e: any) {}
+
+      if (oldPos.length === 2) {
+        layer.position.setValue([oldPos[0] + deltaX, oldPos[1] + deltaY]);
+      }
+      else {
+        layer.position.setValue([oldPos[0] + deltaX, oldPos[1] + deltaY, oldPos[2]]);
+      }
+    }
+    catch (e) { }
   }
+
   app.endUndoGroup();
   return ok();
 }
+
+
+
+
 
 export function applyRotation(degrees: number): string {
   app.beginUndoGroup("Apply Rotation");
@@ -787,50 +893,41 @@ export function resetRotation(): string {
   return ok();
 }
 
-export function scaleCompToOneToOne(scale: any): string {
-  app.beginUndoGroup("Scale Comp / Reset");
-  var comp = resolveActiveComp();
-  if (!comp) { app.endUndoGroup(); return fail("Select a composition."); }
-  if (!comp.selectedLayers || comp.selectedLayers.length === 0) { app.endUndoGroup(); return fail("Select at least one layer."); }
-
-  for (var i = 0; i < comp.selectedLayers.length; i += 1) {
-    var targetLayer = comp.selectedLayers[i];
-    if (!targetLayer || !targetLayer.scale || !targetLayer.position) continue;
+export function scaleCompToOneToOne(scaleMultiplier: number): string {
+    app.beginUndoGroup("Excalibur Scale to comp (1/1 with multiplier)");
     try {
-      if (scale === "reset" || scale === null || scale === undefined) {
-        var resetValue = (targetLayer.scale.value.length === 2) ? [100, 100] : [100, 100, 100];
-        if (targetLayer.scale.numKeys > 0) targetLayer.scale.setValueAtTime(comp.time, resetValue);
-        else targetLayer.scale.setValue(resetValue);
-        continue;
-      }
-      var numScale = Number(scale);
-      if (isNaN(numScale) || numScale <= 0) continue;
+        var comp = app.project.activeItem;
+        if (comp instanceof CompItem) {
+            var multiplier = (typeof scaleMultiplier === "number" && !isNaN(scaleMultiplier)) ? scaleMultiplier : 1;
 
-      var layerWidth = 0, layerHeight = 0;
-      try {
-        var rect = targetLayer.sourceRectAtTime(comp.time, true);
-        if (rect && rect.width > 0 && rect.height > 0) { layerWidth = rect.width; layerHeight = rect.height; }
-      } catch (e: any) {}
+            for (var i = 0; i < comp.selectedLayers.length; i += 1) {
+                var targetLayer = comp.selectedLayers[i];
+                
+                if (targetLayer && !targetLayer.locked && targetLayer.width !== undefined && targetLayer.height !== undefined) {
+                    var scaleProp = targetLayer.scale;
+                    var posProp = targetLayer.position;
 
-      if (layerWidth <= 0 || layerHeight <= 0) {
-        if (typeof targetLayer.width === "number" && targetLayer.width > 0) layerWidth = targetLayer.width;
-        if (typeof targetLayer.height === "number" && targetLayer.height > 0) layerHeight = targetLayer.height;
-      }
-      if (layerWidth <= 0 || layerHeight <= 0) continue;
-
-      var scaleX = (comp.width / layerWidth) * numScale;
-      var scaleY = (comp.height / layerHeight) * numScale;
-      var newScale = (targetLayer.scale.value.length === 2) ? [scaleX, scaleY] : [scaleX, scaleY, targetLayer.scale.value[2]];
-      var newPos = (targetLayer.position.value.length === 2) ? [comp.width / 2, comp.height / 2] : [comp.width / 2, comp.height / 2, targetLayer.position.value[2]];
-
-      if (targetLayer.scale.numKeys > 0) targetLayer.scale.setValueAtTime(comp.time, newScale);
-      else targetLayer.scale.setValue(newScale);
-      if (targetLayer.position.numKeys > 0) targetLayer.position.setValueAtTime(comp.time, newPos);
-      else targetLayer.position.setValue(newPos);
-    } catch (e: any) {}
-  }
-  app.endUndoGroup();
-  return ok();
+                    if (scaleProp && scaleProp.canSetPropertyValue && posProp && posProp.canSetPropertyValue) {
+                        var scaleX = ((comp.width / targetLayer.width) * 100) * multiplier;
+                        var scaleY = ((comp.height / targetLayer.height) * 100) * multiplier;
+                        
+                        var centerX = comp.width / 2;
+                        var centerY = comp.height / 2;
+                        
+                        scaleProp.setValue([scaleX, scaleY]);
+                        posProp.setValue([centerX, centerY]);
+                    }
+                }
+            }
+        } else {
+            alert("Please select a composition.");
+        }
+    } catch (e: any) {
+        alert("Error: " + e.toString());
+    } finally {
+        app.endUndoGroup();
+    }
+    return "ok";
 }
 
 function ensureSelectionOrError(comp: any): any[] {
@@ -1268,27 +1365,41 @@ export function disableFrameBlendingFunc(): string {
   }
 }
 
+
+
+
+
+function setMotionBlurRecursive(comp: CompItem, enabled: boolean, visited: { [id: number]: boolean }): void {
+  if (visited[comp.id]) return;
+  visited[comp.id] = true;
+  comp.motionBlur = enabled;
+
+  for (var i = 1; i <= comp.numLayers; i += 1) {
+    var layer = comp.layer(i);
+
+    if (layer instanceof AVLayer) {
+      layer.motionBlur = enabled;
+
+      var source = layer.source;
+      if (source instanceof CompItem) {
+        setMotionBlurRecursive(source, enabled, visited);
+      }
+    }
+  }
+}
+
 export function sequenceLayersAction(): string {
   app.beginUndoGroup("Sequence Layers");
   try {
     var comp = resolveActiveComp();
     if (!comp) throw new Error("Select a composition.");
-    var layers = ensureSelectionOrError(comp);
-    if (layers.length < 2) throw new Error("Select at least two layers.");
-    
-    var offset = 0; 
-    
-    for (var i = 0; i < layers.length; i += 1) {
-      var visibleDuration = layers[i].outPoint - layers[i].inPoint;
-      var startCutDuration = layers[i].inPoint - layers[i].startTime;
-      layers[i].startTime = offset - startCutDuration;
-      offset += visibleDuration;
-    }
-    
+
+    setMotionBlurRecursive(comp, true, {});
+
     app.endUndoGroup();
     return ok();
   } catch (e: any) {
-    app.endUndoGroup(); 
+    app.endUndoGroup();
     return fail(e.message);
   }
 }
@@ -1298,22 +1409,23 @@ export function sequenceLayersFromBottomAction(): string {
   try {
     var comp = resolveActiveComp();
     if (!comp) throw new Error("Select a composition.");
-    var layers = ensureSelectionOrError(comp);
-    if (layers.length < 2) throw new Error("Select at least two layers.");
-    var offset = 0; 
-    for (var i = layers.length - 1; i >= 0; i -= 1) {
-      var visibleDuration = layers[i].outPoint - layers[i].inPoint;
-      var startCutDuration = layers[i].inPoint - layers[i].startTime;
-      layers[i].startTime = offset - startCutDuration;
-      offset += visibleDuration;
-    }
+
+    setMotionBlurRecursive(comp, false, {});
+
     app.endUndoGroup();
     return ok();
   } catch (e: any) {
-    app.endUndoGroup(); 
+    app.endUndoGroup();
     return fail(e.message);
   }
 }
+
+
+
+
+
+
+
 
 export function trimCompToSelection(): string {
   app.beginUndoGroup("Trim Comp to Selection");
@@ -1381,86 +1493,117 @@ export function loopOutSelectedLayerAction(): string { return applyLoopExpressio
 
 
 export function freezeFrameAction(): string {
+  var frozenText = "// FROZEN";
+
+  function skipProperty(property: any): boolean {
+    var depth = property.propertyDepth;
+
+    if (depth > 1) {
+      var layer = property.propertyGroup(depth);
+      var rootGroup = property.propertyGroup(depth - 1);
+
+      switch (rootGroup.matchName) {
+        case "ADBE Layer Styles":
+          if (!layer.layerStyle.canSetEnabled) return true;
+          if (property instanceof PropertyGroup && !property.canSetEnabled) return true;
+          break;
+        case "ADBE Plane Options Group":
+        case "ADBE Material Options Group":
+        case "ADBE Extrsn Options Group":
+          if (!layer.threeDLayer) return true;
+          break;
+        case "ADBE Audio Group":
+          if (!layer.hasAudio) return true;
+          break;
+      }
+    }
+    return false;
+  }
+
+  function generateExpression(property: any): string {
+    var expression = [frozenText, "posterizeTime(0);"];
+
+    switch (property.propertyValueType) {
+      case PropertyValueType.ThreeD_SPATIAL:
+      case PropertyValueType.ThreeD:
+      case PropertyValueType.TwoD_SPATIAL:
+      case PropertyValueType.TwoD:
+      case PropertyValueType.COLOR:
+        expression.push("[" + property.value.toString() + "];");
+        break;
+      case PropertyValueType.NO_VALUE:
+      case PropertyValueType.CUSTOM_VALUE:
+      case PropertyValueType.SHAPE:
+      case PropertyValueType.TEXT_DOCUMENT:
+        var compTime = property.propertyGroup(property.propertyDepth).time;
+        expression.push("valueAtTime(" + compTime + ");");
+        break;
+      case PropertyValueType.OneD:
+        expression.push(property.value.toString() + ";");
+        break;
+    }
+
+    return expression.join("\n");
+  }
+
+  function freezeProp(property: any): void {
+    if (!property.canSetExpression) return;
+
+    var expression = property.expression;
+
+    if (expression === "") {
+      property.expression = generateExpression(property);
+    }
+  }
+
+  function freeze(property: any): void {
+    if (skipProperty(property)) return;
+
+    if (property instanceof Property) {
+      freezeProp(property);
+    } else if (
+      property instanceof PropertyGroup ||
+      property.matchName.indexOf("Layer") > -1
+    ) {
+      for (var ii = 1; ii <= property.numProperties; ii++) {
+        freeze(property.property(ii));
+      }
+    }
+  }
+
   app.beginUndoGroup("Freeze Frame");
   try {
     var comp = resolveActiveComp();
     if (!comp) throw new Error("Select a composition.");
     var layers = ensureSelectionOrError(comp);
+    if (layers.length === 0) throw new Error("Select at least one layer.");
+
     var count = 0;
-    var freezeTime = comp.time;
-    var frameStep = 1 / Math.max(comp.frameRate || 30, 1);
 
-    for (var i = 0; i < layers.length; i += 1) {
+    for (var i = 0; i < layers.length; i++) {
       var layer = layers[i];
-      try {
-        if (!layer) continue;
+      if (!layer) continue;
 
-        try {
-          if (!layer.timeRemapEnabled) layer.timeRemapEnabled = true;
-        } catch (e: any) {}
-
-        var trProp: any = null;
-        try {
-          trProp = layer.property("ADBE Time Remapping");
-        } catch (e: any) {}
-
-        if (!trProp) {
-          try {
-            layer.timeRemapEnabled = true;
-            trProp = layer.property("ADBE Time Remapping");
-          } catch (e: any) {}
-        }
-
-        if (!trProp) continue;
-
-        if (trProp.expressionEnabled) {
-          trProp.expressionEnabled = false;
-        }
-
-        var safeFreezeTime = Math.min(Math.max(freezeTime, layer.inPoint), layer.outPoint);
-        var beforeTime = Math.max(layer.inPoint, safeFreezeTime - frameStep);
-        var afterTime = Math.min(layer.outPoint, safeFreezeTime + frameStep);
-
-        if (afterTime <= beforeTime) {
-          beforeTime = Math.max(layer.inPoint, safeFreezeTime - frameStep / 2);
-          afterTime = Math.min(layer.outPoint, safeFreezeTime + frameStep / 2);
-        }
-
-        if (afterTime <= beforeTime) {
-          beforeTime = safeFreezeTime;
-          afterTime = Math.min(layer.outPoint, safeFreezeTime + frameStep);
-        }
-
-        while (trProp.numKeys > 0) {
-          try {
-            trProp.removeKey(trProp.numKeys);
-          } catch (eRemove: any) {
-            break;
-          }
-        }
-
-        var frozenValue = trProp.valueAtTime(safeFreezeTime, false);
-
-        trProp.setValueAtTime(beforeTime, frozenValue);
-        trProp.setValueAtTime(afterTime, frozenValue);
-
-        try {
-          trProp.setInterpolationTypeAtKey(1, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
-          trProp.setInterpolationTypeAtKey(2, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
-        } catch (e: any) {}
-
-        count++;
-      } catch (e: any) {
-        console.error("[Excalibur] Freeze failed for layer:", layer && layer.name, e);
-      }
+      freeze(layer);
+      count++;
     }
+
     app.endUndoGroup();
-    if (count === 0) return fail("Impossible de figer l'image sur le(s) calque(s) sélectionné(s).");
+
+    if (count === 0) {
+      return fail("Impossible de figer l'image sur le(s) calque(s).");
+    }
     return ok({ applied: count });
+
   } catch (e: any) {
-    app.endUndoGroup(); return fail(e.message);
+    app.endUndoGroup();
+    return fail(e.message);
   }
 }
+
+
+
+
 
 export function reverseTimeAction(): string {
     app.beginUndoGroup("Reversed layer");
@@ -1503,175 +1646,165 @@ function isCompUsedAnywhere(comp: CompItem): boolean {
 }
 
 export function UnPrecompose(): string {
-    const parentComp = app.project.activeItem;
-
-    if (!(parentComp instanceof CompItem)) {
-        return fail("Sélectionnez une composition active.");
+    var comp = app.project.activeItem;
+    if (!(comp && comp instanceof CompItem)) {
+        return fail("Un-Precompose: open a comp and select layer(s).");
+    }
+    var sel = comp.selectedLayers.slice(0);
+    if (sel.length === 0) {
+        return fail("Un-Precompose: select at least one layer.");
     }
 
-    const selectedLayers = parentComp.selectedLayers;
-    if (selectedLayers.length === 0) {
-        return fail("Sélectionnez au moins un calque de composition.");
-    }
+    var warnings: string[] = [];
+    var newlyAdded: any[] = [];
+    var processedCount = 0;
+    var deletedComps: string[] = [];
+    var srcCompsToCheck: any[] = [];
 
-    const targets: AVLayer[] = [];
-    for (let i = 0; i < selectedLayers.length; i++) {
-        const l = selectedLayers[i];
-        if (l instanceof AVLayer && l.source instanceof CompItem) {
-            targets.push(l);
+    function copyLayerIn(srcLayer: any, targetComp: any): any {
+        var savedParent = srcLayer.parent;
+        if (savedParent) srcLayer.parent = null;
+        var before: { [id: number]: boolean } = {};
+        for (var k = 1; k <= targetComp.numLayers; k++) before[targetComp.layer(k).id] = true;
+        srcLayer.copyToComp(targetComp);
+        if (savedParent) srcLayer.parent = savedParent;
+        for (var k = 1; k <= targetComp.numLayers; k++) {
+            if (!before[targetComp.layer(k).id]) return targetComp.layer(k);
         }
-    }
-
-    if (targets.length === 0) {
-        return fail("Aucun calque sélectionné n'est un calque de composition.");
+        return null;
     }
 
     app.beginUndoGroup("Un-Precompose");
-
-    const allErrors: string[] = [];
-
     try {
-        for (let t = 0; t < targets.length; t++) {
-            const compLayer = targets[t];
-            const subComp = compLayer.source as CompItem;
+        for (var s = 0; s < sel.length; s++) {
+            var preLayer = sel[s];
+            var src = preLayer.source;
 
-            const stretch = compLayer.stretch / 100;
-            const containerStart = compLayer.startTime;
-            const containerInPoint = compLayer.inPoint;
-            const containerOutPoint = compLayer.outPoint;
-
-            const cPos = compLayer.property("Position") as Property;
-            const cScale = compLayer.property("Scale") as Property;
-            const cRotation = compLayer.property("Rotation") as Property;
-            const cAnchor = compLayer.property("Anchor Point") as Property;
-            const cOpacity = compLayer.property("Opacity") as Property;
-
-            const posVal = cPos.value as number[];
-            const scaleVal = cScale.value as number[];
-            const rotVal = cRotation.value as number;
-            const anchorVal = cAnchor.value as number[];
-            const opacityVal = cOpacity.value as number;
-
-            const scaleFactorX = scaleVal[0] / 100;
-            const scaleFactorY = scaleVal[1] / 100;
-            const rotRad = (rotVal * Math.PI) / 180;
-            const cosR = Math.cos(rotRad);
-            const sinR = Math.sin(rotRad);
-
-            for (let k = 1; k <= parentComp.numLayers; k++) {
-                parentComp.layer(k).selected = false;
-            }
-            for (let k = 1; k <= subComp.numLayers; k++) {
-                subComp.layer(k).selected = true;
-            }
-            app.executeCommand(app.findMenuCommandId("Copy"));
-
-            parentComp.openInViewer();
-            app.executeCommand(app.findMenuCommandId("Paste"));
-
-            const pastedLayers: AVLayer[] = [];
-            const pastedSelection = parentComp.selectedLayers;
-            for (let p = 0; p < pastedSelection.length; p++) {
-                pastedLayers.push(pastedSelection[p] as AVLayer);
+            if (!(src && src instanceof CompItem)) {
+                newlyAdded.push(preLayer);
+                processedCount++;
+                continue;
             }
 
-            for (let p = 0; p < pastedLayers.length; p++) {
-                const originalSubLayer = subComp.layer(p + 1);
-                const newLayer = pastedLayers[p];
-
-                if (originalSubLayer.parent) {
-                    const parentIndexInSub = originalSubLayer.parent.index;
-                    const newParentLayer = pastedLayers[parentIndexInSub - 1];
-                    if (newParentLayer) newLayer.parent = newParentLayer;
-                }
+            if (preLayer.canSetTimeRemapEnabled && preLayer.timeRemapEnabled) {
+                warnings.push("'" + preLayer.name + "': time-remapped - left as precomp (non-linear mapping).");
+                newlyAdded.push(preLayer);
+                processedCount++;
+                continue;
             }
 
-            const errors: string[] = [];
+            if (preLayer.property("ADBE Effect Parade").numProperties > 0 ||
+                preLayer.property("ADBE Mask Parade").numProperties > 0) {
+                warnings.push("'" + preLayer.name + "': effects/masks on the precomp layer are lost after extraction.");
+            }
 
-            for (let p = 0; p < pastedLayers.length; p++) {
-                const newLayer = pastedLayers[p];
-                const originalSubLayer = subComp.layer(p + 1);
+            if (preLayer.locked) preLayer.locked = false;
 
+            var stretchFactor = preLayer.stretch / 100;
+            if (stretchFactor === 0) stretchFactor = 1;
+
+            var offset = preLayer.startTime;
+            var preIn = preLayer.inPoint;
+            var preOut = preLayer.outPoint;
+
+            for (var k = 1; k <= comp.numLayers; k++) comp.layer(k).selected = false;
+
+            var n = src.numLayers;
+            var info: any[] = [];
+            for (var i = 1; i <= n; i++) {
+                var il = src.layer(i);
+                var rec: any = {
+                    start: il.startTime, inP: il.inPoint, outP: il.outPoint,
+                    locked: il.locked,
+                    parentIdx: (il.parent ? il.parent.index : 0),
+                    matteIdx: 0, matteType: null
+                };
                 try {
-                    const origStart = originalSubLayer.startTime;
-                    const origIn = originalSubLayer.inPoint;
-                    const origOut = originalSubLayer.outPoint;
-
-                    newLayer.startTime = containerStart + origStart * stretch;
-                    newLayer.inPoint = containerStart + origIn * stretch;
-                    newLayer.outPoint = containerStart + origOut * stretch;
-
-                    if (newLayer.inPoint < containerInPoint) newLayer.inPoint = containerInPoint;
-                    if (newLayer.outPoint > containerOutPoint) newLayer.outPoint = containerOutPoint;
-
-                    newLayer.stretch = newLayer.stretch * stretch;
-
-                    if (!originalSubLayer.parent) {
-                        const posProp = newLayer.property("Position") as Property;
-
-                        if (posProp.propertyType !== PropertyType.PROPERTY) {
-                            errors.push(
-                                "Layer '" + newLayer.name + "' : Position in ."
-                            );
-                        } else {
-                            const scaleProp = newLayer.property("Scale") as Property;
-                            const rotProp = newLayer.property("Rotation") as Property;
-                            const nOpacity = newLayer.property("Opacity") as Property;
-
-                            const localPos = posProp.value as number[];
-                            const localScale = scaleProp.value as number[];
-                            const localRot = rotProp.value as number;
-
-                            const dx = (localPos[0] - anchorVal[0]) * scaleFactorX;
-                            const dy = (localPos[1] - anchorVal[1]) * scaleFactorY;
-
-                            const rx = dx * cosR - dy * sinR;
-                            const ry = dx * sinR + dy * cosR;
-
-                            posProp.setValue([posVal[0] + rx, posVal[1] + ry]);
-                            scaleProp.setValue([localScale[0] * scaleFactorX, localScale[1] * scaleFactorY]);
-                            rotProp.setValue(localRot + (rotRad * 180) / Math.PI);
-                            nOpacity.setValue(((nOpacity.value as number) * opacityVal) / 100);
-                        }
+                    if (il.trackMatteType !== TrackMatteType.NO_TRACK_MATTE) {
+                        rec.matteType = il.trackMatteType;
+                        rec.matteIdx = il.trackMatteLayer ? il.trackMatteLayer.index : (i - 1);
                     }
-                } catch (layerErr) {
-                    errors.push("Layer '" + newLayer.name + "' : " + (layerErr as Error).toString());
-                }
+                } catch (e) {}
+                info.push(rec);
             }
 
-            for (let e = 0; e < errors.length; e++) allErrors.push(errors[e]);
+            var copies: any[] = [];
+            for (var i = 1; i <= n; i++) {
+                var il = src.layer(i);
+                var rec = info[i - 1];
+                if (rec.locked) il.locked = false;
+                var nl = copyLayerIn(il, comp);
+                if (rec.locked) il.locked = true;
+                if (!nl) { throw new Error("Copy of '" + il.name + "' not found in target comp."); }
+                nl.locked = false;
+                nl.selected = false;
+                nl.moveBefore(preLayer);
 
-           for (let p = 0; p < pastedLayers.length; p++) {
-                try {
-                    pastedLayers[p].moveBefore(compLayer);
-                } catch (moveErr) {
-                    allErrors.push("Layer '" + pastedLayers[p].name + "' : repositionnement impossible (" + (moveErr as Error).toString() + ")");
+                nl.startTime = offset + (rec.start / stretchFactor);
+                var tIn = offset + (rec.inP / stretchFactor);
+                var tOut = offset + (rec.outP / stretchFactor);
+
+                if (tIn < preOut && tOut > preIn) {
+                    if (tIn < preIn) tIn = preIn;
+                    if (tOut > preOut) tOut = preOut;
                 }
+                nl.inPoint = tIn;
+                nl.outPoint = tOut;
+                copies.push(nl);
             }
 
-            compLayer.remove();
-
-            if (!isCompUsedAnywhere(subComp)) {
-                try {
-                    subComp.remove();
-                } catch (removeErr) {
-                    allErrors.push(
-                        "Not able to delete the composition '" + subComp.name + "' : " + (removeErr as Error).toString()
-                    );
+            for (var i = 0; i < n; i++) {
+                if (info[i].parentIdx > 0) copies[i].parent = copies[info[i].parentIdx - 1];
+            }
+            for (var i = 0; i < n; i++) {
+                if (info[i].matteType !== null && info[i].matteIdx > 0) {
+                    try { copies[i].setTrackMatte(copies[info[i].matteIdx - 1], info[i].matteType); }
+                    catch (e) { try { copies[i].trackMatteType = info[i].matteType; } catch (e2) {} }
                 }
+            }
+            for (var i = 0; i < n; i++) {
+                if (info[i].locked) copies[i].locked = true;
+                newlyAdded.push(copies[i]);
+            }
+
+            preLayer.remove();
+            srcCompsToCheck.push(src); 
+            processedCount++;
+        }
+
+        var alreadyChecked: { [id: number]: boolean } = {};
+        for (var c = 0; c < srcCompsToCheck.length; c++) {
+            var srcComp = srcCompsToCheck[c];
+            if (alreadyChecked[srcComp.id]) continue;
+            alreadyChecked[srcComp.id] = true;
+
+            try {
+                if (srcComp.usedIn.length === 0) {
+                    var compName = srcComp.name;
+                    srcComp.remove();
+                    deletedComps.push(compName);
+                } else {
+                    warnings.push("'" + srcComp.name + "': still used elsewhere - not deleted.");
+                }
+            } catch (e: any) {
+                warnings.push("'" + srcComp.name + "': could not delete (" + e.toString() + ").");
             }
         }
-    } catch (e) {
+
+        for (var i = 1; i <= comp.numLayers; i++) comp.layer(i).selected = false;
+        for (var i = 0; i < newlyAdded.length; i++) newlyAdded[i].selected = true;
+
+    } catch (err: any) {
+        warnings.push("Error: " + err.toString() + (err.line ? " (line " + err.line + ")" : ""));
+    } finally {
         app.endUndoGroup();
-        return fail((e as Error).toString());
     }
 
-    app.endUndoGroup();
+    if (warnings.length) {
+        alert("Un-Precompose:\n" + warnings.join("\n"));
+    }
 
-    return ok({
-        processed: targets.length,
-        warnings: allErrors,
-    });
+    return ok({ processed: processedCount, deletedComps: deletedComps, warnings: warnings });
 }
 
 export function Flip(direction: number): string {
@@ -2081,58 +2214,60 @@ function DoAPreCompBeforeTracking(layer: any) {
 
 export function CreateWarpStable(color: number, detailan: number, smooth: number, method: number, fast: number, border: number) {
     app.beginUndoGroup("Excalibur Warp Stabilizer");
-    var comp = app.project.activeItem;
-    if (comp instanceof CompItem) {
-        var myLayers = comp.selectedLayers;
-        if (myLayers.length == 1) {
-            var targetLayer;
+    try {
+        var comp = app.project.activeItem;
+        if (comp instanceof CompItem) {
+            var myLayers = comp.selectedLayers;
+            if (myLayers.length == 1) {
+                var targetLayer;
 
-            if (DoAPreCompBeforeTracking(myLayers[0])) {
-                var newInPoint = myLayers[0].inPoint;
-                var newOutPoint = myLayers[0].outPoint;
-                var layerIndices = [];
-                for (var i = 0; i < myLayers.length; i += 1) {
-                    layerIndices.push(myLayers[i].index);
-                    var inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
-                    var outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
-                    if (inPoint < newInPoint) newInPoint = inPoint;
-                    if (outPoint > newOutPoint) newOutPoint = outPoint;
-                }
-                var offset = newInPoint;
-                for (var i = 0; i < myLayers.length; i += 1) {
-                    myLayers[i].startTime -= offset;
-                }
-                var LayerName = myLayers[0].name + " Precomposed";
-                var newComp = comp.layers.precompose(layerIndices, LayerName, true);
-                newComp.duration = newOutPoint - offset;
+                if (DoAPreCompBeforeTracking(myLayers[0])) {
+                    var newInPoint = myLayers[0].inPoint;
+                    var newOutPoint = myLayers[0].outPoint;
+                    var layerIndices = [];
+                    for (var i = 0; i < myLayers.length; i += 1) {
+                        layerIndices.push(myLayers[i].index);
+                        var inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
+                        var outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
+                        if (inPoint < newInPoint) newInPoint = inPoint;
+                        if (outPoint > newOutPoint) newOutPoint = outPoint;
+                    }
+                    var offset = newInPoint;
+                    for (var i = 0; i < myLayers.length; i += 1) {
+                        myLayers[i].startTime -= offset;
+                    }
+                    var LayerName = myLayers[0].name + " Precomposed";
+                    var newComp = comp.layers.precompose(layerIndices, LayerName, true);
+                    newComp.duration = newOutPoint - offset;
 
-                targetLayer = comp.selectedLayers[0];
-                targetLayer.startTime = offset;
-                targetLayer.label = Number(color);
-                targetLayer.selected = true;
+                    targetLayer = comp.selectedLayers[0];
+                    targetLayer.startTime = offset;
+                    targetLayer.label = Number(color);
+                    targetLayer.selected = true;
+                } else {
+                    targetLayer = myLayers[0];
+                    try {
+                        var compCenter = [comp.width / 2, comp.height / 2];
+                        targetLayer.position.setValue(compCenter);
+                        targetLayer.anchorPoint.setValue(compCenter);
+                        targetLayer.rotation.setValue(0);
+                    } catch (e : any) {
+                    }
+                }
+                targetLayer.Effects.addProperty("ADBE SubspaceStabilizer");
+
             } else {
-                var compCenter = [comp.width / 2, comp.height / 2];
-                myLayers[0].position.setValue(compCenter);
-                myLayers[0].anchorPoint.setValue(compCenter);
-                myLayers[0].rotation.setValue(0);
-                targetLayer = myLayers[0];
+                alert("Please select only one Layer.");
             }
-
-            var stable = targetLayer.Effects.addProperty("ADBE SubspaceStabilizer");
-
-            stable.property(6).setValue(Number(method) + 1);   
-            stable.property(5).setValue(Number(smooth));        
-            stable.property(10).setValue(Number(border) + 1);   
-            stable.property(18).setValue(Number(detailan) ? 1 : 0); 
-            stable.property(19).setValue(Number(fast) ? 1 : 0); 
-
         } else {
-            alert("Please select only one Layer.");
+            alert("Please select a composition.");
         }
-    } else {
-        alert("Please select a composition.");
+    } catch (e : any) {
+        customErrorAlert("Excalibur ERROR", "Error while creating Warp Stabilizer: " + e.toString());
+        return;
+    } finally {
+        app.endUndoGroup();
     }
-    app.endUndoGroup();
 }
 
 export function CreateCameraTracker(
@@ -2141,62 +2276,67 @@ export function CreateCameraTracker(
     points: number
 ) {
     app.beginUndoGroup("Excalibur 3D Camera Tracker");
-    var comp = app.project.activeItem;
+    try {
+        var comp = app.project.activeItem;
 
-    if (!(comp instanceof CompItem)) {
-        alert("Please select a composition.");
-        app.endUndoGroup();
-        return;
-    }
-
-    var myLayers = comp.selectedLayers;
-    if (myLayers.length != 1) {
-        customErrorAlert("Excalibur ERROR", "Please select only one Layer.");
-        app.endUndoGroup();
-        return;
-    }
-
-    var targetLayer;
-
-    if (DoAPreCompBeforeTracking(myLayers[0])) {
-        var newInPoint = myLayers[0].inPoint;
-        var newOutPoint = myLayers[0].outPoint;
-        var layerIndices = [];
-
-        for (var i = 0; i < myLayers.length; i++) {
-            layerIndices.push(myLayers[i].index);
-            var inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
-            var outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
-            if (inPoint < newInPoint) newInPoint = inPoint;
-            if (outPoint > newOutPoint) newOutPoint = outPoint;
+        if (!(comp instanceof CompItem)) {
+            alert("Please select a composition.");
+            return;
         }
 
-        var offset = newInPoint;
-        for (var i = 0; i < myLayers.length; i++) {
-            myLayers[i].startTime -= offset;
+        var myLayers = comp.selectedLayers;
+        if (myLayers.length != 1) {
+            customErrorAlert("Excalibur ERROR", "Please select only one Layer.");
+            return;
         }
 
-        var layerName = myLayers[0].name + " Precomposed";
-        var newComp = comp.layers.precompose(layerIndices, layerName, true);
-        newComp.duration = newOutPoint - offset;
+        var targetLayer;
 
-        targetLayer = comp.selectedLayers[0];
-        targetLayer.startTime = offset;
-        targetLayer.label = Number(color);
-        targetLayer.selected = true;
-    } else {
-        var compCenter = [comp.width / 2, comp.height / 2];
-        myLayers[0].position.setValue(compCenter);
-        myLayers[0].anchorPoint.setValue(compCenter);
-        myLayers[0].rotation.setValue(0);
-        targetLayer = myLayers[0];
+        if (DoAPreCompBeforeTracking(myLayers[0])) {
+            var newInPoint = myLayers[0].inPoint;
+            var newOutPoint = myLayers[0].outPoint;
+            var layerIndices = [];
+
+            for (var i = 0; i < myLayers.length; i++) {
+                layerIndices.push(myLayers[i].index);
+                var inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
+                var outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
+                if (inPoint < newInPoint) newInPoint = inPoint;
+                if (outPoint > newOutPoint) newOutPoint = outPoint;
+            }
+
+            var offset = newInPoint;
+            for (var i = 0; i < myLayers.length; i++) {
+                myLayers[i].startTime -= offset;
+            }
+
+            var layerName = myLayers[0].name + " Precomposed";
+            var newComp = comp.layers.precompose(layerIndices, layerName, true);
+            newComp.duration = newOutPoint - offset;
+
+            targetLayer = comp.selectedLayers[0];
+            targetLayer.startTime = offset;
+            targetLayer.label = Number(color);
+            targetLayer.selected = true;
+        } else {
+            targetLayer = myLayers[0];
+            try {
+                var compCenter = [comp.width / 2, comp.height / 2];
+                targetLayer.position.setValue(compCenter);
+                targetLayer.anchorPoint.setValue(compCenter);
+                targetLayer.rotation.setValue(0);
+            } catch (e : any) {
+                alert("Excalibur ERROR", "Error while setting layer properties: " + e.toString());
+            }
+        }
+
+        targetLayer.Effects.addProperty("ADBE 3D Tracker");
+    } catch (e : any) {
+        customErrorAlert("Excalibur ERROR", "Error while creating 3D Camera Tracker: " + e.toString());
+        return;
+    } finally {
+        app.endUndoGroup();
     }
-
-    var cameraTrack = targetLayer.Effects.addProperty("ADBE 3D Tracker");
-    cameraTrack.property(16).setValue(Number(detailed) ? 1 : 0); 
-    cameraTrack.property(7).setValue(Number(points));            
-
-    app.endUndoGroup();
 }
 
 
@@ -2364,30 +2504,21 @@ export function toggleHeavyFXProject(mode : "external" | "native" | "all"): stri
 
     var toggledCount = 0;
 
-    // On parcourt tout le projet
     for (var i = 1; i <= app.project.numItems; i++) {
         var item = app.project.item(i);
         
-        // Si c'est une composition
         if (item instanceof CompItem) {
             
-            // On parcourt ses calques
             for (var l = 1; l <= item.numLayers; l++) {
                 var layer = item.layer(l);
                 var fxGroup = layer.property("ADBE Effect Parade");
                 
-                // S'il y a des effets sur ce calque
                 if (fxGroup !== null) {
                     
-                    // On parcourt chaque effet
                     for (var e = 1; e <= fxGroup.numProperties; e++) {
                         var fx = fxGroup.property(e);
                         
-                        // Si le nom ne commence pas par "ADBE", c'est un plugin externe
                         var isThirdParty = (fx.matchName.indexOf("ADBE") !== 0);
-
-                        // --- LOGIQUE SIMPLE IF / ELSE ---
-                        
                         if (mode === "external") {
                             if (isThirdParty === true) {
                                 fx.enabled = !fx.enabled;
@@ -2401,7 +2532,6 @@ export function toggleHeavyFXProject(mode : "external" | "native" | "all"): stri
                             }
                         } 
                         else if (mode === "all") {
-                            // On bascule tout sans distinction
                             fx.enabled = !fx.enabled;
                             toggledCount++;
                         }
@@ -3130,7 +3260,845 @@ export function applyTransitionPreset(transitionId: string): string {
         }
 
         return "Success";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function applyExpressionToSelected(expressionCode: string): string {
+    app.beginUndoGroup("Expression Kit: Apply");
+    try {
+        var comp = app.project.activeItem as CompItem;
+        if (!comp || !(comp instanceof CompItem)) {
+            return JSON.stringify({ success: false, error: "Aucune composition active." });
+        }
+
+        var selectedProps = comp.selectedProperties;
+        if (selectedProps.length === 0) {
+            return JSON.stringify({ success: false, error: "Sélectionnez au moins une propriété." });
+        }
+
+        var appliedCount = 0;
+        for (var i = 0; i < selectedProps.length; i++) {
+            var prop = selectedProps[i] as Property;
+            if (prop.canSetExpression) {
+                prop.expression = expressionCode;
+                appliedCount++;
+            }
+        }
+
+        app.endUndoGroup();
+        return JSON.stringify({ success: true, count: appliedCount });
+    } catch (e: any) {
+        app.endUndoGroup();
+        return JSON.stringify({ success: false, error: e.toString() });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function ExcaliburFXfindItemByName(folder: any, name: string): any {
+    for (let i = 1; i <= folder.numItems; i += 1) {
+        const item = folder.item(i);
+        if ((item instanceof FootageItem) || (item instanceof CompItem)) {
+            let itemName: string = item.name;
+            if ((item.mainSource) && (item.mainSource.file)) {
+                itemName = item.mainSource.file.name;
+            }
+            if (itemName === name) {
+                return item;
+            }
+        }
+    }
+    return null;
+}
+
+export function ExcaliburFXfindOrCreateFolder(folderName: string, parentFolder: any): any {
+    for (let i = 1; i <= parentFolder.numItems; i += 1) {
+        if ((parentFolder.item(i).name === folderName) && (parentFolder.item(i) instanceof FolderItem)) {
+            return parentFolder.item(i);
+        }
+    }
+    return parentFolder.items.addFolder(folderName);
+}
+
+function findNearestMarkerTimeInSequence(sequence: any, refTimeSeconds: number): number | null {
+    const markers = sequence.markers;
+    if (!markers || markers.numMarkers === 0) return null;
+
+    let marker = markers.getFirstMarker();
+    let closestTime: number | null = null;
+    let closestDiff = Number.MAX_VALUE;
+
+    while (marker) {
+        const markerTime = marker.start.seconds;
+        const diff = Math.abs(markerTime - refTimeSeconds);
+        if (diff < closestDiff) {
+            closestDiff = diff;
+            closestTime = markerTime;
+        }
+        marker = markers.getNextMarker(marker);
     }
 
+    return closestTime;
+}
 
+function findNearestMarkerTimeAE(comp: any, refTime: number): number | null {
+    const markerProp = comp.markerProperty;
+    if (!markerProp || markerProp.numKeys === 0) return null;
 
+    let closestTime: number | null = null;
+    let closestDiff = Number.MAX_VALUE;
+
+    for (let i = 1; i <= markerProp.numKeys; i += 1) {
+        const markerTime = markerProp.keyTime(i);
+        const diff = Math.abs(markerTime - refTime);
+        if (diff < closestDiff) {
+            closestDiff = diff;
+            closestTime = markerTime;
+        }
+    }
+
+    return closestTime;
+}
+
+export function importSoundFileToTimeline(filePath: string, offsetSeconds: number = 0, mode: string = "cursor"): void {
+    app.enableQE();
+    const project = app.project;
+    if (project) {
+        const rootItem = project.rootItem;
+        let soundFolder = null;
+        for (let i = 0; i < rootItem.children.numItems; i += 1) {
+            if (rootItem.children[i].name === "ExcaliburFX") {
+                soundFolder = rootItem.children[i];
+                break;
+            }
+        }
+        if (!soundFolder) {
+            soundFolder = rootItem.createBin("ExcaliburFX");
+        }
+        
+        let importedItem = null;
+        const fileName = decodeURI(new File(filePath).name);
+        
+        for (let i = 0; i < soundFolder.children.numItems; i += 1) {
+            const item = soundFolder.children[i];
+            if (item.name === fileName) {
+                importedItem = item;
+                break;
+            }
+        }
+        
+        if (!importedItem) {
+            project.importFiles([filePath], true, soundFolder, false);
+            for (let i = 0; i < soundFolder.children.numItems; i += 1) {
+                const item = soundFolder.children[i];
+                if (item.name === fileName) {
+                    importedItem = item;
+                    break;
+                }
+            }
+        }
+        
+        if (importedItem) {
+            const activeSequence = project.activeSequence;
+            if (activeSequence) {
+                const audioTracks = activeSequence.audioTracks;
+
+                const time = activeSequence.getPlayerPosition();
+                const safeOffset = isNaN(offsetSeconds) ? 0 : Math.max(0, offsetSeconds);
+
+                if (mode === "peak") {
+                    time.seconds = Math.max(0, time.seconds - safeOffset);
+                } else if (mode === "beatmarker") {
+                    const nearestMarkerTime = findNearestMarkerTimeInSequence(activeSequence, time.seconds);
+                    if (nearestMarkerTime !== null) {
+                        time.seconds = Math.max(0, nearestMarkerTime - safeOffset);
+                    } else {
+                        alert("ExcaliburFX: Aucun repère trouvé dans la séquence. Insertion sur le point le plus fort au curseur.");
+                        time.seconds = Math.max(0, time.seconds - safeOffset);
+                    }
+                }
+
+                const soundDuration = importedItem.getOutPoint().seconds - importedItem.getInPoint().seconds;
+                
+                function findLowestAvailableTrack(): any {
+                    for (let i = 0; i < audioTracks.numTracks; i += 1) {
+                        const track = audioTracks[i];
+                        let isTrackAvailable = true;
+                        for (let j = 0; j < track.clips.numItems; j += 1) {
+                            const clip = track.clips[j];
+                            if (((clip.start.seconds < (time.seconds + soundDuration)) && (clip.end.seconds > time.seconds)) || ((time.seconds < clip.end.seconds) && ((time.seconds + soundDuration) > clip.start.seconds))) {
+                                isTrackAvailable = false;
+                                break;
+                            }
+                        }
+                        if (isTrackAvailable) {
+                            return track;
+                        }
+                    }
+                    return null;
+                }
+                
+                const trackToInsert = findLowestAvailableTrack();
+                if (trackToInsert) {
+                    trackToInsert.insertClip(importedItem, time);
+                } else {
+                    alert("ExcaliburFX ERROR: Please add more audio lines.");
+                }
+            } else {
+                alert("ExcaliburFX ERROR: No active sequence found.");
+            }
+        } else {
+            alert("ExcaliburFX ERROR: Failed to import the sound file.");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: No project found.");
+    }
+}
+
+function WhatProgrammIsGettingUsed() {
+    if ((typeof app.project !== "undefined") && (typeof app.project.renderQueue !== "undefined")) {
+        return 2;
+    } else {
+        if ((typeof app.project !== "undefined") && (typeof app.project.activeSequence !== "undefined")) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+export function ExcaliburFXLoadSfxFile(payload: { path: string; offset?: number; mode?: string }): void {
+    const filePath = decodeURIComponent(payload.path);
+    const offsetSeconds = (typeof payload.offset === "number" && !isNaN(payload.offset)) ? payload.offset : 0;
+    const mode = payload.mode ?? "cursor";
+
+    switch (WhatProgrammIsGettingUsed()) {
+        case 1:
+            importSoundFileToTimeline(filePath, offsetSeconds, mode);
+            break;
+        case 2:
+            const comp = app.project.activeItem;
+            if (comp instanceof CompItem) {
+                const file = new File(filePath);
+                if (!file.exists) {
+                    alert("ExcaliburFX ERROR: File does not exist.");
+                    return;
+                }
+                
+                const fileName = file.name;
+                const project = app.project;
+                if (!project) {
+                    alert("ExcaliburFX ERROR: No project found.");
+                    return;
+                }
+                
+                const activeComp = project.activeItem;
+                if ((!activeComp) || (!(activeComp instanceof CompItem))) {
+                    return;
+                }
+                
+                app.beginUndoGroup("ExcaliburFX added");
+                const testFolder = ExcaliburFXfindOrCreateFolder("ExcaliburFX Assets", project.rootFolder);
+                const existingItem = ExcaliburFXfindItemByName(testFolder, fileName);
+                let itemToUse: any;
+
+                if (existingItem) {
+                    itemToUse = existingItem;
+                } else {
+                    const importOptions = new ImportOptions(file);
+                    const importedItem = project.importFile(importOptions);
+                    importedItem.parentFolder = testFolder;
+                    itemToUse = importedItem;
+                }
+                
+                if ((itemToUse instanceof FootageItem) || (itemToUse instanceof AVLayer)) {
+                    const myLayers = activeComp.selectedLayers;
+                    let startTime = activeComp.time;
+
+                    if (mode === "peak") {
+                        startTime = Math.max(0, activeComp.time - offsetSeconds);
+                    } else if (mode === "beatmarker") {
+                        const nearestMarkerTime = findNearestMarkerTimeAE(activeComp, activeComp.time);
+                        if (nearestMarkerTime !== null) {
+                            startTime = Math.max(0, nearestMarkerTime - offsetSeconds);
+                        } else {
+                            alert("ExcaliburFX: Aucun repère trouvé dans la composition. Insertion sur le point le plus fort au curseur.");
+                            startTime = Math.max(0, activeComp.time - offsetSeconds);
+                        }
+                    }
+
+                    if (myLayers.length > 0) {
+                        let lowest_index = 999999;
+                        let lowest = 999999;
+                        for (let i = 0; i < myLayers.length; i += 1) {
+                            if (myLayers[i].index < lowest_index) {
+                                lowest = i;
+                                lowest_index = myLayers[i].index;
+                            }
+                        }
+                        const layer = activeComp.layers.add(itemToUse);
+                        layer.startTime = startTime;
+                        layer.moveBefore(myLayers[lowest]);
+                    } else {
+                        const layer = activeComp.layers.add(itemToUse);
+                        layer.startTime = startTime;
+                    }
+                } else {
+                    alert("ExcaliburFX ERROR: Unsupported file type.");
+                }
+                app.endUndoGroup();
+            } else {
+                alert("ExcaliburFX ERROR: Please select a composition.");
+            }
+            break;
+        default:
+            alert("ExcaliburFX ERROR: Not supported program");
+            break;
+    }
+}
+
+export function ExcaliburFXselectFolder(): string | null {
+    const folder = Folder.selectDialog("Select a folder that you wanna add.");
+    if (folder != null) {
+        return folder.fsName;
+    } else {
+        return null;
+    }
+}
+
+export function setAudioVolumeKeyframes(
+    fadeOutVal: number,
+    brub: boolean,
+    fullLevel: number = 0.1775,
+    silenceLevel: number = 0.0014
+): void {
+    const sequence = app.project.activeSequence;
+    if (!sequence) {
+        alert("No active sequence found.");
+        return;
+    }
+    const selectedClips = sequence.getSelection();
+    if (selectedClips.length === 0) {
+        alert("No clips selected.");
+        return;
+    }
+    
+    for (let i = 0; i < selectedClips.length; i += 1) {
+        const clip = selectedClips[i];
+        const audioComponents = clip.components;
+        let volumeComponent = null;
+        
+        for (let j = 0; j < audioComponents.numItems; j += 1) {
+            if (audioComponents[j].displayName === "Volume") {
+                volumeComponent = audioComponents[j];
+                break;
+            }
+        }
+        
+        if (!volumeComponent) {
+            continue;
+        }
+        
+        const volumeProperty = volumeComponent.properties[1];
+        const inPoint = clip.inPoint.seconds;
+        const outPoint = clip.outPoint.seconds;
+        
+        volumeProperty.addKey(inPoint);
+        volumeProperty.setValueAtKey(inPoint, fullLevel, 0);
+        
+        if (volumeProperty.isTimeVarying()) {
+            const keyframeCount = volumeProperty.getKeys().length;
+            for (let k = keyframeCount - 1; k >= 0; k--) {
+                volumeProperty.removeKey(volumeProperty.getKeys()[k]);
+            }
+        }
+        
+        volumeProperty.setTimeVarying(true);
+        const diff = (outPoint - inPoint) * fadeOutVal;
+
+        if (brub) {
+            volumeProperty.addKey(outPoint - diff);
+            volumeProperty.setValueAtKey(outPoint - diff, fullLevel, 1);
+            volumeProperty.addKey(outPoint);
+            volumeProperty.setValueAtKey(outPoint, silenceLevel, 1);
+        } else {
+            volumeProperty.addKey(inPoint);
+            volumeProperty.setValueAtKey(inPoint, silenceLevel, 1);
+            volumeProperty.addKey(inPoint + diff);
+            volumeProperty.setValueAtKey(inPoint + diff, fullLevel, 1);
+        }
+    }
+}
+
+export function FadeInLevel(fadeInVal: string | number, strengthVal: string | number): void {
+    const numFadeInVal = Number(fadeInVal) / 100;
+    const numStrengthVal = Number(strengthVal);
+    
+    switch (WhatProgrammIsGettingUsed()) {
+        case 1:
+            const premiereFullLevel = 0.1775 * Math.pow(10, numStrengthVal / 20);
+            setAudioVolumeKeyframes(numFadeInVal, false, premiereFullLevel);
+            break;
+        case 2:
+            app.beginUndoGroup("ExcaliburFX Fade in");
+            const comp = app.project.activeItem;
+            if (comp instanceof CompItem) {
+                const myLayers = comp.selectedLayers;
+                if (myLayers.length <= 0) {
+                    alert("ExcaliburFX ERROR: Please select at least one layer.");
+                    return;
+                }
+                
+                for (let i = 0; i < myLayers.length; i += 1) {
+                    const inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
+                    const outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
+                    const layer = myLayers[i];
+                    const audioLevels = layer.property("Audio").property("Audio Levels");
+                    
+                    if (audioLevels == null) {
+                        alert("ExcaliburFX ERROR: The selected layer does not have an audio property.");
+                        continue;
+                    }
+                    
+                    const numKeyframes = audioLevels.numKeys;
+                    for (let k = numKeyframes; k > 0; k--) {
+                        audioLevels.removeKey(k);
+                    }
+                    
+                    const diff = (outPoint - inPoint) * numFadeInVal;
+                    audioLevels.setValueAtTime(inPoint, [numStrengthVal, numStrengthVal]);
+                    audioLevels.setValueAtTime(inPoint + diff, [0, 0]);
+                }
+                comp.openInViewer();
+            } else {
+                alert("ExcaliburFX ERROR: Please select a composition.");
+            }
+            app.endUndoGroup();
+            break;
+        default:
+            alert("ExcaliburFX ERROR: Not supported program");
+            break;
+    }
+}
+
+export function FadeOutLevel(fadeOutVal: string | number, strengthVal: string | number): void {
+    const numFadeOutVal = Number(fadeOutVal) / 100;
+    const numStrengthVal = Number(strengthVal);
+
+    switch (WhatProgrammIsGettingUsed()) {
+        case 1:
+            const premiereFullLevel = 0.1775 * Math.pow(10, numStrengthVal / 20);
+            setAudioVolumeKeyframes(numFadeOutVal, true, premiereFullLevel);
+            break;
+        case 2:
+            app.beginUndoGroup("ExcaliburFX Fade out");
+            const comp = app.project.activeItem;
+            if (comp instanceof CompItem) {
+                const myLayers = comp.selectedLayers;
+                if (myLayers.length <= 0) {
+                    alert("ExcaliburFX ERROR: Please select at least one layer.");
+                    return;
+                }
+                
+                for (let i = 0; i < myLayers.length; i += 1) {
+                    const inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
+                    const outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
+                    const layer = myLayers[i];
+                    const audioLevels = layer.property("Audio").property("Audio Levels");
+                    
+                    if (audioLevels == null) {
+                        alert("ExcaliburFX ERROR: The selected layer does not have an audio property.");
+                        continue;
+                    }
+                    
+                    const numKeyframes = audioLevels.numKeys;
+                    for (let k = numKeyframes; k > 0; k--) {
+                        audioLevels.removeKey(k);
+                    }
+                    
+                    const diff = (outPoint - inPoint) * numFadeOutVal;
+                    audioLevels.setValueAtTime(outPoint - diff, [0, 0]);
+                    audioLevels.setValueAtTime(outPoint, [numStrengthVal, numStrengthVal]);
+                }
+                comp.openInViewer();
+            } else {
+                alert("ExcaliburFX ERROR: Please select a composition.");
+            }
+            app.endUndoGroup();
+            break;
+        default:
+            alert("ExcaliburFX ERROR: Not supported program");
+            break;
+    }
+}
+
+export function ExcaliburFX_Lower(lowerAmount: string | number, spacingSeconds: string | number): void {
+    const numLowerAmount = Number(lowerAmount);
+    const numSpacing = Math.max(0.01, Number(spacingSeconds));
+
+    switch (WhatProgrammIsGettingUsed()) {
+        case 1:
+            setPremiereLowerKeyframe(numLowerAmount, numSpacing);
+            break;
+        case 2:
+            app.beginUndoGroup("ExcaliburFX Lower");
+            const comp = app.project.activeItem;
+            if (comp instanceof CompItem) {
+                const myLayers = comp.selectedLayers;
+                if (myLayers.length <= 0) {
+                    alert("ExcaliburFX ERROR: Please select at least one layer.");
+                    return;
+                }
+
+                const cursorTime = comp.time;
+
+                for (let i = 0; i < myLayers.length; i += 1) {
+                    const layer = myLayers[i];
+                    const audioLevels = layer.property("Audio").property("Audio Levels");
+
+                    if (audioLevels == null) {
+                        alert("ExcaliburFX ERROR: The selected layer does not have an audio property.");
+                        continue;
+                    }
+
+                    const leftTime = Math.max(layer.inPoint, cursorTime - numSpacing);
+                    const rightTime = Math.min(layer.outPoint, cursorTime + numSpacing);
+
+                    const currentAtLeft = audioLevels.valueAtTime(leftTime, false);
+                    const currentAtCenter = audioLevels.valueAtTime(cursorTime, false);
+                    const currentAtRight = audioLevels.valueAtTime(rightTime, false);
+
+                    audioLevels.setValueAtTime(leftTime, [currentAtLeft[0], currentAtLeft[1]]);
+                    audioLevels.setValueAtTime(cursorTime, [
+                        currentAtCenter[0] - numLowerAmount,
+                        currentAtCenter[1] - numLowerAmount
+                    ]);
+                    audioLevels.setValueAtTime(rightTime, [currentAtRight[0], currentAtRight[1]]);
+                }
+                comp.openInViewer();
+            } else {
+                alert("ExcaliburFX ERROR: Please select a composition.");
+            }
+            app.endUndoGroup();
+            break;
+        default:
+            alert("ExcaliburFX ERROR: Not supported program");
+            break;
+    }
+}
+
+function setPremiereLowerKeyframe(lowerAmountDb: number, spacingSeconds: number): void {
+    const sequence = app.project.activeSequence;
+    if (!sequence) {
+        alert("No active sequence found.");
+        return;
+    }
+    const selectedClips = sequence.getSelection();
+    if (selectedClips.length === 0) {
+        alert("No clips selected.");
+        return;
+    }
+
+    const cursorSeconds = sequence.getPlayerPosition().seconds;
+
+    for (let i = 0; i < selectedClips.length; i += 1) {
+        const clip = selectedClips[i];
+        const audioComponents = clip.components;
+        let volumeComponent = null;
+
+        for (let j = 0; j < audioComponents.numItems; j += 1) {
+            if (audioComponents[j].displayName === "Volume") {
+                volumeComponent = audioComponents[j];
+                break;
+            }
+        }
+
+        if (!volumeComponent) {
+            continue;
+        }
+
+        const volumeProperty = volumeComponent.properties[1];
+        const inPoint = clip.inPoint.seconds;
+        const outPoint = clip.outPoint.seconds;
+
+        const centerTime = Math.min(Math.max(cursorSeconds, inPoint), outPoint);
+        const leftTime = Math.max(inPoint, centerTime - spacingSeconds);
+        const rightTime = Math.min(outPoint, centerTime + spacingSeconds);
+
+        volumeProperty.setTimeVarying(true);
+
+        const currentAtLeft = volumeProperty.getValueAtTime(leftTime);
+        const currentAtCenter = volumeProperty.getValueAtTime(centerTime);
+        const currentAtRight = volumeProperty.getValueAtTime(rightTime);
+        const reducedCenterValue = currentAtCenter * Math.pow(10, -lowerAmountDb / 20);
+
+        volumeProperty.addKey(leftTime);
+        volumeProperty.setValueAtKey(leftTime, currentAtLeft, 1);
+
+        volumeProperty.addKey(centerTime);
+        volumeProperty.setValueAtKey(centerTime, reducedCenterValue, 1);
+
+        volumeProperty.addKey(rightTime);
+        volumeProperty.setValueAtKey(rightTime, currentAtRight, 1);
+    }
+}
+
+export function ExcaliburFX_BassAndTreble(): void {
+    app.beginUndoGroup("ExcaliburFX Bass & Treble");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            myLayers[i].Effects.addProperty("ADBE Aud BT");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_LowPass(): void {
+    app.beginUndoGroup("ExcaliburFX LowPass");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            const heightLowPass = myLayers[i].Effects.addProperty("ADBE Aud HiLo");
+            heightLowPass.property(1).setValue(2);
+            heightLowPass.property(2).setValue(1495);
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_HighPass(): void {
+    app.beginUndoGroup("ExcaliburFX HighPass");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            const heightLowPass = myLayers[i].Effects.addProperty("ADBE Aud HiLo");
+            heightLowPass.property(1).setValue(1);
+            heightLowPass.property(2).setValue(1373.5);
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_Reverb(): void {
+    app.beginUndoGroup("ExcaliburFX Reverb");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            myLayers[i].Effects.addProperty("ADBE Aud Reverb");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_EQ(): void {
+    app.beginUndoGroup("ExcaliburFX Equalizer");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            myLayers[i].Effects.addProperty("ADBE Param EQ");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_Delay(): void {
+    app.beginUndoGroup("ExcaliburFX Equalizer");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            myLayers[i].Effects.addProperty("ADBE Aud Delay");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}
+
+export function ExcaliburFX_SteroMixer(): void {
+    app.beginUndoGroup("ExcaliburFX Equalizer");
+    const comp = app.project.activeItem;
+    if (comp instanceof CompItem) {
+        const myLayers = comp.selectedLayers;
+        if (myLayers.length <= 0) {
+            alert("ExcaliburFX ERROR: Please select at least one layer.");
+            return;
+        }
+        for (let i = 0; i < myLayers.length; i += 1) {
+            myLayers[i].Effects.addProperty("ADBE Aud Stereo Mixer");
+        }
+    } else {
+        alert("ExcaliburFX ERROR: Please select a composition.");
+    }
+    app.endUndoGroup();
+}

@@ -1,43 +1,38 @@
 <script>
-  import { onMount } from "svelte"; // Ajoute cet import
   import { activeTab, prevTab, transitioning, direction } from "../stores.js";
   import Dashboard from "./tabs/Dashboard.svelte";
+  import Colors from "./tabs/Colors.svelte";
+  import Curve from "./tabs/Curve.svelte";
+  import Effects from "./tabs/Effects.svelte";
+  import Ffmpeg from "./tabs/Ffmpeg.svelte";
+  import Notes from "./tabs/Notes.svelte";
+  import Scripts from "./tabs/Scripts.svelte";
+  import Settings from "./tabs/Settings.svelte";
+  import SFX from "./tabs/SFX.svelte";
+  import Workflow from "./tabs/Workflow.svelte";
 
-  const loaders = {
-    colors: () => import("./tabs/Colors.svelte"),
-    curves: () => import("./tabs/Curve.svelte"),
-    dashboard: () => Promise.resolve({ default: Dashboard }),
-    effects: () => import("./tabs/Effects.svelte"),
-    ffmpeg: () => import("./tabs/Ffmpeg.svelte"),
-    notes: () => import("./tabs/Notes.svelte"),
-    scripts: () => import("./tabs/Scripts.svelte"),
-    settings: () => import("./tabs/Settings.svelte"),
-    transitions: () => import("./tabs/Transitions.svelte"),
-    workflow: () => import("./tabs/Workflow.svelte"),
+  const comps = {
+    colors: Colors,
+    curves: Curve,
+    dashboard: Dashboard,
+    effects: Effects,
+    ffmpeg: Ffmpeg,
+    notes: Notes,
+    scripts: Scripts,
+    settings: Settings,
+    sfx: SFX,
+    workflow: Workflow,
   };
 
-  let comps = {};
-  let list = [];
+  const list = Object.keys(comps);
 
-  async function load(name) {
-    if (!name || !loaders[name]) name = "dashboard";
-    if (!comps[name]) {
-      const mod = await loaders[name]();
-      comps[name] = mod.default;
-    }
-    if (!list.includes(name)) {
-      list = [...list, name];
-    }
+  $: if (!$activeTab || !comps[$activeTab]) {
+    activeTab.set("dashboard");
   }
 
-  onMount(() => {
-    Object.keys(loaders).forEach((tabName) => {
-      load(tabName);
-    });
-  });
-
-  $: load($activeTab);
-  $: if ($transitioning && $prevTab) load($prevTab);
+  $: if ($transitioning && $prevTab && !comps[$prevTab]) {
+    activeTab.set("dashboard");
+  }
 </script>
 
 <section class="content">
@@ -125,16 +120,20 @@
   }
 
   .pane.outgoing.dir-down {
-    animation: outUp var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: outUp var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1)
+      forwards;
   }
   .pane.outgoing.dir-up {
-    animation: outDown var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: outDown var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1)
+      forwards;
   }
   .pane.incoming.dir-down {
-    animation: inFromBottom var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: inFromBottom var(--transition-ms, 0.3s)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .pane.incoming.dir-up {
-    animation: inFromTop var(--transition-ms, 0.3s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: inFromTop var(--transition-ms, 0.3s)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
 
   .tab-content {
@@ -142,15 +141,23 @@
   }
 
   @keyframes outUp {
-    to { transform: translateY(-100%); }
+    to {
+      transform: translateY(-100%);
+    }
   }
   @keyframes outDown {
-    to { transform: translateY(100%); }
+    to {
+      transform: translateY(100%);
+    }
   }
   @keyframes inFromBottom {
-    from { transform: translateY(100%); }
+    from {
+      transform: translateY(100%);
+    }
   }
   @keyframes inFromTop {
-    from { transform: translateY(-100%); }
+    from {
+      transform: translateY(-100%);
+    }
   }
 </style>

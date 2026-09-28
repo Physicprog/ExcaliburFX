@@ -174,6 +174,9 @@ export let DEFAULTS = {
     muted: false,
     volumeState: "high",
     theme: "dark",
+    seasonalThemeEnabled: false,
+    seasonalThemeAuto: true,
+    seasonalThemeMode: "none",
     lastActiveTab: "Dashboard",
     hue: 0,
     saturation: 70,
@@ -191,6 +194,7 @@ export let DEFAULTS = {
     applyOnAdjustmentLayer: false,
     curvesTab: "presets",
     effectsTab: "presets",
+    sfxTab: "sfx",
     colorHarmonyMode: "Complementary",
     colorPresetMode: "Blue",
     colorHue: 210,
@@ -198,7 +202,6 @@ export let DEFAULTS = {
     colorLight: 50,
     colorActiveSource: "harmony",
     colorApplyDirect: false,
-    colorInverted: false,
     c4aSkipDefaults: true,
     c4aSkipDisabledFx: true,
     c4aIncTransform: true,
@@ -237,18 +240,39 @@ export let DEFAULTS = {
       workflow: true,
       effects: true,
       colors: true,
-      transitions: true,
+      sfx: true,
       scripts: true,
       ffmpeg: true,
       media: true
-    }
+    },
+    sfxPreviewVolume: 0.7,
+    sfxPreviewEnabled: true,
+    sfxCursorPlacementMode: "peak",
+    sfxLoopPreview: false,
+    sfxConfirmBeforeDelete: true,
+    sfxCustomFolders: [],
+    sfxNameOverrides: {},
+    sfxFolderNameOverrides: {},
+    sfxFavoriteFiles: {},
+    scriptFavoriteExpressions: {},
+    sfxFadeInVal: 20,
+    sfxFadeOutVal: 20,
+    sfxFadeInStrength: 0,
+    sfxFadeOutStrength: 0,
+    sfxLowerAmount: 6,
+    sfxLowerSpacing: 0.3,
+    ffmpegPresets: [],
+    ffmpegPresetsMigrated: false,
+    ffmpegChain: [],
+    scriptsCustomExpressions: [],
+    scriptsParameterValues: {},
   },
   tabs: {
     dashboard: {},
     colors: { savedPalettes: [] },
     curves: { savedPresets: [] },
     effects: { favorites: [] },
-    transitions: { favorites: [] },
+    sfx: { favorites: [] },
     ffmpeg: { lastPreset: null, outputFormat: "mp4", crf: 18 },
     notes: { entries: [] },
     scripts: { recentlyUsed: [] },
@@ -418,6 +442,7 @@ export function saveNotes(content) {
   try {
     fs.writeFileSync(NOTES_FILE, content, "utf-8");
   } catch (e) {
+    console.error("Error saving notes:", e);
   }
 }
 
@@ -815,15 +840,8 @@ export async function AutoCut(threshold) {
   return await executeJSXAction("autoCutSelectedLayer", threshold);
 }
 
-export async function CreateWarpStable(color, c, d, s, m, f, b) {
-  if (color === undefined) color = 0;
-  if (c === undefined) c = 0;
-  if (d === undefined) d = 0;
-  if (s === undefined) s = 50;
-  if (m === undefined) m = 0;
-  if (f === undefined) f = 0;
-  if (b === undefined) b = 2;
-  return await executeJSXAction("CreateWarpStable", color, c, d, s, m, f, b);
+export async function CreateWarpStable(color, detailed, smooth, method, fast, border) {
+  return await executeJSXAction("CreateWarpStable", color, detailed, smooth, method, fast, border);
 }
 
 export async function CreateCameraTracker(color, c, d, p) {

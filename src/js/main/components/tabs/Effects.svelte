@@ -45,7 +45,6 @@
   import IsPreset from "../../../assets/ui/Bolt.png";
   import IsPlugin from "../../../assets/ui/Electic.png";
   import Settings from "../../../assets/ui/settings.png";
-  import warpStabilizerPreview from "../../../assets/ui/stabed.png";
   import cameraTrackerPreview from "../../../assets/ui/tracked.png";
 
   let isDeleteMode = false;
@@ -154,18 +153,26 @@
 
   function parseAESource(res) {
     if (Array.isArray(res)) return res;
-    if (typeof res === "string") {
+    if (typeof res !== "string") return [];
+
+    const normalized = res.trim();
+    if (!normalized) return [];
+
+    try {
+      return JSON.parse(normalized);
+    } catch {
       try {
-        return JSON.parse(res);
-      } catch (e) {
-        try {
-          return eval(res);
-        } catch (err) {
-          return [];
-        }
+        const jsLiteral = normalized.replace(/^\(+|\)+$/g, "").trim();
+
+        return JSON.parse(
+          jsLiteral
+            .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, '$1"$2"$3')
+            .replace(/'/g, '"'),
+        );
+      } catch {
+        return [];
       }
     }
-    return [];
   }
 
   async function loadDataFromAE() {
@@ -321,20 +328,25 @@
     borderOpen = !borderOpen;
   }
 
-  function runAction(action) {
+  async function runAction(action) {
     try {
-      action();
+      const result = await action();
+      if (result && result.status === "ERROR") {
+        sendNotif(`Action failed: ${result.message || "Unknown error"}`, false);
+      }
     } catch (e) {
       log("[Action] Execution failed:", e);
+      sendNotif(`Action failed: ${String(e)}`, false);
     }
   }
 
-  function applyWarpStabilizer(color) {
+  async function applyWarpStabilizer(color) {
     const s = $warpStabilizerSettings;
     const methodIndex = WARP_METHODS.indexOf(s.method);
     const borderIndex = BORDER_DISPLAY.indexOf(s.border);
-    const layerColor = color !== undefined ? color : ($layerColors ? $layerColors.adjustment : 5);
-    CreateWarpStable(
+    const layerColor =
+      color !== undefined ? color : $layerColors ? $layerColors.adjustment : 5;
+    return CreateWarpStable(
       layerColor,
       s.detailed ? 1 : 0,
       s.smoothness,
@@ -344,10 +356,11 @@
     );
   }
 
-  function applyCameraTracker(color) {
+  async function applyCameraTracker(color) {
     const s = $cameraTrackerSettings;
-    const layerColor = color !== undefined ? color : ($layerColors ? $layerColors.adjustment : 5);
-    CreateCameraTracker(layerColor, s.detailed ? 1 : 0, s.trackSize);
+    const layerColor =
+      color !== undefined ? color : $layerColors ? $layerColors.adjustment : 5;
+    return CreateCameraTracker(layerColor, s.detailed ? 1 : 0, s.trackSize);
   }
 </script>
 
@@ -644,11 +657,25 @@
               class="fx-card {expandedEffectId === 'warpStabilizer'
                 ? 'expanded'
                 : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("warpStabilizer")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("warpStabilizer");
+                }
+              }}
             >
               <div class="fx-card-head">
-                <button class="fx-apply-btn" on:click={() => runAction(() => applyWarpStabilizer($layerColors.precompose))}>
+                <button
+                  class="fx-apply-btn"
+                  on:click={() =>
+                    runAction(() =>
+                      applyWarpStabilizer($layerColors.precompose),
+                    )}
+                >
                   <span class="fx-name">Warp Stabilizer</span>
                 </button>
                 <button
@@ -667,11 +694,25 @@
               class="fx-card {expandedEffectId === 'cameraTracker'
                 ? 'expanded'
                 : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("cameraTracker")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("cameraTracker");
+                }
+              }}
             >
               <div class="fx-card-head">
-                <button class="fx-apply-btn" on:click={() => runAction(() => applyCameraTracker($layerColors.precompose))}>
+                <button
+                  class="fx-apply-btn"
+                  on:click={() =>
+                    runAction(() =>
+                      applyCameraTracker($layerColors.precompose),
+                    )}
+                >
                   <span class="fx-name">3D Camera Tracker</span>
                 </button>
                 <button
@@ -688,8 +729,16 @@
 
             <div
               class="fx-card {expandedEffectId === 'autoCut' ? 'expanded' : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("autoCut")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("autoCut");
+                }
+              }}
             >
               <div class="fx-card-head">
                 <button
@@ -715,8 +764,16 @@
               class="fx-card {expandedEffectId === 'audioBeat'
                 ? 'expanded'
                 : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("audioBeat")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("audioBeat");
+                }
+              }}
             >
               <div class="fx-card-head">
                 <button
@@ -746,8 +803,16 @@
 
             <div
               class="fx-card {expandedEffectId === 'HeavyFX' ? 'expanded' : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("HeavyFX")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("HeavyFX");
+                }
+              }}
             >
               <div class="fx-card-head">
                 <button
@@ -785,8 +850,16 @@
               class="fx-card {expandedEffectId === 'createFXControlRig'
                 ? 'expanded'
                 : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("createFXControlRig")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("createFXControlRig");
+                }
+              }}
             >
               <div class="fx-card-head">
                 <button
@@ -816,8 +889,16 @@
               class="fx-card {expandedEffectId === 'dumpCompData'
                 ? 'expanded'
                 : ''}"
+              role="button"
+              tabindex="0"
               on:mouseenter={() => setHovered("dumpCompData")}
               on:mouseleave={clearHovered}
+              on:keydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setHovered("dumpCompData");
+                }
+              }}
             >
               <div class="fx-card-head">
                 <button
@@ -1087,8 +1168,8 @@
                     />
 
                     <p class="fx-description">
-                      60% = auto detect, 100% = off. La zone intermédiaire
-                      ajuste la sensibilité des marqueurs audio.
+                      60% = auto detect, 100% = off. The lower the value, the
+                      more sensitive the detection will be.
                     </p>
                   </div>
                 </div>
@@ -1112,7 +1193,7 @@
                         class="checkbox"
                         class:checked={$toggleFxMode === "external"}
                       ></span>
-                      <span class="label-text">Plugins externes (Tiers)</span>
+                      <span class="label-text">Externe plugins (Imported)</span>
                     </button>
 
                     <button
@@ -1124,7 +1205,7 @@
                         class="checkbox"
                         class:checked={$toggleFxMode === "native"}
                       ></span>
-                      <span class="label-text">Effets natifs (Adobe)</span>
+                      <span class="label-text">Native effects</span>
                     </button>
                     <button
                       type="button"
@@ -1135,7 +1216,7 @@
                         class="checkbox"
                         class:checked={$toggleFxMode === "all"}
                       ></span>
-                      <span class="label-text">TOUS les effets</span>
+                      <span class="label-text">All effects</span>
                     </button>
                   </div>
                 </div>
@@ -1146,18 +1227,11 @@
                   out:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
                   <div class="fx-field" style="gap: 1.5vh;">
-                    <p class="fx-description">
-                      Génère un système de contrôle centralisé (Null objects)
-                      pour piloter les paramètres des effets du calque.
-                    </p>
-
                     <label class="fx-check-row">
                       <span class="checkbox" class:checked={localOneNull}>
                         <input type="checkbox" bind:checked={localOneNull} />
                       </span>
-                      <span class="label-text" style="color: #ff9d00;"
-                        >1 Null par effet (vs. Global)</span
-                      >
+                      <span class="label-text">1 Null for each effects</span>
                     </label>
 
                     <label class="fx-check-row">
@@ -1167,10 +1241,13 @@
                           bind:checked={localOnlyImportant}
                         />
                       </span>
-                      <span class="label-text"
-                        >Sliders principaux uniquement</span
-                      >
+                      <span class="label-text">Main sliders only</span>
                     </label>
+                    <p class="fx-description">
+                      Create a control rig for all effects in the selected
+                      layers. You can choose to create one null per effect or
+                      one null for all effects (global).
+                    </p>
                   </div>
                 </div>
               {:else if expandedEffectId === "dumpCompData"}
@@ -1189,9 +1266,7 @@
                           bind:checked={$c4aSkipDefaults}
                         />
                       </span>
-                      <span class="label-text" style="color: #ff9d00;"
-                        >Ignorer val. par défaut</span
-                      >
+                      <span class="label-text">Skip def. values</span>
                     </label>
                     <label class="fx-check-row">
                       <span class="checkbox" class:checked={$c4aSkipDisabledFx}>
@@ -1200,9 +1275,7 @@
                           bind:checked={$c4aSkipDisabledFx}
                         />
                       </span>
-                      <span class="label-text" style="color: #ff9d00;"
-                        >Ignorer FX désactivés</span
-                      >
+                      <span class="label-text">Skip dsbled effects</span>
                     </label>
                   </div>
 
@@ -1227,19 +1300,19 @@
                       <span class="checkbox" class:checked={$c4aIncMasks}>
                         <input type="checkbox" bind:checked={$c4aIncMasks} />
                       </span>
-                      <span class="label-text">Masques</span>
+                      <span class="label-text">Masks</span>
                     </label>
                     <label class="fx-check-row">
                       <span class="checkbox" class:checked={$c4aIncText}>
                         <input type="checkbox" bind:checked={$c4aIncText} />
                       </span>
-                      <span class="label-text">Données Texte</span>
+                      <span class="label-text">Text Data</span>
                     </label>
                     <label class="fx-check-row">
                       <span class="checkbox" class:checked={$c4aIncStyles}>
                         <input type="checkbox" bind:checked={$c4aIncStyles} />
                       </span>
-                      <span class="label-text">Styles de Calque</span>
+                      <span class="label-text">Style Data</span>
                     </label>
                   </div>
 
@@ -1255,7 +1328,7 @@
                       <span class="checkbox" class:checked={$c4aIncEffects}>
                         <input type="checkbox" bind:checked={$c4aIncEffects} />
                       </span>
-                      <span class="label-text">Inclure les Effets</span>
+                      <span class="label-text">Include Effects</span>
                     </label>
                     {#if $c4aIncEffects}
                       <label
@@ -1271,9 +1344,7 @@
                             bind:checked={$c4aIncFxSettings}
                           />
                         </span>
-                        <span class="label-text"
-                          >Détailler les paramètres des effets</span
-                        >
+                        <span class="label-text">Detail Effect Settings</span>
                       </label>
                     {/if}
                   </div>
@@ -1290,9 +1361,7 @@
                       <span class="checkbox" class:checked={$c4aIncPrecomps}>
                         <input type="checkbox" bind:checked={$c4aIncPrecomps} />
                       </span>
-                      <span class="label-text"
-                        >Scanner les sous-compositions</span
-                      >
+                      <span class="label-text">Scan Subcompositions</span>
                     </label>
                     {#if $c4aIncPrecomps}
                       <div
@@ -1300,8 +1369,7 @@
                         style="width: 92%; margin-left: 4%;"
                       >
                         <label for="c4a-depth-slider"
-                          >Profondeur Max <span class="fx-value"
-                            >{$c4aMaxDepth}</span
+                          >Max Depth <span class="fx-value">{$c4aMaxDepth}</span
                           ></label
                         >
                         <input
@@ -1322,35 +1390,38 @@
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <img
-                    src={warpStabilizerPreview}
-                    alt="Warp Stabilizer Preview"
-                    class="preview-image"
-                    decoding="async"
-                  />
+                  <h2>Warp Stabilizer</h2>
+
+                  <p>Stabilizes the selected layer</p>
+                  <p>
+                    If any transform properties are applied to the layer, The
+                    clips will be precomposed before applying the effect.
+                  </p>
                 </div>
               {:else if hoveredEffectId === "cameraTracker"}
                 <div
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <img
-                    src={cameraTrackerPreview}
-                    alt="3D Camera Tracker Preview"
-                    class="preview-image"
-                    decoding="async"
-                  />
+                  <h2>3D Camera Tracker</h2>
+
+                  <p>Tracks the 3D camera motion in the scene</p>
+                  <p>
+                    Allows you to match your 3D camera to the motion of a real
+                    camera or to create a new 3D camera that follows a specific
+                    path.
+                  </p>
                 </div>
               {:else if hoveredEffectId === "autoCut"}
                 <div
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <div class="preview-icon">✂️</div>
-                  <h3>Auto Cut</h3>
+                  <h2>Auto Cut</h2>
+
                   <p>
-                    Scanne le calque sélectionné et coupe automatiquement à
-                    chaque changement de scène détecté.
+                    Scans the selected layer and cuts automatically at each
+                    scene change detected
                   </p>
                 </div>
               {:else if hoveredEffectId === "audioBeat"}
@@ -1358,11 +1429,11 @@
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <div class="preview-icon">🥁</div>
-                  <h3>Auto Beat Marker</h3>
+                  <h2>Audio Beat Marker</h2>
+
                   <p>
-                    Analyse la piste audio sélectionnée et pose automatiquement
-                    des marqueurs sur chaque battement détecté.
+                    Analyzes the selected audio track and places markers at each
+                    beat detected.
                   </p>
                 </div>
               {:else if hoveredEffectId === "HeavyFX"}
@@ -1370,11 +1441,13 @@
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <div class="preview-icon">⚙️</div>
-                  <h3>Toggle Heavy FX</h3>
+                  <h2>Toggle Heavy FX</h2>
+
                   <p>
-                    Bascule la visibilité des effets lourds du projet pour
-                    accélérer l'aperçu pendant le montage.
+                    Disable or enable imported plugins and keep native Ae
+                    effects only. Useful for previews. Make sure to disable the
+                    mode before rendering, else the render will be done without
+                    the plugins.
                   </p>
                 </div>
               {:else if hoveredEffectId === "dumpCompData"}
@@ -1382,11 +1455,10 @@
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <div class="preview-icon">📋</div>
                   <h3>Copy4Ai</h3>
                   <p>
-                    Exporte les données de la comp active (calques, propriétés,
-                    keyframes) pour debug ou usage externe.
+                    Copies the data of the current composition, as well as the
+                    data it contains, to the clipboard.
                   </p>
                 </div>
               {:else if hoveredEffectId === "createFXControlRig"}
@@ -1394,11 +1466,11 @@
                   class="preview-panel"
                   in:fly={{ x: 30, duration: $TRANSITION_MS ?? 200 }}
                 >
-                  <div class="preview-icon">🎛️</div>
                   <h3>Create FX Control Rig</h3>
                   <p>
-                    Génère un calque de contrôle pour piloter centralement les
-                    effets appliqués.
+                    Generates a control null layer to centrally control the
+                    applied effects. It will allow to adjust the main parameters
+                    of the effects without having to open each effect panel.
                   </p>
                 </div>
               {:else}
@@ -1787,6 +1859,9 @@
       font-size: 3vh;
       color: #e0e0e0;
       font-weight: 700;
+      background: transparent;
+      border: none;
+      appearance: none;
       white-space: nowrap;
       line-height: 1;
       margin-top: 1px;
@@ -2054,10 +2129,6 @@
     min-width: 0;
     overflow: hidden;
     transition: grid-template-columns 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-
-    &.preview-mode {
-      grid-template-columns: minmax(0, 0.35fr) minmax(0, 1.65fr);
-    }
   }
 
   .fx-list {
@@ -2135,27 +2206,17 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
-    padding: 0;
+
+    padding: 0 5px;
     overflow: hidden;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 
-    .preview-image {
-      width: 100%;
-      height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      border-radius: 1vh;
-      background: #000;
-      display: block;
-    }
-
-    .preview-icon {
-      font-size: 6.5vh;
-      margin-bottom: 2vh;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-    }
-    h3 {
+    h2 {
       font-size: 2.6vh;
       color: #fff;
       margin: 1vh 0 1vh 0;
@@ -2166,14 +2227,17 @@
       flex-shrink: 0;
     }
     p {
-      font-size: 1.8vh;
+      font-size: 2.3vh;
       color: #999;
-      margin: 0;
+      margin: 0 0 1vh 0;
       line-height: 1.5;
       word-break: break-word;
       flex-shrink: 0;
+
+      max-width: 90%;
     }
   }
+
   .empty-settings {
     display: flex;
     align-items: center;
@@ -2298,7 +2362,7 @@
       text-overflow: ellipsis;
     }
     .fx-value {
-      font-size: 2.3vh;
+      font-size: 2.8vh;
       color: var(--activeColour);
       font-weight: 800;
       flex-shrink: 0;
@@ -2347,11 +2411,23 @@
     cursor: pointer;
     width: 100%;
     min-width: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: #fff;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
     .label-text {
       font-size: 2.6vh;
       font-weight: 600;
       min-width: 0;
       flex: none;
+      background: transparent;
+      border: none;
+      appearance: none;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2505,7 +2581,7 @@
     filter: grayscale(100%);
   }
   .fx-description {
-    font-size: 2vh;
+    font-size: 2.2vh;
     color: #cdcdcd;
     line-height: 1.4;
     margin-top: 0.5vh;

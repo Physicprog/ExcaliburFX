@@ -16,6 +16,11 @@
     LAYER_TYPE_LABELS,
     cameraFocalLength,
     createLayerCompOnSelected,
+    applyOnAdjustmentLayer,
+    sfxPreviewEnabled,
+    sfxPreviewVolume,
+    isCollapsed,
+    showFPS,
   } from "../../stores.js";
   import { resetPreferences } from "../../../lib/utils/main.js";
   import { sendNotif } from "../../logic.js";
@@ -78,6 +83,32 @@
 
   function handleReduceProject() {
     deleteUnusedItems();
+  }
+
+  function handleOpenExcaliburFolder() {
+    try {
+      const isWindows =
+        typeof navigator !== "undefined" &&
+        navigator.userAgent.includes("Windows");
+
+      if (
+        typeof window !== "undefined" &&
+        window.cep_node &&
+        typeof window.cep_node.require === "function"
+      ) {
+        const os = window.cep_node.require("os");
+        const path = window.cep_node.require("path");
+        const childProcess = window.cep_node.require("child_process");
+
+        const folderPath = path.join(os.homedir(), "Documents", "Excalibur");
+
+        childProcess.exec(
+          isWindows ? `explorer "${folderPath}"` : `open "${folderPath}"`,
+        );
+      }
+    } catch (error) {
+      console.warn("[Excalibur] Unable to open Excalibur folder:", error);
+    }
   }
 
   $: speedLabel = getSpeedLabel($AnimationSpeed);
@@ -398,39 +429,95 @@
         </div>
       </div>
 
-      <div class="ctrl focal-picker-ctrl">
-        <label for="focal-input">Focal camera length</label>
-        <div class="custom-number-picker">
-          <button
-            type="button"
-            class="picker-btn minus-btn"
-            aria-label="Decrease"
-            on:click={decreaseFocal}>-</button
-          >
-          <input
-            id="focal-input"
-            type="number"
-            class="picker-input"
-            bind:value={$cameraFocalLength}
-            min="1"
-            max="300"
-            step="1"
-          />
-          <button
-            type="button"
-            class="picker-btn plus-btn"
-            aria-label="Increase"
-            on:click={increaseFocal}>+</button
-          >
+      <div class="options-grid">
+        <div class="opt-row">
+          <label for="focal-input">Cam Lenght Val</label>
+          <div class="custom-number-picker">
+            <button
+              type="button"
+              class="picker-btn minus-btn"
+              aria-label="Decrease"
+              on:click={decreaseFocal}>-</button
+            >
+            <input
+              id="focal-input"
+              type="number"
+              class="picker-input"
+              bind:value={$cameraFocalLength}
+              min="1"
+              max="300"
+              step="1"
+            />
+            <button
+              type="button"
+              class="picker-btn plus-btn"
+              aria-label="Increase"
+              on:click={increaseFocal}>+</button
+            >
+          </div>
         </div>
-      </div>
-      <div class="check-layer-comp">
-        <label class="check-row">
+
+        <div class="opt-row">
+          <label for="sfx-volume-slider">SFX volume</label>
+          <div class="opt-slider-ctrl">
+            <input
+              id="sfx-volume-slider"
+              class="slider slider-default"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              bind:value={$sfxPreviewVolume}
+            />
+            <!--<span class="slider-value">{$sfxPreviewVolume.toFixed(2)}</span>-->
+          </div>
+        </div>
+
+        <div class="opt-divider"></div>
+
+        <label class="opt-check">
+          <span class="checkbox" class:checked={$applyOnAdjustmentLayer}>
+            <input type="checkbox" bind:checked={$applyOnAdjustmentLayer} />
+          </span>
+          <span>Apply on adjustment layer</span>
+        </label>
+
+        <label class="opt-check">
           <span class="checkbox" class:checked={$createLayerCompOnSelected}>
             <input type="checkbox" bind:checked={$createLayerCompOnSelected} />
           </span>
-          <span>Create Layer on each selected</span>
+          <span>Create layer on each selected</span>
         </label>
+
+        <label class="opt-check">
+          <span class="checkbox" class:checked={$sfxPreviewEnabled}>
+            <input type="checkbox" bind:checked={$sfxPreviewEnabled} />
+          </span>
+          <span>Enable SFX preview</span>
+        </label>
+
+        <label class="opt-check">
+          <span class="checkbox" class:checked={$isCollapsed}>
+            <input type="checkbox" bind:checked={$isCollapsed} />
+          </span>
+          <span>Compact sidebar</span>
+        </label>
+
+        <div class="opt-inline-row">
+          <label class="opt-check opt-check-inline">
+            <span class="checkbox" class:checked={$showFPS}>
+              <input type="checkbox" bind:checked={$showFPS} />
+            </span>
+            <span>Show FPS</span>
+          </label>
+
+          <button
+            class="mini-btn open-folder-btn inline"
+            on:click={handleOpenExcaliburFolder}
+          >
+            Open Excalibur folder
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -509,6 +596,122 @@
     transition: transform 0.2s ease-in-out;
   }
 
+  :global(html.seasonal-theme) {
+    --seasonal-accent: #ff007f;
+    --seasonal-secondary: #ffffff;
+    --seasonal-particle-colour: rgba(255, 255, 255, 0.8);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme .settings-wrapper .panel),
+  :global(html.seasonal-theme .settings-wrapper .mini-btn),
+  :global(html.seasonal-theme .settings-wrapper .menu-pill),
+  :global(html.seasonal-theme .settings-wrapper .toggle-dropdown-btn),
+  :global(html.seasonal-theme .settings-wrapper .picker-btn),
+  :global(html.seasonal-theme .settings-wrapper .menu-dropdown-container) {
+    position: relative;
+  }
+
+  :global(html.seasonal-theme .settings-wrapper .panel::before),
+  :global(html.seasonal-theme .settings-wrapper .mini-btn::before),
+  :global(html.seasonal-theme .settings-wrapper .menu-pill::before),
+  :global(html.seasonal-theme .settings-wrapper .toggle-dropdown-btn::before),
+  :global(html.seasonal-theme .settings-wrapper .picker-btn::before) {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    width: 11px;
+    height: 11px;
+    pointer-events: none;
+    background-image: var(--seasonal-icon-url);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.7;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  }
+
+  :global(html.seasonal-theme--christmas) {
+    --seasonal-accent: #d62828;
+    --seasonal-secondary: #1f9d66;
+    --seasonal-particle-colour: rgba(255, 255, 255, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--spring) {
+    --seasonal-accent: #4caf50;
+    --seasonal-secondary: #ffb703;
+    --seasonal-particle-colour: rgba(255, 242, 179, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--summer) {
+    --seasonal-accent: #ff9f1c;
+    --seasonal-secondary: #2ec4b6;
+    --seasonal-particle-colour: rgba(255, 246, 178, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--autumn) {
+    --seasonal-accent: #d97706;
+    --seasonal-secondary: #b45309;
+    --seasonal-particle-colour: rgba(248, 217, 161, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--festive) {
+    --seasonal-accent: #7c3aed;
+    --seasonal-secondary: #f59e0b;
+    --seasonal-particle-colour: rgba(254, 243, 199, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--cat) {
+    --seasonal-accent: #f4a261;
+    --seasonal-secondary: #8ecae6;
+    --seasonal-particle-colour: rgba(255, 230, 167, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(.excalibur-seasonal-particles) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  :global(.seasonal-particle) {
+    position: absolute;
+    left: var(--left, 50%);
+    top: var(--top, -10px);
+    width: var(--size, 4px);
+    height: var(--size, 4px);
+    border-radius: 50%;
+    opacity: 0.7;
+    display: block;
+    animation: seasonal-float var(--duration, 5s) linear infinite;
+    box-shadow: 0 0 4px var(--seasonal-particle-colour);
+    background-color: var(--seasonal-particle-colour);
+  }
+
+  @keyframes seasonal-float {
+    0% {
+      transform: translate3d(0, -10px, 0) scale(0.6);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate3d(var(--drift), 105vh, 0) scale(1);
+      opacity: 0;
+    }
+  }
+
   .mini-btn:hover {
     border-color: var(--activeColour);
     background-color: var(--activeColour);
@@ -525,7 +728,8 @@
 
   section.panel.panel-wide {
     width: 100%;
-    height: 130px;
+    min-height: 150px;
+    height: auto;
     padding: 6px 8px;
     box-sizing: border-box;
   }
@@ -538,19 +742,6 @@
     width: 100%;
   }
 
-  .focal-picker-ctrl {
-    display: flex;
-    justify-content: start;
-    align-items: center;
-
-    gap: 6px;
-    margin-top: 10px;
-
-    label {
-      margin-bottom: 0;
-    }
-  }
-
   .custom-number-picker {
     display: inline-flex;
     align-items: center;
@@ -559,6 +750,7 @@
     overflow: hidden;
     height: 15px;
     background-color: #0d0d0d;
+    flex-shrink: 0;
   }
 
   .picker-btn {
@@ -620,6 +812,7 @@
     inset: 0;
     z-index: 100;
     cursor: default;
+    backdrop-filter: blur(1px);
     border: 0;
     padding: 0;
     background: transparent;
@@ -673,8 +866,92 @@
     }
   }
 
-  .check-layer-comp {
-    margin-top: 6px;
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 6px;
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  .opt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+
+    label {
+      font-size: 8px;
+      font-weight: bold;
+      color: #ccc;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+  }
+
+  .opt-slider-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    margin-left: 30px;
+    justify-content: flex-end;
+
+    .slider {
+      flex: 0 0 auto;
+      width: 90px;
+    }
+  }
+
+  .opt-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: #2b2b2b;
+    margin: 2px 0;
+  }
+
+  .opt-check {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 0;
+
+    span:last-child {
+      font-size: 8px;
+      font-weight: bold;
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .opt-inline-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .opt-check-inline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .open-folder-btn {
+    width: 50%;
+    min-width: 110px;
+    height: 18px;
+    margin: 0;
+    flex: 0 0 auto;
   }
 
   .menus-pills {

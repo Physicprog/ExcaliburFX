@@ -1,5 +1,6 @@
 import { cep_node, cep, __adobe_cep__ } from "./lib/cep-types";
 
+declare module "*.js";
 declare module "*.png";
 declare module "*.gif";
 declare module "*.jpg";

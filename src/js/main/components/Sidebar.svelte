@@ -11,6 +11,7 @@
     FPS,
     CURRENT_VERSION,
     tabVisibility,
+    showFPS,
   } from "../stores.js";
 
   import {
@@ -164,9 +165,11 @@
         {$isCollapsed ? "Expand" : "Collapse"}
       </button>
 
-      <span class="fps-counter">
-        {$FPS}{#if !$isCollapsed}&nbsp;FPS{/if}
-      </span>
+      {#if $showFPS}
+        <span class="fps-counter">
+          {$FPS}{#if !$isCollapsed}&nbsp;FPS{/if}
+        </span>
+      {/if}
     </div>
   </div>
 </nav>

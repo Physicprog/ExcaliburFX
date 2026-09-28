@@ -1,6 +1,11 @@
 <script>
   import { onMount } from "svelte";
   import { readNotes, saveNotes } from "../../../lib/utils/main.js";
+  import {
+    seasonalThemeEnabled,
+    seasonalThemeMode,
+    seasonalThemeAuto,
+  } from "../../stores.js";
   import { censorField } from "../utils/profanity.ts";
 
   let text = "";
@@ -16,52 +21,32 @@
   let menuY = 18;
 
   let commands = [
-    "clear",
-    "todo",
-    "line",
-    "date",
-    "Enable christmas mode",
-    "Enable christmas mode",
-    "Enable christmas mode",
-    "Enable christmas mode",
+    "theme-off",
+    "theme-noel",
+    "theme-printemps",
+    "theme-ete",
+    "theme-automne",
+    "theme-fetes",
+    "theme-chat",
+    "theme-auto",
+    "theme-reset",
   ];
 
   onMount(() => {
     text = readNotes();
   });
 
-  function runCommand(cmd) {
-    if (cmd === "clear") {
-      text = "";
-      saveNotes("");
-    } else if (cmd === "todo") {
-      insertText("- [ ] ");
-    } else if (cmd === "line") {
-      insertText("\n---\n");
-    } else if (cmd === "date") {
-      let now = new Date();
-      insertText(now.toLocaleDateString());
-    } else if (cmd === "Enable christmas mode") {
-      insertText("NOEL");
-    }
-    showMenu = false;
-    menuItems = [];
-  }
-
-  function insertText(value) {
+  function removeSlashAndKeepCursor() {
     if (!textareaEl) return;
 
-    let cursor = textareaEl.selectionStart;
-    let before = text.slice(0, cursor);
-    let after = text.slice(cursor);
-    let slashPos = before.lastIndexOf("/");
+    const cursor = textareaEl.selectionStart;
+    const before = text.slice(0, cursor);
+    const after = text.slice(cursor);
+    const slashPos = before.lastIndexOf("/");
+    const cleanBefore = slashPos >= 0 ? before.slice(0, slashPos) : before;
 
-    if (slashPos >= 0) {
-      before = before.slice(0, slashPos);
-    }
-
-    text = before + value + after;
-    let newCursor = before.length + value.length;
+    text = cleanBefore + after;
+    const newCursor = cleanBefore.length;
 
     setTimeout(() => {
       textareaEl.focus();
@@ -70,6 +55,50 @@
     }, 0);
 
     handleInput();
+  }
+
+  function runCommand(cmd) {
+    if (cmd === "theme-off" || cmd === "theme-none") {
+      seasonalThemeEnabled.set(false);
+      seasonalThemeMode.set("none");
+      seasonalThemeAuto.set(false);
+    } else if (cmd === "theme-auto") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(true);
+      seasonalThemeMode.set("none");
+    } else if (cmd === "theme-reset") {
+      seasonalThemeEnabled.set(false);
+      seasonalThemeMode.set("none");
+      seasonalThemeAuto.set(true);
+    } else if (cmd === "theme-noel") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("christmas");
+    } else if (cmd === "theme-printemps") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("spring");
+    } else if (cmd === "theme-ete") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("summer");
+    } else if (cmd === "theme-automne") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("autumn");
+    } else if (cmd === "theme-fetes") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("festive");
+    } else if (cmd === "theme-chat") {
+      seasonalThemeEnabled.set(true);
+      seasonalThemeAuto.set(false);
+      seasonalThemeMode.set("cat");
+    }
+
+    removeSlashAndKeepCursor();
+    showMenu = false;
+    menuItems = [];
   }
 
   function updateMenuPosition() {
@@ -85,8 +114,16 @@
     let containerRect = container ? container.getBoundingClientRect() : null;
     let textareaRect = textareaEl.getBoundingClientRect();
 
-    let x = (textareaRect.left - (containerRect ? containerRect.left : 0)) + 14 + (colIndex * 7.2);
-    let y = (textareaRect.top - (containerRect ? containerRect.top : 0)) + 10 + (lineIndex * 22);
+    let x =
+      textareaRect.left -
+      (containerRect ? containerRect.left : 0) +
+      14 +
+      colIndex * 7.2;
+    let y =
+      textareaRect.top -
+      (containerRect ? containerRect.top : 0) +
+      10 +
+      lineIndex * 22;
 
     menuX = x < 14 ? 14 : x;
     menuY = y < 14 ? 14 : y;
@@ -115,7 +152,9 @@
       return;
     }
 
-    menuItems = commands.filter((cmd) => cmd.toLowerCase().includes(query.toLowerCase()));
+    menuItems = commands.filter((cmd) =>
+      cmd.toLowerCase().includes(query.toLowerCase()),
+    );
 
     if (menuItems.length === 0) {
       showMenu = false;
@@ -184,10 +223,16 @@
       Clear Notes
     </button>
 
-    <div id="hightlightLine" style="transform: translateY({(activeLine - 1) * 22 - scrollTop}px);"></div>
+    <div
+      id="hightlightLine"
+      style="transform: translateY({(activeLine - 1) * 22 - scrollTop}px);"
+    ></div>
 
     <div id="lineNumber">
-      <div class="numbers-wrapper" style="transform: translateY(-{scrollTop}px);">
+      <div
+        class="numbers-wrapper"
+        style="transform: translateY(-{scrollTop}px);"
+      >
         {#each lineNumbers as line}
           <div class="num" class:active={line === activeLine}>{line}</div>
         {/each}
@@ -212,7 +257,11 @@
       <div class="slash-menu" style="left: {menuX}px; top: {menuY}px;">
         <div class="slash-menu-list">
           {#each menuItems as cmd, index}
-            <button type="button" class:active={index === menuIndex} on:click={() => runCommand(cmd)}>
+            <button
+              type="button"
+              class:active={index === menuIndex}
+              on:click={() => runCommand(cmd)}
+            >
               {cmd}
             </button>
           {/each}

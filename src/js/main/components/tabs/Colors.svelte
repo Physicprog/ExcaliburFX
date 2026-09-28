@@ -13,19 +13,153 @@
     colorApplyDirect,
     colorInverted,
   } from "../../stores.js";
- 
+
   const PRESETS = {
-    Blue: ["#00215E", "#023087", "#0D47A1", "#1565C0", "#1976D2", "#1E88E5", "#2196F3", "#42A5F5", "#64B5F6", "#90CAF9", "#BBDEFB", "#E3F2FD", "#3498DB", "#2980B9", "#1B4F72"],
-    Green: ["#003300", "#084A12", "#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#4CAF50", "#66BB6A", "#81C784", "#A5D6A7", "#C8E6C9", "#E8F5E9", "#27AE60", "#2ECC71", "#145A32"],
-    Red: ["#4A0000", "#7D0000", "#B71C1C", "#C62828", "#D32F2F", "#E53935", "#F44336", "#EF5350", "#E74C3C", "#C0392B", "#FF1744", "#D50000", "#FF8A80", "#FFCDD2", "#FFEBEE"],
-    "Orange/Yellow": ["#E65100", "#EF6C00", "#F57C00", "#FB8C00", "#FF9800", "#FFA726", "#FFB74D", "#FFCC80", "#FFE0B2", "#FFF3E0", "#F1C40F", "#F39C12", "#E67E22", "#FFC107", "#FFF8E1"],
-    Purple: ["#4A148C", "#6A1B9A", "#7B1FA2", "#8E24AA", "#9C27B0", "#AB47BC", "#BA68C8", "#CE93D8", "#E1BEE7", "#F3E5F5", "#9B59B6", "#8E44AD", "#673AB7", "#5E35B1", "#311B92"],
-    Pink: ["#880E4F", "#AD1457", "#C2185B", "#D81B60", "#E91E63", "#EC407A", "#F06292", "#F48FB1", "#F8BBD0", "#FCE4EC", "#FD79A8", "#FF4081", "#F50057", "#C51162", "#4A0024"],
-    Brown: ["#3E2723", "#4E342E", "#5D4037", "#6D4C41", "#795548", "#8D6E63", "#A1887F", "#BCAAA4", "#D7CCC8", "#EFEBE9", "#8C6B5D", "#705346", "#543C33", "#382620", "#1E120D"],
-    Neutrals: ["#000000", "#1A1A1A", "#333333", "#4D4D4D", "#666666", "#808080", "#999999", "#B3B3B3", "#CCCCCC", "#E6E6E6", "#F2F2F2", "#FFFFFF", "#2B2B2B", "#595959", "#A6A6A6"]
+    Blue: [
+      "#00215E",
+      "#023087",
+      "#0D47A1",
+      "#1565C0",
+      "#1976D2",
+      "#1E88E5",
+      "#2196F3",
+      "#42A5F5",
+      "#64B5F6",
+      "#90CAF9",
+      "#BBDEFB",
+      "#E3F2FD",
+      "#3498DB",
+      "#2980B9",
+      "#1B4F72",
+    ],
+    Green: [
+      "#003300",
+      "#084A12",
+      "#1B5E20",
+      "#2E7D32",
+      "#388E3C",
+      "#43A047",
+      "#4CAF50",
+      "#66BB6A",
+      "#81C784",
+      "#A5D6A7",
+      "#C8E6C9",
+      "#E8F5E9",
+      "#27AE60",
+      "#2ECC71",
+      "#145A32",
+    ],
+    Red: [
+      "#4A0000",
+      "#7D0000",
+      "#B71C1C",
+      "#C62828",
+      "#D32F2F",
+      "#E53935",
+      "#F44336",
+      "#EF5350",
+      "#E74C3C",
+      "#C0392B",
+      "#FF1744",
+      "#D50000",
+      "#FF8A80",
+      "#FFCDD2",
+      "#FFEBEE",
+    ],
+    "Orange/Yellow": [
+      "#E65100",
+      "#EF6C00",
+      "#F57C00",
+      "#FB8C00",
+      "#FF9800",
+      "#FFA726",
+      "#FFB74D",
+      "#FFCC80",
+      "#FFE0B2",
+      "#FFF3E0",
+      "#F1C40F",
+      "#F39C12",
+      "#E67E22",
+      "#FFC107",
+      "#FFF8E1",
+    ],
+    Purple: [
+      "#4A148C",
+      "#6A1B9A",
+      "#7B1FA2",
+      "#8E24AA",
+      "#9C27B0",
+      "#AB47BC",
+      "#BA68C8",
+      "#CE93D8",
+      "#E1BEE7",
+      "#F3E5F5",
+      "#9B59B6",
+      "#8E44AD",
+      "#673AB7",
+      "#5E35B1",
+      "#311B92",
+    ],
+    Pink: [
+      "#880E4F",
+      "#AD1457",
+      "#C2185B",
+      "#D81B60",
+      "#E91E63",
+      "#EC407A",
+      "#F06292",
+      "#F48FB1",
+      "#F8BBD0",
+      "#FCE4EC",
+      "#FD79A8",
+      "#FF4081",
+      "#F50057",
+      "#C51162",
+      "#4A0024",
+    ],
+    Brown: [
+      "#3E2723",
+      "#4E342E",
+      "#5D4037",
+      "#6D4C41",
+      "#795548",
+      "#8D6E63",
+      "#A1887F",
+      "#BCAAA4",
+      "#D7CCC8",
+      "#EFEBE9",
+      "#8C6B5D",
+      "#705346",
+      "#543C33",
+      "#382620",
+      "#1E120D",
+    ],
+    Neutrals: [
+      "#000000",
+      "#1A1A1A",
+      "#333333",
+      "#4D4D4D",
+      "#666666",
+      "#808080",
+      "#999999",
+      "#B3B3B3",
+      "#CCCCCC",
+      "#E6E6E6",
+      "#F2F2F2",
+      "#FFFFFF",
+      "#2B2B2B",
+      "#595959",
+      "#A6A6A6",
+    ],
   };
 
-  const HARMONIES = ["Monochromatic", "Analogous", "Complementary", "Triadic", "Tetradic"];
+  const HARMONIES = [
+    "Monochromatic",
+    "Analogous",
+    "Complementary",
+    "Triadic",
+    "Tetradic",
+  ];
 
   let hexDisplay = "SELECT";
   let ringEl;
@@ -35,7 +169,7 @@
   let draggingRing = false;
   let isLeftSemicircle = false;
 
-  $: isPreset =$colorActiveSource === "preset";
+  $: isPreset = $colorActiveSource === "preset";
   $: isSmall = wrapperWidth <= 350;
 
   function hslToHex(h, s, l) {
@@ -45,16 +179,41 @@
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l - c / 2;
-    let r = 0, g = 0, b = 0;
+    let r = 0,
+      g = 0,
+      b = 0;
 
-    if (h < 60) { r = c; g = x; b = 0; }
-    else if (h < 120) { r = x; g = c; b = 0; }
-    else if (h < 180) { r = 0; g = c; b = x; }
-    else if (h < 240) { r = 0; g = x; b = c; }
-    else if (h < 300) { r = x; g = 0; b = c; }
-    else { r = c; g = 0; b = x; }
+    if (h < 60) {
+      r = c;
+      g = x;
+      b = 0;
+    } else if (h < 120) {
+      r = x;
+      g = c;
+      b = 0;
+    } else if (h < 180) {
+      r = 0;
+      g = c;
+      b = x;
+    } else if (h < 240) {
+      r = 0;
+      g = x;
+      b = c;
+    } else if (h < 300) {
+      r = x;
+      g = 0;
+      b = c;
+    } else {
+      r = c;
+      g = 0;
+      b = x;
+    }
 
-    const toHex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0").toUpperCase();
+    const toHex = (v) =>
+      Math.round((v + m) * 255)
+        .toString(16)
+        .padStart(2, "0")
+        .toUpperCase();
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
@@ -76,14 +235,18 @@
       const t = i / (perHue - 1);
       return Math.min(95, Math.max(5, l - spread / 2 + t * spread));
     });
-    
+
     const colors = [];
-    hues.forEach((hh) => steps.forEach((ll) => colors.push(hslToHex(hh, s, ll))));
+    hues.forEach((hh) =>
+      steps.forEach((ll) => colors.push(hslToHex(hh, s, ll))),
+    );
     return colors.slice(0, 20);
   }
 
-  $: palette = isPreset ? PRESETS[$colorPresetMode] : generateHarmony($colorHarmonyMode,$colorHue, $colorSat,$colorLight);
-  $: baseHex = hslToHex($colorHue, $colorSat,$colorLight);
+  $: palette = isPreset
+    ? PRESETS[$colorPresetMode]
+    : generateHarmony($colorHarmonyMode, $colorHue, $colorSat, $colorLight);
+  $: baseHex = hslToHex($colorHue, $colorSat, $colorLight);
 
   function selectHarmony(e) {
     $colorHarmonyMode = e.target.value;
@@ -104,7 +267,7 @@
     const dy = clientY - cy;
     const radius = rect.width / 2;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    
+
     $colorHue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
     $colorSat = Math.min(1, dist / radius) * 100;
   }
@@ -117,7 +280,7 @@
     const dx = clientX - cx;
     const dy = clientY - cy;
     const angle = Math.atan2(dy, dx);
-    
+
     isLeftSemicircle = Math.cos(angle) < 0;
     $colorLight = Math.max(0, Math.min(100, (1 - Math.sin(angle)) * 50));
   }
@@ -144,12 +307,16 @@
     draggingRing = false;
   }
 
-  $: Y_norm = 1 -$colorLight / 50;
-  $: X_norm = Math.sqrt(Math.max(0, 1 - Y_norm * Y_norm)) * (isLeftSemicircle ? -1 : 1);
+  $: Y_norm = 1 - $colorLight / 50;
+  $: X_norm =
+    Math.sqrt(Math.max(0, 1 - Y_norm * Y_norm)) * (isLeftSemicircle ? -1 : 1);
   $: ringPointerX = 50 + X_norm * 46.5;
   $: ringPointerY = 50 + Y_norm * 46.5;
 
-  $: pointerX = 50 + ($colorSat / 100) * 50 * Math.cos(($colorHue * Math.PI) / 180);$: pointerY = 50 + ($colorSat / 100) * 50 * Math.sin(($colorHue * Math.PI) / 180);
+  $: pointerX =
+    50 + ($colorSat / 100) * 50 * Math.cos(($colorHue * Math.PI) / 180);
+  $: pointerY =
+    50 + ($colorSat / 100) * 50 * Math.sin(($colorHue * Math.PI) / 180);
 
   function copyToClipboardFallback(text) {
     const ta = document.createElement("textarea");
@@ -159,7 +326,9 @@
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
-    try { document.execCommand("copy"); } catch (e) {}
+    try {
+      document.execCommand("copy");
+    } catch (e) {}
     document.body.removeChild(ta);
   }
 
@@ -174,7 +343,9 @@
   }
 
   async function applyFillToSelectedLayer(hex) {
-    try { await applyFillColor(hex); } catch (e) {}
+    try {
+      await applyFillColor(hex);
+    } catch (e) {}
   }
 
   function onSwatchClick(hex) {
@@ -194,14 +365,24 @@
     <div class="select-group">
       <div class="select-col">
         <span class="select-label">Harmonies</span>
-        <select value={$colorHarmonyMode} on:change={selectHarmony} class="mode-select" class:active={!isPreset}>
+        <select
+          value={$colorHarmonyMode}
+          on:change={selectHarmony}
+          class="mode-select"
+          class:active={!isPreset}
+        >
           {#each HARMONIES as f}<option value={f}>{f}</option>{/each}
         </select>
       </div>
 
       <div class="select-col">
         <span class="select-label">Presets</span>
-        <select value={$colorPresetMode} on:change={selectPreset} class="mode-select" class:active={isPreset}>
+        <select
+          value={$colorPresetMode}
+          on:change={selectPreset}
+          class="mode-select"
+          class:active={isPreset}
+        >
           {#each Object.keys(PRESETS) as p}<option value={p}>{p}</option>{/each}
         </select>
       </div>
@@ -209,47 +390,109 @@
 
     <div class="header-actions">
       {#if !isSmall}
-        <div class="hex-display" style="color:{isPreset ? palette[0] : baseHex}">
+        <div
+          class="hex-display"
+          style="color:{isPreset ? palette[0] : baseHex}"
+        >
           {hexDisplay}
         </div>
       {/if}
-      <button class="icon-btn switch-btn" title="Invert wheel / colors" on:click={() => ($colorInverted = !$colorInverted)}>
+      <button
+        class="icon-btn switch-btn"
+        title="Invert wheel / colors"
+        on:click={() => ($colorInverted = !$colorInverted)}
+      >
         <img src={Switch} alt="Switch" width="16" height="16" />
       </button>
     </div>
   </div>
 
   <div class="body" style="--anim-dur:{$TRANSITION_MS}ms;">
-    <div class="wheel-col" class:disabled={isPreset} style="order: {isSmall ? ($colorInverted ? 2 : 1) : 0}; transform: {isSmall ? 'none' : `translateX(${$colorInverted ? 'calc(100% + 15px)' : '0%'})`};">
+    <div
+      class="wheel-col"
+      class:disabled={isPreset}
+      style="order: {isSmall
+        ? $colorInverted
+          ? 2
+          : 1
+        : 0}; transform: {isSmall
+        ? 'none'
+        : `translateX(${$colorInverted ? 'calc(100% + 15px)' : '0%'})`};"
+    >
       <div class="wheel-container">
-        <div class="ring-track" bind:this={ringEl} on:pointerdown={onRingPointerDown} role="slider" aria-valuenow={$colorLight} aria-label="Luminosity"></div>
-        <div class="ring-pointer" style="left:{ringPointerX}%; top:{ringPointerY}%; background: hsl(0, 0%, {$colorLight}%);"></div>
-        <div class="wheel-core" bind:this={wheelEl} on:pointerdown={onWheelPointerDown} role="slider" aria-label="Chromatic wheel" aria-valuenow={$colorHue}>
-          <div class="wheel-pointer" style="left:{pointerX}%; top:{pointerY}%; background:{baseHex}"></div>
+        <div
+          class="ring-track"
+          bind:this={ringEl}
+          on:pointerdown={onRingPointerDown}
+          role="slider"
+          aria-valuenow={$colorLight}
+          aria-label="Luminosity"
+        ></div>
+        <div
+          class="ring-pointer"
+          style="left:{ringPointerX}%; top:{ringPointerY}%; background: hsl(0, 0%, {$colorLight}%);"
+        ></div>
+        <div
+          class="wheel-core"
+          bind:this={wheelEl}
+          on:pointerdown={onWheelPointerDown}
+          role="slider"
+          aria-label="Chromatic wheel"
+          aria-valuenow={$colorHue}
+        >
+          <div
+            class="wheel-pointer"
+            style="left:{pointerX}%; top:{pointerY}%; background:{baseHex}"
+          ></div>
         </div>
       </div>
     </div>
 
-    <div class="palette-col" style="order: {isSmall ? ($colorInverted ? 1 : 2) : 0}; transform: {isSmall ? 'none' : `translateX(${$colorInverted ? 'calc(-100% - 15px)' : '0%'})`};">
+    <div
+      class="palette-col"
+      style="order: {isSmall
+        ? $colorInverted
+          ? 1
+          : 2
+        : 0}; transform: {isSmall
+        ? 'none'
+        : `translateX(${$colorInverted ? 'calc(-100% - 15px)' : '0%'})`};"
+    >
       <div class="palette-grid">
         {#each palette as hex}
-          <button class="swatch" style="background:{hex}" title={hex} on:click={() => onSwatchClick(hex)}></button>
+          <button
+            class="swatch"
+            style="background:{hex}"
+            title={hex}
+            on:click={() => onSwatchClick(hex)}
+          ></button>
         {/each}
       </div>
     </div>
   </div>
 
   <div class="footer">
-    <label class="toggle-wrapper" title="Apply Fill effect directly on selected layer">
+    <label
+      class="toggle-wrapper"
+      title="Apply Fill effect directly on selected layer"
+    >
       <div class="switch" style="--anim-dur: {$TRANSITION_MS}ms">
-        <input type="checkbox" class="toggle" bind:checked={$colorApplyDirect} />
+        <input
+          type="checkbox"
+          class="toggle"
+          bind:checked={$colorApplyDirect}
+        />
         <span class="slider">
           <span class="slider-text off">off</span>
           <span class="slider-text on">on</span>
           <span class="slider-thumb"></span>
         </span>
       </div>
-      <span class="label-text">{$colorApplyDirect ? "Copy the selected color enabled" : "Color the selected layer enabled"}</span>
+      <span class="label-text"
+        >{$colorApplyDirect
+          ? "Copy the selected color enabled"
+          : "Color the selected layer enabled"}</span
+      >
     </label>
   </div>
 </div>
@@ -321,7 +564,9 @@
     font-weight: 600;
     outline: none;
     cursor: pointer;
-    transition: border-color 150ms, box-shadow 150ms;
+    transition:
+      border-color 150ms,
+      box-shadow 150ms;
 
     &.active {
       color: #fff;
@@ -423,7 +668,9 @@
     opacity: 0.25;
     pointer-events: none;
     filter: grayscale(80%);
-    transition: transform var(--anim-dur, 300ms) cubic-bezier(0.65, 0, 0.35, 1), opacity 0.2s;
+    transition:
+      transform var(--anim-dur, 300ms) cubic-bezier(0.65, 0, 0.35, 1),
+      opacity 0.2s;
   }
 
   .wrapper.is-small .body {
@@ -472,8 +719,16 @@
     position: absolute;
     inset: 14%;
     border-radius: 50%;
-    background: radial-gradient(circle closest-side, #ffffff 0%, rgba(255, 255, 255, 0) 35%), conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.6);
+    background:
+      radial-gradient(
+        circle closest-side,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0) 35%
+      ),
+      conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 2px 8px rgba(0, 0, 0, 0.6);
     cursor: crosshair;
     touch-action: none;
     z-index: 3;
@@ -506,9 +761,14 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 0;
-    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s, outline 0.1s;
+    transition:
+      transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.15s,
+      outline 0.1s;
 
     &:hover {
       transform: scale(1.08);

@@ -59,7 +59,11 @@
     }, 50);
   }
 
-  $: if ($Hue !== undefined || $Saturation !== undefined || $EnableRGBMode !== undefined) {
+  $: if (
+    $Hue !== undefined ||
+    $Saturation !== undefined ||
+    $EnableRGBMode !== undefined
+  ) {
     for (let i = 0; i < redrawTriggers.length; i++) {
       redrawTriggers[i]();
     }
@@ -215,7 +219,7 @@
     lastKnownActiveColor = getComputedStyle(document.documentElement)
       .getPropertyValue("--activeColour")
       .trim();
-    
+
     colorPollInterval = setInterval(pollActiveColorChange, 250);
   });
 
@@ -259,7 +263,7 @@
     if (typeof os !== "undefined" && typeof os.homedir === "function") {
       homeDir = os.homedir();
     }
-    
+
     let documentsFolder = "";
     if (homeDir) documentsFolder = homeDir + "/Documents";
     else documentsFolder = "Documents";
@@ -275,7 +279,9 @@
   }
 
   function deleteAllPresets() {
-    let confirmed = window.confirm("Are you sure you want to delete all custom presets? This action is irreversible.");
+    let confirmed = window.confirm(
+      "Are you sure you want to delete all custom presets? This action is irreversible.",
+    );
     if (!confirmed) {
       return;
     }
@@ -320,7 +326,7 @@
 
               let currentX1 = 0.5;
               if (p.x1 !== undefined) currentX1 = Number(p.x1);
-              
+
               let currentY1 = 0;
               if (p.y1 !== undefined) currentY1 = Number(p.y1);
 
@@ -335,7 +341,7 @@
                 x1: currentX1,
                 y1: currentY1,
                 x2: currentX2,
-                y2: currentY2
+                y2: currentY2,
               });
             }
           }
@@ -365,9 +371,7 @@
       }
       let jsonString = JSON.stringify(presetsData);
       fs.writeFileSync(filePath, jsonString, "utf-8");
-    } catch (e) {
-      // empty catch
-    }
+    } catch (e) {}
   }
 
   function generateId() {
@@ -416,13 +420,13 @@
       let mt = 1 - t;
       let xEst = 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t;
       let d = 3 * mt * mt * x1 + 6 * mt * t * (x2 - x1) + 3 * t * t * (1 - x2);
-      
+
       if (Math.abs(d) < 1e-6) {
         break;
       }
-      
+
       t = t - (xEst - x) / d;
-      
+
       if (t < 0) t = 0;
       if (t > 1) t = 1;
     }
@@ -525,11 +529,11 @@
       for (let i = 0; i < points.length; i++) {
         let ptX = points[i][0];
         let ptY = points[i][1];
-        
+
         ctx.beginPath();
         let radius = w / 35;
         if (radius < 2) radius = 2;
-        
+
         ctx.arc(ptX, ptY, radius, 0, Math.PI * 2);
         ctx.fillStyle = "#fff";
         ctx.fill();
@@ -544,12 +548,12 @@
 
     let unregister = registerRedraw(draw);
     let resizeRafId = null;
-    
+
     let ro = new ResizeObserver(function () {
       if (resizeRafId) cancelAnimationFrame(resizeRafId);
       resizeRafId = requestAnimationFrame(draw);
     });
-    
+
     ro.observe(node);
 
     return {
@@ -581,7 +585,7 @@
       let px = w * padding;
       let py = h * padding;
       let currentValues = getters();
-      
+
       let x1 = currentValues.x1;
       let y1 = currentValues.y1;
       let x2 = currentValues.x2;
@@ -606,7 +610,7 @@
     function draw(tPoint) {
       let pts = points();
       if (!pts.w || !pts.h) return;
-      
+
       canvas.width = pts.w;
       canvas.height = pts.h;
       let ctx = canvas.getContext("2d");
@@ -631,10 +635,17 @@
 
       let curveLineWidth = pts.h / 55;
       if (curveLineWidth < 2.5) curveLineWidth = 2.5;
-      
+
       ctx.beginPath();
       ctx.moveTo(pts.px, pts.h - pts.py);
-      ctx.bezierCurveTo(pts.p1x, pts.p1y, pts.p2x, pts.p2y, pts.w - pts.px, pts.py);
+      ctx.bezierCurveTo(
+        pts.p1x,
+        pts.p1y,
+        pts.p2x,
+        pts.p2y,
+        pts.w - pts.px,
+        pts.py,
+      );
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = curveLineWidth;
       ctx.lineCap = "round";
@@ -661,7 +672,7 @@
         ctx.beginPath();
         let radius = pts.h / 32;
         if (radius < 3) radius = 3;
-        
+
         ctx.arc(ptX, ptY, radius, 0, Math.PI * 2);
         ctx.fillStyle = activeColor;
         ctx.fill();
@@ -675,7 +686,7 @@
         let deriv = bezierDerivativeAt(tPoint, pts.x1, pts.y1, pts.x2, pts.y2);
         let len = Math.hypot(deriv.dx, deriv.dy);
         if (len === 0) len = 1;
-        
+
         let dirX = deriv.dx / len;
         let dirY = -deriv.dy / len;
 
@@ -706,13 +717,13 @@
     function onMouseDown(evt) {
       let pts = points();
       let m = getMouse(evt);
-      
+
       let r = pts.h / 10;
       if (r < 16) r = 16;
-      
+
       let dist1 = Math.hypot(m.x - pts.p1x, m.y - pts.p1y);
       let dist2 = Math.hypot(m.x - pts.p2x, m.y - pts.p2y);
-      
+
       if (dist1 <= r) {
         dragging = 1;
       } else if (dist2 <= r) {
@@ -723,7 +734,7 @@
     function onMouseMove(evt) {
       let pts = points();
       let m = getMouse(evt);
-      
+
       let r = pts.h / 10;
       if (r < 16) r = 16;
 
@@ -732,7 +743,7 @@
       } else {
         let dist1 = Math.hypot(m.x - pts.p1x, m.y - pts.p1y);
         let dist2 = Math.hypot(m.x - pts.p2x, m.y - pts.p2y);
-        
+
         if (dist1 <= r || dist2 <= r) {
           canvas.style.cursor = "grab";
         } else {
@@ -781,7 +792,7 @@
           isVisible = true;
         }
       },
-      { threshold: 0 }
+      { threshold: 0 },
     );
     visibilityObserver.observe(node);
 
@@ -791,7 +802,12 @@
     function animer(now) {
       if (stopped) return;
 
-      if (document.hidden || !isVisible || node.offsetParent === null || $activeTab !== "curves") {
+      if (
+        document.hidden ||
+        !isVisible ||
+        node.offsetParent === null ||
+        $activeTab !== "curves"
+      ) {
         timeDebut = null;
         animId = requestAnimationFrame(animer);
         return;
@@ -800,7 +816,7 @@
       if (timeDebut === null) {
         timeDebut = now;
       }
-      
+
       let elapsed = now - timeDebut;
       let cyclePos = elapsed % CYCLE_MS;
 
@@ -816,15 +832,15 @@
 
       animId = requestAnimationFrame(animer);
     }
-    
+
     let unregister = registerRedraw(function () {
       draw(lastT);
     });
-    
+
     let ro = new ResizeObserver(function () {
       draw(lastT);
     });
-    
+
     ro.observe(node);
     draw(0);
     animId = requestAnimationFrame(animer);
@@ -861,7 +877,7 @@
             }
           }
         },
-        { root: null, threshold: 0, rootMargin: "50px" }
+        { root: null, threshold: 0, rootMargin: "50px" },
       );
     }
     return sharedPresetObserver;
@@ -882,19 +898,19 @@
         pendingPreset.x1,
         pendingPreset.y1,
         pendingPreset.x2,
-        pendingPreset.y2
+        pendingPreset.y2,
       );
     }
 
     let observer = getSharedPresetObserver();
-    
+
     presetVisibilityMap.set(node, function (visible) {
       isVisible = visible;
       if (visible && !instance) {
         ensureDrawn();
       }
     });
-    
+
     observer.observe(node);
 
     return {
@@ -926,7 +942,7 @@
         setNewX2 = x2;
         setNewY2 = y2;
         curveValText = formatVal(x1, y1, x2, y2);
-      }
+      },
     );
     return { destroy: instance.destroy };
   }
@@ -935,7 +951,12 @@
     let instance = interactiveBezier(
       node,
       function () {
-        return { x1: L_setNewX1, y1: L_setNewY1, x2: L_setNewX2, y2: L_setNewY2 };
+        return {
+          x1: L_setNewX1,
+          y1: L_setNewY1,
+          x2: L_setNewX2,
+          y2: L_setNewY2,
+        };
       },
       function (x1, y1, x2, y2) {
         L_setNewX1 = x1;
@@ -943,14 +964,20 @@
         L_setNewX2 = x2;
         L_setNewY2 = y2;
         curveValLiveText = formatVal(x1, y1, x2, y2);
-      }
+      },
     );
     return { destroy: instance.destroy };
   }
 
   async function applyCurveValues(x1, y1, x2, y2) {
     try {
-      let response = await evalTS("ApplyCurveToKeyFramesExcalibur", Number(x1), Number(y1), Number(x2), Number(y2));
+      let response = await evalTS(
+        "ApplyCurveToKeyFramesExcalibur",
+        Number(x1),
+        Number(y1),
+        Number(x2),
+        Number(y2),
+      );
       let result = JSON.parse(response);
 
       if (result.status === "SUCCESS") {
@@ -979,9 +1006,7 @@
       } else {
         copiedBezierDisplay = "No curve copied";
       }
-    } catch (e) {
-      // empty catch
-    }
+    } catch (e) {}
   }
 
   function pasteCurve() {
@@ -1021,22 +1046,20 @@
         x2: Number(L_setNewX2),
         y2: Number(L_setNewY2),
       };
-      
+
       let newArray = [];
       for (let i = 0; i < presetsData.length; i++) {
         newArray.push(presetsData[i]);
       }
       newArray.push(newPreset);
       presetsData = newArray;
-      
+
       savePresets();
       loadPresets();
 
       $CurvesTab = "presets";
       sendNotif("Live curve saved as preset", true);
-    } catch (e) {
-      // empty catch
-    }
+    } catch (e) {}
   }
 
   function savePreset() {
@@ -1072,7 +1095,7 @@
       newArray.push(newPreset);
       presetsData = newArray;
     }
-    
+
     savePresets();
     loadPresets();
     setView("list");
@@ -1080,7 +1103,7 @@
 
   function removeCurrentPreset() {
     if (!editingId) return;
-    
+
     let filtered = [];
     for (let i = 0; i < presetsData.length; i++) {
       if (presetsData[i].id !== editingId) {
@@ -1088,7 +1111,7 @@
       }
     }
     presetsData = filtered;
-    
+
     savePresets();
     setView("list");
   }
@@ -1097,27 +1120,41 @@
 </script>
 
 <div class="settings-wrapper" bind:this={wrapperEl}>
-  <div class="tab-view" bind:this={tabViewEl} style="transform: scale({scaleFactor}); width: {REF_WIDTH}px;">
+  <div
+    class="tab-view"
+    bind:this={tabViewEl}
+    style="transform: scale({scaleFactor}); width: {REF_WIDTH}px;"
+  >
     <div class="slider-wrapper">
-      <div class="tab-slide" 
+      <div
+        class="tab-slide"
         class:hidden={activeView !== "list" && prevView !== "list"}
         class:exit={isTransitioning && prevView === "list"}
         class:enter={isTransitioning && activeView === "list"}
-        class:slide-left-exit={isTransitioning && prevView === "list" && direction === 1}
-        class:slide-right-enter={isTransitioning && activeView === "list" && direction === -1}>
+        class:slide-left-exit={isTransitioning &&
+          prevView === "list" &&
+          direction === 1}
+        class:slide-right-enter={isTransitioning &&
+          activeView === "list" &&
+          direction === -1}
+      >
         <div class="full-view-content">
           <nav class="dashboard-sub-menu">
             <div class="nav-grid">
-              <button type="button" 
+              <button
+                type="button"
                 class:eff_active={$CurvesTab === "presets"}
                 class:not_eff_active={$CurvesTab !== "presets"}
-                on:click={() => ($CurvesTab = "presets")}>
+                on:click={() => ($CurvesTab = "presets")}
+              >
                 <span>Presets</span>
               </button>
-              <button type="button" 
+              <button
+                type="button"
                 class:eff_active={$CurvesTab === "live"}
                 class:not_eff_active={$CurvesTab !== "live"}
-                on:click={() => ($CurvesTab = "live")}>
+                on:click={() => ($CurvesTab = "live")}
+              >
                 <span>Live Curve</span>
               </button>
             </div>
@@ -1125,56 +1162,140 @@
 
           <main class="content-area">
             {#if $CurvesTab === "presets"}
-              <div class="presets-section" in:fly={{ x: -80, duration: durIn }} out:fly={{ x: -80, duration: durOut }}>
+              <div
+                class="presets-section"
+                in:fly={{ x: -80, duration: durIn }}
+                out:fly={{ x: -80, duration: durOut }}
+              >
                 {#if showCopyPasteButtons}
                   <div class="copy-paste-bar">
-                    <button class="cp-btn btn-copy" on:click={copyCurve}>Copy</button>
-                    <button class="cp-btn btn-paste" on:click={pasteCurve}>Paste</button>
+                    <button class="cp-btn btn-copy" on:click={copyCurve}
+                      >Copy</button
+                    >
+                    <button class="cp-btn btn-paste" on:click={pasteCurve}
+                      >Paste</button
+                    >
                   </div>
                 {/if}
 
-                <div class="presets-grid-wrapper" style="--preset-size: {$zoomLevel}px;">
+                <div
+                  class="presets-grid-wrapper"
+                  style="--preset-size: {$zoomLevel}px;"
+                >
                   <div class="presets-grid">
-                    <button type="button" class="curve_prefix add-curve-btn" on:click={openNewPreset} title="New Curve" aria-label="Create a new curve preset">
+                    <button
+                      type="button"
+                      class="curve_prefix add-curve-btn"
+                      on:click={openNewPreset}
+                      title="New Curve"
+                      aria-label="Create a new curve preset"
+                    >
                       <img src={Add} alt="Nouvelle Courbe" decoding="async" />
                     </button>
                     {#each presetsData as preset (preset.id)}
-                      <button type="button" class="curve_prefix" use:miniCurveAction={preset} on:click={() => applyPreset(preset)} on:contextmenu|preventDefault={() => openEditPreset(preset)} title="Left click: apply — Right click: edit" aria-label={`Apply preset ${preset.id}`}></button>
+                      <button
+                        type="button"
+                        class="curve_prefix"
+                        use:miniCurveAction={preset}
+                        on:click={() => applyPreset(preset)}
+                        on:contextmenu|preventDefault={() =>
+                          openEditPreset(preset)}
+                        title="Left click: apply — Right click: edit"
+                        aria-label={`Apply preset ${preset.id}`}
+                      ></button>
                     {/each}
                   </div>
                 </div>
-                
+
                 {#if isToolbarOpen}
-                  <div class="floating-toolbar" in:fly={{ y: 20, duration: durIn }} out:fly={{ y: 20, duration: durOut }}>
-                    <button class="toolbar-btn delete-all-btn" on:click={deleteAllPresets} title="Supprimer tous les presets">Delete All</button>
-                    <button class="toolbar-btn toggle-cp-btn" class:is-active={showCopyPasteButtons} on:click={() => (showCopyPasteButtons = !showCopyPasteButtons)} title="Afficher/Masquer les boutons Copy/Paste">
+                  <div
+                    class="floating-toolbar"
+                    in:fly={{ y: 20, duration: durIn }}
+                    out:fly={{ y: 20, duration: durOut }}
+                  >
+                    <button
+                      class="toolbar-btn delete-all-btn"
+                      on:click={deleteAllPresets}
+                      title="Supprimer tous les presets">Delete All</button
+                    >
+                    <button
+                      class="toolbar-btn toggle-cp-btn"
+                      class:is-active={showCopyPasteButtons}
+                      on:click={() =>
+                        (showCopyPasteButtons = !showCopyPasteButtons)}
+                      title="Afficher/Masquer les boutons Copy/Paste"
+                    >
                       C/P {showCopyPasteButtons ? "ON" : "OFF"}
                     </button>
                     <div class="zoom-toolbar">
-                      <button class="zoom-btn" on:click={zoomOut} title="Réduire">−</button>
+                      <button
+                        class="zoom-btn"
+                        on:click={zoomOut}
+                        title="Réduire">−</button
+                      >
                       <span class="zoom-value">{$zoomLevel}</span>
-                      <button class="zoom-btn" on:click={zoomIn} title="Agrandir">+</button>
+                      <button
+                        class="zoom-btn"
+                        on:click={zoomIn}
+                        title="Agrandir">+</button
+                      >
                     </div>
-                    <button class="toolbar-btn close-pop-btn" on:click={() => (isToolbarOpen = false)} title="Fermer les options">
+                    <button
+                      class="toolbar-btn close-pop-btn"
+                      on:click={() => (isToolbarOpen = false)}
+                      title="Fermer les options"
+                    >
                       <img src={Close} alt="Fermer" decoding="async" />
                     </button>
                   </div>
                 {:else}
-                  <button class="toolbar-toggle-btn" on:click={() => (isToolbarOpen = true)} title="Options" in:scale={{ duration: durIn, start: 0.5 }} out:scale={{ duration: durOut, start: 0.5 }}>
+                  <button
+                    class="toolbar-toggle-btn"
+                    on:click={() => (isToolbarOpen = true)}
+                    title="Options"
+                    in:scale={{ duration: durIn, start: 0.5 }}
+                    out:scale={{ duration: durOut, start: 0.5 }}
+                  >
                     <img src={Add} alt="Options" decoding="async" />
                   </button>
                 {/if}
               </div>
             {:else}
-              <div class="live-section" in:fly={{ x: 80, duration: durIn }} out:fly={{ x: 80, duration: durOut }}>
+              <div
+                class="live-section"
+                in:fly={{ x: 80, duration: durIn }}
+                out:fly={{ x: 80, duration: durOut }}
+              >
                 <div class="live-card">
-                  <div id="CurvePreview_Live" class="live-canvas" use:liveCurveAction></div>
-                  <input class="value-input live-value-input" type="text" readonly value={curveValLiveText} />
+                  <div
+                    id="CurvePreview_Live"
+                    class="live-canvas"
+                    use:liveCurveAction
+                  ></div>
+                  <input
+                    class="value-input live-value-input"
+                    type="text"
+                    readonly
+                    value={curveValLiveText}
+                  />
                   <div class="live-actions">
-                    <button class="primary-btn live-btn" on:click={() => applyCurveValues(L_setNewX1, L_setNewY1, L_setNewX2, L_setNewY2)}>
+                    <button
+                      class="primary-btn live-btn"
+                      on:click={() =>
+                        applyCurveValues(
+                          L_setNewX1,
+                          L_setNewY1,
+                          L_setNewX2,
+                          L_setNewY2,
+                        )}
+                    >
                       Apply
                     </button>
-                    <button class="secondary-btn live-btn" on:click={saveLiveAsPreset} title="Sauvegarder en tant que preset">
+                    <button
+                      class="secondary-btn live-btn"
+                      on:click={saveLiveAsPreset}
+                      title="Sauvegarder en tant que preset"
+                    >
                       Add as Preset
                     </button>
                   </div>
@@ -1185,19 +1306,32 @@
         </div>
       </div>
 
-      <div class="tab-slide" 
+      <div
+        class="tab-slide"
         class:hidden={activeView !== "edit" && prevView !== "edit"}
         class:exit={isTransitioning && prevView === "edit"}
         class:enter={isTransitioning && activeView === "edit"}
-        class:slide-right-exit={isTransitioning && prevView === "edit" && direction === -1}
-        class:slide-left-enter={isTransitioning && activeView === "edit" && direction === 1}>
+        class:slide-right-exit={isTransitioning &&
+          prevView === "edit" &&
+          direction === -1}
+        class:slide-left-enter={isTransitioning &&
+          activeView === "edit" &&
+          direction === 1}
+      >
         <div class="edit-mode-container">
           <div class="edit-card">
             <div class="edit-canvas" use:editCurveAction></div>
-            <input class="value-input readonly" type="text" readonly value={curveValText} />
+            <input
+              class="value-input readonly"
+              type="text"
+              readonly
+              value={curveValText}
+            />
             <div class="edit-actions" class:with-remove={editingId}>
               {#if editingId}
-                <button class="btn-remove" on:click={removeCurrentPreset}>Remove</button>
+                <button class="btn-remove" on:click={removeCurrentPreset}
+                  >Remove</button
+                >
               {/if}
               <button class="btn-cancel" on:click={closeEdit}>Cancel</button>
               <button class="btn-save" on:click={savePreset}>Save</button>
@@ -1270,16 +1404,20 @@
   }
 
   .slide-left-enter {
-    animation: slideInFromRight var(--transition-ms, 300ms) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slideInFromRight var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .slide-left-exit {
-    animation: slideOutToLeft var(--transition-ms, 300ms) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slideOutToLeft var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .slide-right-enter {
-    animation: slideInFromLeft var(--transition-ms, 300ms) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slideInFromLeft var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .slide-right-exit {
-    animation: slideOutToRight var(--transition-ms, 300ms) cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slideOutToRight var(--transition-ms, 300ms)
+      cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
 
   @keyframes slideInFromRight {
@@ -1411,7 +1549,9 @@
       font-size: 11px;
       cursor: pointer;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-      transition: transform 30ms, filter 100ms ease;
+      transition:
+        transform 30ms,
+        filter 100ms ease;
 
       &:hover {
         filter: brightness(1.15);
@@ -1471,7 +1611,9 @@
     justify-content: center;
     cursor: pointer;
     backdrop-filter: blur(4px);
-    transition: background-color 0.15s ease, transform 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease;
 
     img {
       width: 45px;
@@ -1578,7 +1720,9 @@
       cursor: pointer;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
       box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
-      transition: transform 30ms, background-color 65ms;
+      transition:
+        transform 30ms,
+        background-color 65ms;
 
       &:hover {
         transform: scale(1.02);
@@ -1627,12 +1771,7 @@
     }
   }
   .btn-save {
-    background-color: rgb(158, 194, 27);
-    &:hover {
-      background-color: rgb(214, 255, 32);
-      color: black;
-      text-shadow: none;
-    }
+    background-color: var(--activeColour);
   }
 
   .toolbar-btn {
@@ -1645,7 +1784,9 @@
     font-size: 9px;
     cursor: pointer;
     padding: 0 8px;
-    transition: filter 0.12s ease, background-color 0.12s ease;
+    transition:
+      filter 0.12s ease,
+      background-color 0.12s ease;
 
     &:hover {
       filter: brightness(1.15);
@@ -1676,7 +1817,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: filter 0.12s ease, background-color 0.12s ease;
+      transition:
+        filter 0.12s ease,
+        background-color 0.12s ease;
 
       &:hover {
         background-color: #4d4d4d;
@@ -1720,10 +1863,13 @@
 
   .presets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--preset-size, 40px), 1fr));
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(var(--preset-size, 40px), 1fr)
+    );
     gap: 4px;
     align-content: start;
-    
+
     .add-curve-btn {
       order: 9999;
     }
@@ -1744,7 +1890,10 @@
     align-items: center;
     justify-content: center;
     z-index: 2;
-    transition: transform 35ms, background-color 0.15s ease, border-color 0.15s ease;
+    transition:
+      transform 35ms,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
 
     img {
       width: 100%;
@@ -1835,7 +1984,9 @@
     background-color: var(--activeColour);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
     box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 30ms, background-color 65ms;
+    transition:
+      transform 30ms,
+      background-color 65ms;
     margin: 0 auto;
 
     &:hover {

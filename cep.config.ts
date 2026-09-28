@@ -62,7 +62,7 @@ const config: CEP_Config = {
     jsxBin: "off",
   },
   installModules: [],
-  copyAssets: ["js/assets", "js/radial", "js/lib/cep"],
+  copyAssets: ["js/assets", "js/lib/cep"],
   copyZipAssets: [],
 };
 

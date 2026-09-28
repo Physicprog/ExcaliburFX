@@ -1,10 +1,9 @@
 import { defineConfig } from "vite";
-
 import { svelte } from "@sveltejs/vite-plugin-svelte"; 
-import {sveltePreprocess} from "svelte-preprocess"; 
-
+import { sveltePreprocess } from "svelte-preprocess"; 
 import { cep, CepOptions, runAction } from "vite-cep-plugin";
 import cepConfig from "./cep.config";
+import fs from "fs";
 import path from "path";
 import { extendscriptConfig } from "./vite.es.config";
 
@@ -29,6 +28,22 @@ cepConfig.panels.map((panel) => {
   input[panel.name] = path.resolve(root, panel.mainPath);
 });
 
+Object.values(input).forEach((panelEntry) => {
+  const relativePath = path.relative(root, panelEntry);
+  const panelOutputDir = path.dirname(path.resolve(outDir, relativePath));
+  fs.mkdirSync(panelOutputDir, { recursive: true });
+});
+
+const runtimeAssets = [
+  [path.resolve(root, "main/bin/win/ffmpeg.exe"), "ffmpeg.exe"],
+  [path.resolve(root, "main/bin/mac/ffmpeg"), "ffmpeg"],
+] as const;
+const runtimeAssetDir = path.resolve(outDir, "assets");
+fs.mkdirSync(runtimeAssetDir, { recursive: true });
+runtimeAssets.forEach(([source, fileName]) => {
+  fs.copyFileSync(source, path.join(runtimeAssetDir, fileName));
+});
+
 const config: CepOptions = {
   cepConfig,
   isProduction,
@@ -49,7 +64,6 @@ if (action) runAction(config, action);
 export default defineConfig({
   plugins: [
     svelte({ preprocess: sveltePreprocess({ typescript: true }) }), 
-    // svelte(), 
     cep(config),
   ],
   resolve: {
@@ -66,19 +80,16 @@ export default defineConfig({
 
   build: {
     sourcemap: isPackage ? cepConfig.zxp.sourceMap : cepConfig.build?.sourceMap,
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
     watch: {
       include: "src/jsx/**",
     },
-    // commonjsOptions: {
-    //   transformMixedEsModules: true,
-    // },
     rollupOptions: {
       input,
       external: ["uiohook-napi"], 
-
       output: {
         manualChunks: {},
-        // esModule: false,
         preserveModules: false,
         format: "cjs",
         entryFileNames: "assets/[name]-[hash].cjs",

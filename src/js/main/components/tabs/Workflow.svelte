@@ -93,35 +93,119 @@
         <div class="section-label">Transform</div>
         <div class="transform-container">
           <div class="grid-anchor">
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("tl"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("tc"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("tr"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("cl"))}><span class="dot"></span></button>
-            <button class="anchor-btn center-btn" on:click={() => runAction(() => dragAnchorPoint("cc"))}><span class="dot dot-center"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("cr"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("bl"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("bc"))}><span class="dot"></span></button>
-            <button class="anchor-btn" on:click={() => runAction(() => dragAnchorPoint("br"))}><span class="dot"></span></button>
+            <button
+              class="anchor-btn"
+              aria-label="Top left anchor"
+              on:click={() => runAction(() => dragAnchorPoint("tl"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Top center anchor"
+              on:click={() => runAction(() => dragAnchorPoint("tc"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Top right anchor"
+              on:click={() => runAction(() => dragAnchorPoint("tr"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Center left anchor"
+              on:click={() => runAction(() => dragAnchorPoint("cl"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn center-btn"
+              aria-label="Center anchor"
+              on:click={() => runAction(() => dragAnchorPoint("cc"))}
+              ><span class="dot dot-center"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Center right anchor"
+              on:click={() => runAction(() => dragAnchorPoint("cr"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Bottom left anchor"
+              on:click={() => runAction(() => dragAnchorPoint("bl"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Bottom center anchor"
+              on:click={() => runAction(() => dragAnchorPoint("bc"))}
+              ><span class="dot"></span></button
+            >
+            <button
+              class="anchor-btn"
+              aria-label="Bottom right anchor"
+              on:click={() => runAction(() => dragAnchorPoint("br"))}
+              ><span class="dot"></span></button
+            >
           </div>
 
           <div class="col-actions">
-            <button class="secondary-btn" on:click={() => runAction(() => applyRotation(15))}>Rotation +</button>
-            <button class="secondary-btn" on:click={() => runAction(() => applyRotation(-15))}>Rotation -</button>
-            <button class="secondary-btn" on:click={() => runAction(() => resetLayerRotation())}>Reset Rotation</button>
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => applyRotation(15))}
+              >Rotation +</button
+            >
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => applyRotation(-15))}
+              >Rotation -</button
+            >
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => resetLayerRotation())}
+              >Reset Rotation</button
+            >
           </div>
 
           <div class="col-actions">
-            <button class="secondary-btn" on:click={() => runAction(() => scaleCompToOneToOne(100))}>Scale to 1:1</button>
-            <button class="secondary-btn" on:click={() => runAction(() => scaleCompToOneToOne(200))}>Scale to 2:1</button>
-            <button class="secondary-btn" on:click={() => runAction(() => scaleCompToOneToOne("reset"))}>Reset Scale</button>
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => scaleCompToOneToOne(0.5))}
+              >Scale to 2:1</button
+            >
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => scaleCompToOneToOne(2))}
+              >Scale to 2:1</button
+            >
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => scaleCompToOneToOne(1))}
+              >Fit To Comp</button
+            >
           </div>
 
           <div class="col-actions">
-            <button class="secondary-btn" on:click={() => runAction(() => disableFrameBlending())}>Disable BF</button>
-            <button class="secondary-btn" on:click={() => runAction(() => enableFrameBlending())}>Enable BF</button>
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => enableFrameBlending())}
+              >Enable BF</button
+            >
+            <button
+              class="secondary-btn"
+              on:click={() => runAction(() => disableFrameBlending())}
+              >Disable BF</button
+            >
             <div class="row-gap">
-              <button class="secondary-btn" on:click={() => runAction(() => sequenceLayersFromBottom())}>↓</button>
-              <button class="secondary-btn" on:click={() => runAction(() => sequenceLayers())}>↑</button>
+              <button
+                class="secondary-btn"
+                on:click={() => runAction(() => sequenceLayers())}>MBO</button
+              >
+              <button
+                class="secondary-btn"
+                on:click={() => runAction(() => sequenceLayersFromBottom())}
+                >MBF</button
+              >
             </div>
           </div>
         </div>
@@ -132,22 +216,65 @@
       <div class="section-block block-layers">
         <div class="section-label">Layers</div>
         <div class="grid-2x3">
-          <button class="secondary-btn" on:click={() => runAction(() => addSolidLayer($layerColors.solid))}>Solid</button>
-          <button class="secondary-btn" on:click={() => runAction(() => addNullLayer($layerColors.null))}>Null</button>
-          <button class="secondary-btn" on:click={() => runAction(() => addTextLayer($layerColors.text))}>Text</button>
-          <button class="secondary-btn" on:click={() => runAction(() => addCameraLayer($layerColors.camera, $cameraFocalLength))}>Camera</button>
-          <button class="secondary-btn span-2" on:click={() => runAction(() => addAdjustmentLayer($layerColors.adjustment, $createLayerCompOnSelected))}>Adjustment Layer</button>
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => addSolidLayer($layerColors.solid))}
+            >Solid</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => addNullLayer($layerColors.null))}
+            >Null</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => addTextLayer($layerColors.text))}
+            >Text</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() =>
+              runAction(() =>
+                addCameraLayer($layerColors.camera, $cameraFocalLength),
+              )}>Camera</button
+          >
+          <button
+            class="secondary-btn span-2"
+            on:click={() =>
+              runAction(() =>
+                addAdjustmentLayer(
+                  $layerColors.adjustment,
+                  $createLayerCompOnSelected,
+                ),
+              )}>Adjustment Layer</button
+          >
         </div>
       </div>
 
       <div class="section-block block-utils">
         <div class="section-label">Utilities</div>
         <div class="grid-utils">
-          <button class="secondary-btn span-2" on:click={() => runAction(() => trimCompToSelection())}>Trim Comp</button>
-          <button class="secondary-btn" on:click={() => runAction(() => Flip(1))}>Flip X</button>
-          <button class="secondary-btn" on:click={() => runAction(() => Flip(2))}>Flip Y</button>
-          <button class="secondary-btn" on:click={() => runAction(() => applyIn())}>In</button>
-          <button class="secondary-btn" on:click={() => runAction(() => applyOut())}>Out</button>
+          <button
+            class="secondary-btn span-2"
+            on:click={() => runAction(() => trimCompToSelection())}
+            >Trim Comp</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => Flip(1))}>Flip X</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => Flip(2))}>Flip Y</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => applyIn())}>In</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => applyOut())}>Out</button
+          >
         </div>
       </div>
     </div>
@@ -156,12 +283,37 @@
       <div class="section-block">
         <div class="section-label">Time &amp; Precomp</div>
         <div class="grid-3x2">
-          <button class="secondary-btn" on:click={() => runAction(() => freezeFrame())}>Freeze</button>
-          <button class="secondary-btn" on:click={() => runAction(() => reverseTime())}>Reverse</button>
-          <button class="secondary-btn" on:click={() => runAction(() => speedToCursor())}>Speed to Cursor</button>
-          <button class="secondary-btn" on:click={() => runAction(() => UnPrecompose())}>UnPre-compose</button>
-          <button class="secondary-btn" on:click={() => runAction(() => createPrecompAllInOneWithSelection($layerColors.precompose))}>Pre-compose All</button>
-          <button class="secondary-btn" on:click={() => runAction(() => createPrecompAllInOne($layerColors.precompose))}>Pre-compose Each</button>
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => freezeFrame())}>Freeze</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => reverseTime())}>Reverse</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => speedToCursor())}
+            >Speed to Cursor</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() => runAction(() => UnPrecompose())}
+            >UnPre-compose</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() =>
+              runAction(() =>
+                createPrecompAllInOneWithSelection($layerColors.precompose),
+              )}>Pre-compose All</button
+          >
+          <button
+            class="secondary-btn"
+            on:click={() =>
+              runAction(() => createPrecompAllInOne($layerColors.precompose))}
+            >Pre-compose Each</button
+          >
         </div>
       </div>
     </div>
@@ -194,9 +346,15 @@
     gap: 8px;
     width: 100%;
   }
-  .row-transform { flex: 1.15; }
-  .row-mid { flex: 0.95; }
-  .row-time { flex: 0.9; }
+  .row-transform {
+    flex: 1.15;
+  }
+  .row-mid {
+    flex: 0.95;
+  }
+  .row-time {
+    flex: 0.9;
+  }
 
   .section-block {
     background-color: rgb(31, 31, 31);
@@ -208,8 +366,12 @@
     box-sizing: border-box;
     flex: 1;
   }
-  .block-layers { flex: 0.45; }
-  .block-utils { flex: 0.55; }
+  .block-layers {
+    flex: 0.45;
+  }
+  .block-utils {
+    flex: 0.55;
+  }
   .section-label {
     font-size: 10px;
     font-weight: bold;
@@ -248,7 +410,8 @@
     height: 100%;
     width: 100%;
   }
-  .grid-2x3, .grid-utils {
+  .grid-2x3,
+  .grid-utils {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
@@ -287,14 +450,14 @@
     border: 1px solid rgb(75, 75, 75);
   }
   .secondary-btn:hover {
-    background-color: #007acc;
+    background-color: var(--activeColour, #007acc);
   }
   .anchor-btn {
     background-color: rgb(37, 37, 37);
     border: 1px solid rgb(60, 60, 60);
   }
   .anchor-btn:hover {
-    background-color: #007acc;
+    background-color: var(--activeColour, #007acc);
   }
   .anchor-btn:hover .dot {
     background-color: #fff;

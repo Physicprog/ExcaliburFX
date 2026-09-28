@@ -59,8 +59,6 @@ export const extendscriptConfig = (
   }
 
   const triggerHMR = () => {
-    // No built-in way to trigger Vite's HMR reload from outside the root folder
-    // Workaround will read and save index.html file for each panel to triggger reload
     console.log("ExtendScript Change");
     cepConfig.panels.map((panel) => {
       const tmpPath = path.join(process.cwd(), "src", "js", panel.mainPath);

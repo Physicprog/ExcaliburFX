@@ -1,0 +1,40 @@
+Classes de thème saisonnier chargées par l'application :
+
+- seasonal-theme
+- seasonal-theme--christmas
+- seasonal-theme--spring
+- seasonal-theme--summer
+- seasonal-theme--autumn
+- seasonal-theme--festive
+- seasonal-theme--cat
+
+Utilisation prévue :
+- Les classes sont ajoutées sur la racine du document par le code du thème.
+- Les styles sont appliqués à tous les éléments existants sans ajouter de nouveaux composants dans l'UI.
+- Les éléments ciblés peuvent être surchargés via :
+  .seasonal-theme--christmas .panel
+  .seasonal-theme--christmas .mini-btn
+  .seasonal-theme--christmas .menu-pill
+  .seasonal-theme--christmas .toggle-dropdown-btn
+  .seasonal-theme--spring .panel
+  .seasonal-theme--summer .panel
+  .seasonal-theme--autumn .panel
+  .seasonal-theme--festive .panel
+  .seasonal-theme--cat .panel
+
+Le système garde la personnalisation de couleur fonctionnelle et n'écrase pas les variables --activeColour, --secondaryColour, etc.
+Les particules vivent dans le conteneur :
+- excalibur-seasonal-particles
+- seasonal-particle
+
+Utilisation dans les composants Svelte :
+- classique : :global(.seasonal-theme--cat .my-element) { ... }
+- ou simplement : .my-element { ... } si l'élément est déjà dans le bon wrapper global
+
+Exemple de ciblage :
+- :global(.seasonal-theme--cat .workflow-panel) { background: #f4a261; }
+- :global(.seasonal-theme--christmas .panel) { border-color: #d62828; }
+
+Les PNG personnels peuvent être ajoutés plus tard via les variables CSS de thème :
+- --seasonal-icon-url
+- --seasonal-particle-colour

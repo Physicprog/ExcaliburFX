@@ -152,12 +152,11 @@
   const hill2Amplitude = 20;
   const hill2Stretch = 0.5;
 
-// Calibrage naturel pour Stick Hero (vitesse de référence x1)
-const baseStretchingSpeed = 4.5;    // ~220 px/s (le bâton monte vite sans être incontrôlable)
-const baseTurningSpeed = 3.5;       // ~0.3 seconde pour basculer à 90°
-const baseWalkingSpeed = 3.2;       // ~310 px/s (marche rythmée et fluide)
-const baseTransitioningSpeed = 2.2; // Défilement rapide de la caméra vers la plateforme suivante
-const baseFallingSpeed = 1.8;       // Chute sèche et punitive quand on rate
+  const baseStretchingSpeed = 4.5;
+  const baseTurningSpeed = 3.5;
+  const baseWalkingSpeed = 3.2;
+  const baseTransitioningSpeed = 2.2;
+  const baseFallingSpeed = 1.8;
 
   const heroWidth = 17;
   const heroHeight = 30;
@@ -225,7 +224,10 @@ const baseFallingSpeed = 1.8;       // Chute sèche et punitive quand on rate
       furthestX = lastTree.x;
     }
 
-    let x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
+    let x =
+      furthestX +
+      minimumGap +
+      Math.floor(Math.random() * (maximumGap - minimumGap));
     let treeColors = ["#6D8821", "#8FAC34", "#98B333"];
     let color = treeColors[Math.floor(Math.random() * treeColors.length)];
 
@@ -245,8 +247,12 @@ const baseFallingSpeed = 1.8;       // Chute sèche et punitive quand on rate
       furthestX = lastPlatform.x + lastPlatform.w;
     }
 
-    let x = furthestX + minimumGap + Math.floor(Math.random() * (maximumGap - minimumGap));
-    let w = minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
+    let x =
+      furthestX +
+      minimumGap +
+      Math.floor(Math.random() * (maximumGap - minimumGap));
+    let w =
+      minimumWidth + Math.floor(Math.random() * (maximumWidth - minimumWidth));
 
     platforms.push({ x: x, w: w });
   }
@@ -321,9 +327,11 @@ const baseFallingSpeed = 1.8;       // Chute sèche et punitive quand on rate
 
     if (phase === "waiting") {
     } else if (phase === "stretching") {
-      currentStick.length = currentStick.length + (timeDelta / baseStretchingSpeed) * stretchMult;
+      currentStick.length =
+        currentStick.length + (timeDelta / baseStretchingSpeed) * stretchMult;
     } else if (phase === "turning") {
-      currentStick.rotation = currentStick.rotation + (timeDelta / baseTurningSpeed) * turnMult;
+      currentStick.rotation =
+        currentStick.rotation + (timeDelta / baseTurningSpeed) * turnMult;
 
       if (currentStick.rotation > 90) {
         currentStick.rotation = 90;
@@ -408,12 +416,15 @@ const baseFallingSpeed = 1.8;       // Chute sèche et punitive quand on rate
         }
       }
     } else if (phase === "transitioning") {
-sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
+      sceneOffset = sceneOffset + timeDelta / baseTransitioningSpeed;
 
       let hitResult = thePlatformTheStickHits();
       let nextPlatform = hitResult[0];
 
-      if (nextPlatform && sceneOffset > nextPlatform.x + nextPlatform.w - paddingX) {
+      if (
+        nextPlatform &&
+        sceneOffset > nextPlatform.x + nextPlatform.w - paddingX
+      ) {
         sticks.push({
           x: nextPlatform.x + nextPlatform.w,
           length: 0,
@@ -423,7 +434,8 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
       }
     } else if (phase === "falling") {
       if (currentStick.rotation < 180) {
-        currentStick.rotation = currentStick.rotation + (timeDelta / baseTurningSpeed) * turnMult;
+        currentStick.rotation =
+          currentStick.rotation + (timeDelta / baseTurningSpeed) * turnMult;
       }
 
       heroY = heroY + (timeDelta / baseFallingSpeed) * fallMult;
@@ -459,7 +471,8 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
     }
 
     if (hitPlatform) {
-      let perfectStart = hitPlatform.x + hitPlatform.w / 2 - perfectAreaSize / 2;
+      let perfectStart =
+        hitPlatform.x + hitPlatform.w / 2 - perfectAreaSize / 2;
       let perfectEnd = hitPlatform.x + hitPlatform.w / 2 + perfectAreaSize / 2;
 
       if (perfectStart < stickFarX && stickFarX < perfectEnd) {
@@ -720,7 +733,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
 
   function getHillY(windowX, baseHeight, amplitude, stretch) {
     let sineBaseY = height - baseHeight;
-    let wave = sinus((sceneOffset * backgroundSpeedMultiplier + windowX) * stretch);
+    let wave = sinus(
+      (sceneOffset * backgroundSpeedMultiplier + windowX) * stretch,
+    );
     return wave * amplitude + sineBaseY;
   }
 
@@ -839,7 +854,12 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
         <div class="new-record-banner">NEW RECORD!</div>
       {/if}
       <h1>Score: {score}</h1>
-      <button id="restart" on:click|stopPropagation={function () { resetGame(); }}>
+      <button
+        id="restart"
+        on:click|stopPropagation={function () {
+          resetGame();
+        }}
+      >
         REPLAY
       </button>
     </div>
@@ -848,7 +868,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
 
 <button
   class="mini-btn settings-panel-btn"
-  on:click|stopPropagation={function () { openSettingsPanel = !openSettingsPanel; }}
+  on:click|stopPropagation={function () {
+    openSettingsPanel = !openSettingsPanel;
+  }}
 >
   <img src={SettingsButton} alt="Settings" />
 </button>
@@ -861,12 +883,20 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
 </button>
 
 {#if openSettingsPanel}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="settings-overlay"
+    role="button"
+    tabindex="0"
+    aria-label="Close settings panel"
     on:mousedown|stopPropagation
     on:touchstart|stopPropagation
     on:click|stopPropagation
+    on:keydown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openSettingsPanel = false;
+      }
+    }}
   >
     <div class="settings-wrapper">
       <div class="tab-view">
@@ -882,7 +912,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
                 type="checkbox"
                 checked={settings.gambleMode || false}
                 disabled={isGameInProgress}
-                on:change={function (e) { updateSetting("gambleMode", e.target.checked); }}
+                on:change={function (e) {
+                  updateSetting("gambleMode", e.target.checked);
+                }}
               />
             </span>
             <span>
@@ -907,7 +939,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
               max="5"
               step="0.1"
               value={settings.stretchingSpeed || 1}
-              on:input={function (e) { updateSetting("stretchingSpeed", e.target.value); }}
+              on:input={function (e) {
+                updateSetting("stretchingSpeed", e.target.value);
+              }}
             />
           </div>
 
@@ -923,7 +957,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
               max="5"
               step="0.1"
               value={settings.turningSpeed || 1}
-              on:input={function (e) { updateSetting("turningSpeed", e.target.value); }}
+              on:input={function (e) {
+                updateSetting("turningSpeed", e.target.value);
+              }}
             />
           </div>
 
@@ -939,10 +975,11 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
               max="5"
               step="0.1"
               value={settings.walkingSpeed || 1}
-              on:input={function (e) { updateSetting("walkingSpeed", e.target.value); }}
+              on:input={function (e) {
+                updateSetting("walkingSpeed", e.target.value);
+              }}
             />
           </div>
-
 
           <div class="ctrl">
             <label for="fall-speed"
@@ -956,7 +993,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
               max="5"
               step="0.1"
               value={settings.fallingSpeed || 1}
-              on:input={function (e) { updateSetting("fallingSpeed", e.target.value); }}
+              on:input={function (e) {
+                updateSetting("fallingSpeed", e.target.value);
+              }}
             />
           </div>
 
@@ -966,7 +1005,9 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
             </button>
             <button
               class="settings-btn"
-              on:click={function () { openSettingsPanel = false; }}
+              on:click={function () {
+                openSettingsPanel = false;
+              }}
             >
               Close
             </button>
@@ -975,7 +1016,7 @@ sceneOffset = sceneOffset + (timeDelta / baseTransitioningSpeed);
       </div>
     </div>
   </div>
-{/if} 
+{/if}
 
 <style>
   :global(body),

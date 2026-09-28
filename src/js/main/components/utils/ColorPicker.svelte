@@ -7,10 +7,18 @@
   let open = false;
 
   function toCss(rgb) {
-    return "rgb(" + Math.round(rgb[0] * 255) + ", " + Math.round(rgb[1] * 255) + ", " + Math.round(rgb[2] * 255) + ")";
+    return (
+      "rgb(" +
+      Math.round(rgb[0] * 255) +
+      ", " +
+      Math.round(rgb[1] * 255) +
+      ", " +
+      Math.round(rgb[2] * 255) +
+      ")"
+    );
   }
 
-  $: current = LABEL_COLORS.find(c => c.index === value) || LABEL_COLORS[0];
+  $: current = LABEL_COLORS.find((c) => c.index === value) || LABEL_COLORS[0];
 
   function toggle() {
     open = !open;
@@ -32,18 +40,25 @@
   {/if}
 
   <button type="button" class="cp-trigger" on:click={toggle}>
-    <span class="cp-swatch" style="background-color: {toCss(current.rgb)}"></span>
+    <span class="cp-swatch" style="background-color: {toCss(current.rgb)}"
+    ></span>
     <span class="cp-name">{current.name}</span>
     <span class="cp-arrow">{open ? "▲" : "▼"}</span>
   </button>
 
   {#if open}
-    <button type="button" class="cp-overlay" on:click={closeDropdown}></button>
+    <button
+      type="button"
+      class="cp-overlay"
+      aria-label="Close color picker"
+      on:click={closeDropdown}
+    ></button>
 
     <div class="cp-dropdown">
       {#each LABEL_COLORS as c}
         <button type="button" class="cp-option" on:click={() => select(c)}>
-          <span class="cp-swatch" style="background-color: {toCss(c.rgb)}"></span>
+          <span class="cp-swatch" style="background-color: {toCss(c.rgb)}"
+          ></span>
           <span class="cp-option-name">{c.name}</span>
         </button>
       {/each}
@@ -151,5 +166,16 @@
   .cp-option-name {
     flex: 1;
     text-align: left;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(37, 37, 37);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--activeColour);
+    border-radius: 3px;
   }
 </style>
