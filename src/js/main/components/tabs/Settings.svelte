@@ -21,6 +21,7 @@
     sfxPreviewVolume,
     isCollapsed,
     showFPS,
+    isHowToUseOpen,
   } from "../../stores.js";
   import { resetPreferences } from "../../../lib/utils/main.js";
   import { sendNotif } from "../../logic.js";
@@ -32,6 +33,23 @@
     deleteUnusedItems,
   } from "../../../lib/utils/main.js";
   import ColorPicker from "../utils/ColorPicker.svelte";
+
+  import Help from "../../../assets/logos/logo.png";
+  import OpenFolder from "../../../assets/ui/OpenFolder.png";
+  import Browse from "../../../assets/ui/Browse.png";
+
+  function openPaymentPage() {
+    const paymentUrl = "https://paypal.me/KhylianGriffon";
+    if (typeof window !== "undefined" && window.cep && window.cep.util) {
+      window.cep.util.openURLInDefaultBrowser(paymentUrl);
+    } else {
+      window.open(paymentUrl, "_blank");
+    }
+  }
+  function openClicker() {
+    closeAllDropdowns();
+    isHowToUseOpen.set(true);
+  }
 
   let showMenuDropdown = false;
   let showColorsDropdown = false;
@@ -204,6 +222,46 @@
   function increaseFocal() {
     if ($cameraFocalLength < 300)
       cameraFocalLength.update((value) => value + 1);
+  }
+  function copyToClipboard(text) {
+    let ta = null;
+    let success = false;
+
+    try {
+      ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      success = document.execCommand("copy");
+    } catch (err) {
+      success = false;
+    } finally {
+      if (ta && ta.parentNode) {
+        ta.parentNode.removeChild(ta);
+      }
+    }
+
+    if (success) {
+      sendNotif("Link copied to clipboard!", true);
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(function () {
+          sendNotif("Link copied to clipboard!", true);
+        })
+        .catch(function () {
+          sendNotif("Copy failed", false);
+        });
+    } else {
+      sendNotif("Copy failed", false);
+    }
   }
 </script>
 
@@ -469,7 +527,6 @@
               step="0.05"
               bind:value={$sfxPreviewVolume}
             />
-            <!--<span class="slider-value">{$sfxPreviewVolume.toFixed(2)}</span>-->
           </div>
         </div>
 
@@ -511,12 +568,34 @@
             <span>Show FPS</span>
           </label>
 
-          <button
-            class="mini-btn open-folder-btn inline"
-            on:click={handleOpenExcaliburFolder}
-          >
-            Open Excalibur folder
-          </button>
+          <div class="open-folder-btn">
+            <button
+              class="icon-btn"
+              title="Open How to use ExcaliburFX page"
+              on:click={openClicker}
+            >
+              <img src={Help} alt="Help" />
+            </button>
+
+            <button
+              class="icon-btn"
+              title="Open Excalibur Folder"
+              on:click={handleOpenExcaliburFolder}
+            >
+              <img src={OpenFolder} alt="Open folder" />
+            </button>
+            <button
+              class="icon-btn"
+              title="Open Excalibur Website"
+              on:click={() =>
+                copyToClipboard("https://excaliburfx-website.vercel.app/")}
+            >
+              <img src={Browse} alt="Website" />
+            </button>
+            <button class="mini-btn" on:click={openPaymentPage}>
+              Support me
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -945,13 +1024,46 @@
     flex: 1 1 auto;
     min-width: 0;
   }
-
   .open-folder-btn {
     width: 50%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
     min-width: 110px;
-    height: 18px;
     margin: 0;
     flex: 0 0 auto;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.2s ease-in-out,
+      filter 0.2s ease;
+  }
+
+  .icon-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  }
+
+  .icon-btn:hover {
+    transform: scale(1.15);
+    filter: brightness(1.2);
+  }
+
+  .icon-btn:active {
+    transform: scale(0.9);
   }
 
   .menus-pills {

@@ -48,16 +48,16 @@ const config: CEP_Config = {
     jsxBin: "off",
     sourceMap: true,
   },
-  zxp: {
+zxp: {
     country: "US",
     province: "CA",
-    org: "Physic (@Physic.vfx)",
+    org: "Physicvfx",
     password: "password",
     tsa: [
-      "http://timestamp.digicert.com/", // Windows Only
-      "http://timestamp.apple.com/ts01", // MacOS Only
+      "http://timestamp.digicert.com/", 
+      "http://timestamp.apple.com/ts01", 
     ],
-    allowSkipTSA: false,
+    allowSkipTSA: true, // <-- ASSURE-TOI QUE C'EST BIEN SUR TRUE
     sourceMap: false,
     jsxBin: "off",
   },

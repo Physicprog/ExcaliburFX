@@ -10,26 +10,45 @@
   import {
     CURRENT_VERSION,
     updateInfo,
+    latestVersion,
     showUpdateModal,
     isOnlineStore,
+    isHowToUseOpen,
+    AnimationSpeed,
   } from "./stores.js";
   import Notification from "./components/Notification.svelte";
+  import HowToUse from "./components/utils/HowToUse.svelte";
   import { initDiscordRPC, watchDiscordRPCPreference } from "./discordRPC.js";
   const MIN_LOADER_MS = 250;
+  let isFirstLaunch = get(isHowToUseOpen);
   let isLoaded = false;
+
+  async function checkUpdate() {
+    try {
+      const remote = await ExcaliburUtils.initApp(get(CURRENT_VERSION));
+      if (remote) {
+        latestVersion.set(remote);
+        updateInfo.set({ version: remote, changelog: null });
+        showUpdateModal.set(true);
+      }
+    } catch (e) {
+      ExcaliburUtils.log("update_check", "Erreur: " + e.message);
+    }
+  }
+
+  function closeHowToUse() {
+    isHowToUseOpen.set(false);
+    ExcaliburUtils.setPreference("hasSeenHowToUse", true);
+  }
 
   let onlineInterval;
   let previousOnlineState = null;
-
   async function loadApp() {
     const start = performance.now();
-    const remoteVersion = await ExcaliburUtils.initApp(get(CURRENT_VERSION));
-    await document.fonts.ready;
 
-    if (remoteVersion) {
-      updateInfo.set({ version: remoteVersion, changelog: null });
-      showUpdateModal.set(true);
-    }
+    checkUpdate();
+
+    await document.fonts.ready;
 
     const elapsed = performance.now() - start;
     if (elapsed < MIN_LOADER_MS) {
@@ -59,13 +78,21 @@
     isOnlineStore.set(isCurrentlyOnline);
 
     if (previousOnlineState !== isCurrentlyOnline) {
-      if (isCurrentlyOnline) {
-        sendNotif("You are online. Welcome back!", true);
-      } else {
+      if (previousOnlineState === null && isFirstLaunch) {
         sendNotif(
-          "Offline. Check internet & AE Scripting Preferences. ",
-          false,
+          "Thanks for downloading ExcaliburFX, have fun using it!",
+          true,
         );
+        isFirstLaunch = false;
+      } else if (previousOnlineState === null) {
+        sendNotif(
+          isCurrentlyOnline ? "You are online" : "You are offline",
+          isCurrentlyOnline,
+        );
+      } else if (isCurrentlyOnline) {
+        sendNotif("Welcome back!", true);
+      } else {
+        sendNotif("You are offline", false);
       }
       previousOnlineState = isCurrentlyOnline;
     }
@@ -112,6 +139,11 @@
   <ContentPane>
     <Dashboard />
   </ContentPane>
+  <HowToUse
+    open={$isHowToUseOpen}
+    duration={Number($AnimationSpeed)}
+    on:close={closeHowToUse}
+  />
   <UpdateModal />
   <Notification />
 </main>
@@ -158,6 +190,11 @@
   @font-face {
     font-family: "Super Bouncer";
     src: url("../assets/fonts/SuperBouncer.ttf") format("truetype");
+  }
+
+  @font-face {
+    font-family: "Angel Wish";
+    src: url("../assets/fonts/AngelWish.ttf") format("truetype");
   }
 
   :global(img) {

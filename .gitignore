@@ -8,3 +8,4 @@ yarn-error.log
 .media
 src/js/main/bin/win/
 src/js/main/bin/mac/
+src/js/assets/SFX/Whooshes/Many Whooshs.mp3

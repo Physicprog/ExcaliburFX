@@ -19,7 +19,7 @@
 
     <div id="udLogs">
       <p class="logClassChild">
-        <span>XX/XX/2027</span><br /><br />
+        <span>01/10/2027</span><br /><br />
         Global release 🍾<br />
       </p>
     </div>

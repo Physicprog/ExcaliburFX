@@ -84,89 +84,61 @@ if (hasNodeFS === true) {
   PREFS_FILE = path.join(ROOT_DIR, "preferences.json");
 }
 
-export let VERSION_URL = "https://api.github.com/repos/Physicprog/ExcaliburFX/releases";
+export let VERSION_URL =
+  "https://api.github.com/repos/Physicprog/ExcaliburFX/releases/latest";
+
+function parseVersion(v) {
+  return String(v)
+    .replace(/^v/i, "")
+    .split("-")[0]
+    .split(".")
+    .map(function (n) {
+      return parseInt(n, 10) || 0;
+    });
+}
+
+
 
 function isNewerVersion(local, remote) {
-  let l = local.split(".");
-  let r = remote.split(".");
-  
-  let maxLen = l.length;
-  if (r.length > l.length) {
-    maxLen = r.length;
-  }
-
-  for (let i = 0; i < maxLen; i++) {
-    let numL = 0;
-    if (l[i] !== undefined) {
-      numL = Number(l[i]);
-    }
-    
-    let numR = 0;
-    if (r[i] !== undefined) {
-      numR = Number(r[i]);
-    }
-
-    if (numR > numL) {
-      return true;
-    }
-    if (numR < numL) {
-      return false;
-    }
+  let l = parseVersion(local);
+  let r = parseVersion(remote);
+  let len = Math.max(l.length, r.length);
+  for (let i = 0; i < len; i++) {
+    let a = l[i] || 0;
+    let b = r[i] || 0;
+    if (b > a) return true;
+    if (b < a) return false;
   }
   return false;
 }
 
 export async function getRepoLasterVersion(url) {
-  if (url === undefined) {
-    url = VERSION_URL;
-  }
+  if (url === undefined) url = VERSION_URL;
   try {
-    let response = await fetch(url, { cache: "no-store" });
-    if (response.ok === false) {
+    let res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      log("update_check", "HTTP " + res.status);
       return null;
     }
-
-    let releases = await response.json();
-    if (Array.isArray(releases) === false || releases.length === 0) {
-      return null;
-    }
-
-    let stableReleases = [];
-    for (let i = 0; i < releases.length; i++) {
-      if (releases[i].draft === false && releases[i].prerelease === false) {
-        stableReleases.push(releases[i]);
-      }
-    }
-
-    if (stableReleases.length === 0) {
-      return null;
-    }
-
-    let latestRelease = stableReleases[0];
-    if (typeof latestRelease.tag_name === "string") {
-      return latestRelease.tag_name.replace(/^v/, "");
-    } else {
-      return null;
-    }
-  } catch (error) {
+    let release = await res.json();
+    if (release.draft || release.prerelease) return null;
+    if (typeof release.tag_name !== "string") return null;
+    return release.tag_name.replace(/^v/i, "");
+  } catch (e) {
+    log("update_check", "Erreur: " + e.message);
     return null;
   }
 }
 
 export async function checkForUpdate(currentVersion, url) {
-  if (url === undefined) {
-    url = VERSION_URL;
-  }
+  if (url === undefined) url = VERSION_URL;
   let remoteVersion = await getRepoLasterVersion(url);
-  if (remoteVersion === null) {
-    return null;
-  }
-  
-  if (isNewerVersion(currentVersion, remoteVersion) === true) {
-    return remoteVersion;
-  } else {
-    return null;
-  }
+  if (remoteVersion === null) return null;
+  return isNewerVersion(currentVersion, remoteVersion) ? remoteVersion : null;
+}
+
+export function openExternal(url) {
+  cs.openURLInDefaultBrowser(url);
 }
 
 export let DEFAULTS = {
@@ -177,6 +149,7 @@ export let DEFAULTS = {
     seasonalThemeEnabled: false,
     seasonalThemeAuto: true,
     seasonalThemeMode: "none",
+    hasSeenHowToUse: false,
     lastActiveTab: "Dashboard",
     hue: 0,
     saturation: 70,

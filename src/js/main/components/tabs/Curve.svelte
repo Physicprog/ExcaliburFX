@@ -886,6 +886,7 @@
   function miniCurveAction(node, preset) {
     let instance = null;
     let isVisible = false;
+    let dirty = false;
     let pendingPreset = preset;
 
     function ensureDrawn() {
@@ -900,13 +901,14 @@
         pendingPreset.x2,
         pendingPreset.y2,
       );
+      dirty = false;
     }
 
     let observer = getSharedPresetObserver();
 
     presetVisibilityMap.set(node, function (visible) {
       isVisible = visible;
-      if (visible && !instance) {
+      if (visible && (!instance || dirty)) {
         ensureDrawn();
       }
     });
@@ -916,6 +918,7 @@
     return {
       update: function (newPreset) {
         pendingPreset = newPreset;
+        dirty = true;
         if (isVisible) {
           ensureDrawn();
         }
@@ -1098,6 +1101,7 @@
 
     savePresets();
     loadPresets();
+    sendNotif("Preset saved", true);
     setView("list");
   }
 
@@ -1113,6 +1117,7 @@
     presetsData = filtered;
 
     savePresets();
+    sendNotif("Preset removed", true);
     setView("list");
   }
 

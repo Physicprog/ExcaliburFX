@@ -1,15 +1,75 @@
 <script>
-  import { showUpdateModal } from "../stores.js";
-  import { closeUpdateModal } from "../logic.js";
+  import { showUpdateModal, latestVersion } from "../stores.js";
+  import { closeUpdateModal, sendNotif } from "../logic.js";
+
+  const RELEASE_URL =
+    "https://github.com/Physicprog/ExcaliburFX/releases/latest";
+
+  const WEBSITE_URL = "https://excaliburfx-website.vercel.app/#download";
+
+  function copyToClipboard(text) {
+    let ta = null;
+    let success = false;
+
+    try {
+      ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      success = document.execCommand("copy");
+    } catch (err) {
+      success = false;
+    } finally {
+      if (ta && ta.parentNode) {
+        ta.parentNode.removeChild(ta);
+      }
+    }
+
+    if (success) {
+      sendNotif("Link copied to clipboard!", true);
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(function () {
+          sendNotif("Link copied to clipboard!", true);
+        })
+        .catch(function () {
+          sendNotif("Copy failed", false);
+        });
+    } else {
+      sendNotif("Copy failed", false);
+    }
+  }
 </script>
 
 {#if $showUpdateModal}
   <div class="modal-overlay">
     <div class="modal-box">
       <button class="btn-close" on:click={closeUpdateModal}>×</button>
-      <h2>Mise à jour disponible</h2>
-      <p>Une nouvelle version d'Excalibur FX est disponible.</p>
-      <button class="btn-update" on:click={() => window.open("https://github.com/TON_USER/TON_REPO/releases/latest", "_blank")}>Voir sur GitHub</button>
+      <h2>Update Available</h2>
+      <p>Excalibur FX v{$latestVersion} is available.</p>
+
+      <div class="button-container">
+        <button
+          class="btn-update"
+          on:click={() => copyToClipboard(RELEASE_URL)}
+        >
+          Download from Github
+        </button>
+        <button
+          class="btn-update"
+          on:click={() => copyToClipboard(WEBSITE_URL)}
+        >
+          Download from ExcaliburFX Website
+        </button>
+      </div>
     </div>
   </div>
 {/if}
@@ -28,10 +88,16 @@
     z-index: 99999;
   }
 
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .modal-box {
     background: #1a1a1a;
-    border: 1px solid #52b495;
-    border-radius: 12px;
+    border: 1px solid var(--activeColour);
+    border-radius: 8px;
     padding: 28px;
     max-width: 360px;
     width: 90%;
@@ -40,10 +106,12 @@
   }
 
   .modal-box h2 {
+    font-family: "Angel Wish", sans-serif;
+
     color: #fff;
     margin-top: 0;
     margin-bottom: 12px;
-    font-size: 18px;
+    font-size: 35px;
   }
 
   .modal-box p {
@@ -69,7 +137,7 @@
   }
 
   .btn-update {
-    background: #52b495;
+    background: var(--activeColour);
     color: #fff;
     border: none;
     border-radius: 8px;

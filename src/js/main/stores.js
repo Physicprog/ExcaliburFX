@@ -21,6 +21,8 @@ import ffmpegPng from '../assets/sidebar/FFMPEG.png';
 import settingsGif from '../assets/sidebar/Settings.gif';
 import settingsPng from '../assets/sidebar/Settings.png';
 
+const LASTEST_VERSION = '1.0.0';
+
 export const order = [
   'curves',
   'workflow',
@@ -359,6 +361,7 @@ export const direction = writable(1);
 export const showDashboard = writable(true);
 export const dashboardClosing = writable(false);
 export const dashboardTab = writable('informations');
+export const isHowToUseOpen = writable(!getPreference('hasSeenHowToUse'));
 export const CurvesTab = writable(getPreference('curvesTab') ?? 'presets');
 export const EffectsTab = writable(getPreference('effectsTab') ?? 'presets');
 export const SFXTab = writable(getPreference('sfxTab') ?? 'sfx');
@@ -366,7 +369,8 @@ export const isCollapsed = writable(getPreference('isCollapsed'));
 export const volumeState = writable(getPreference('volumeState'));
 export const showFPS = writable(getPreference('showFPS') ?? true);
 export const showUpdateModal = writable(false);
-export const CURRENT_VERSION = writable('1.0.0');
+export const latestVersion = writable("");
+export const CURRENT_VERSION = writable(LASTEST_VERSION);
 export const updateInfo = writable(null);
 export const cameraFocalLength = writable(getPreference('cameraFocalLength') ?? 35);
 export const createLayerCompOnSelected = writable(getPreference('createLayerCompOnSelected') ?? false);

@@ -57,7 +57,7 @@
   function addRandomTile() {
     const cells = emptyCells();
     if (!cells.length) return;
-    
+
     const randomCell = cells[Math.floor(Math.random() * cells.length)];
     const id = idCounter++;
     const val = Math.random() < 0.9 ? 2 : 4;
@@ -134,7 +134,7 @@
 
         let farR = row;
         let farC = col;
-        
+
         while (true) {
           const nr = farR + vector.row;
           const nc = farC + vector.col;
@@ -143,12 +143,17 @@
           farR = nr;
           farC = nc;
         }
-        
+
         const nr = farR + vector.row;
         const nc = farC + vector.col;
         const nextTile = withinBounds(nr, nc) ? cellAt(nr, nc, working) : null;
 
-        if (nextTile && nextTile.id !== tile.id && nextTile.value === tile.value && !nextTile.merging) {
+        if (
+          nextTile &&
+          nextTile.id !== tile.id &&
+          nextTile.value === tile.value &&
+          !nextTile.merging
+        ) {
           nextTile.value = nextTile.value * 2;
           nextTile.merging = true;
           gained += nextTile.value;
@@ -184,7 +189,7 @@
       }
       addRandomTile();
       syncStore();
-      
+
       setTimeout(() => {
         tiles = tiles.map((t) => ({ ...t, merging: false }));
         moving = false;
@@ -194,10 +199,16 @@
 
   function handleKeydown(e) {
     const map = {
-      ArrowUp: "up", w: "up", z: "up",
-      ArrowDown: "down", s: "down",
-      ArrowLeft: "left", a: "left", q: "left",
-      ArrowRight: "right", d: "right",
+      ArrowUp: "up",
+      w: "up",
+      z: "up",
+      ArrowDown: "down",
+      s: "down",
+      ArrowLeft: "left",
+      a: "left",
+      q: "left",
+      ArrowRight: "right",
+      d: "right",
     };
     const dir = map[e.key];
     if (dir) {
@@ -216,7 +227,11 @@
   }
 
   function hardReset() {
-    if (confirm("Are you sure you want to reset your 2048 stats? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to reset your 2048 stats? This action cannot be undone.",
+      )
+    ) {
       $game2048Stats.bestScore = 0;
       $game2048Stats.highestTile = 0;
       restart();
@@ -267,9 +282,17 @@
 
   function getColor(val) {
     const colors = {
-      2: "#eee4da", 4: "#ede0c8", 8: "#f2b179", 16: "#f59563",
-      32: "#f67c5f", 64: "#f65e3b", 128: "#edcf72", 256: "#edcc61",
-      512: "#edc850", 1024: "#edc53f", 2048: "#edc22e"
+      2: "#eee4da",
+      4: "#ede0c8",
+      8: "#f2b179",
+      16: "#f59563",
+      32: "#f67c5f",
+      64: "#f65e3b",
+      128: "#edcf72",
+      256: "#edcc61",
+      512: "#edc850",
+      1024: "#edc53f",
+      2048: "#edc22e",
     };
     return colors[val] || "#3c3a32";
   }
@@ -288,7 +311,13 @@
 </script>
 
 <div class="game-widget">
-  <img class="game-background" src={GameBackground} alt="" aria-hidden="true" decoding="async" />
+  <img
+    class="game-background"
+    src={GameBackground}
+    alt=""
+    aria-hidden="true"
+    decoding="async"
+  />
 
   <div class="wrap">
     <div class="head">
@@ -305,10 +334,19 @@
       </div>
     </div>
 
-    <div class="board-wrapper" bind:clientWidth={wrapperWidth} bind:clientHeight={wrapperHeight}>
-      
-      <div class="board" style="width:{boardSize}px; height:{boardSize}px; padding:{PAD}px;">
-        <div class="grid-bg" style="gap:{GAP}px; grid-template-columns: repeat(4, {CELL}px); grid-template-rows: repeat(4, {CELL}px);">
+    <div
+      class="board-wrapper"
+      bind:clientWidth={wrapperWidth}
+      bind:clientHeight={wrapperHeight}
+    >
+      <div
+        class="board"
+        style="width:{boardSize}px; height:{boardSize}px; padding:{PAD}px;"
+      >
+        <div
+          class="grid-bg"
+          style="gap:{GAP}px; grid-template-columns: repeat(4, {CELL}px); grid-template-rows: repeat(4, {CELL}px);"
+        >
           {#each emptySlots as _}
             <div class="cell-bg"></div>
           {/each}
@@ -432,7 +470,7 @@
   }
 
   .score-box.best {
-    background: #4a3b7d;
+    background: var(--activeColour);
   }
 
   .board-wrapper {
@@ -494,7 +532,9 @@
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    transition: top 120ms ease, left 120ms ease;
+    transition:
+      top 120ms ease,
+      left 120ms ease;
     will-change: top, left;
   }
 
@@ -540,15 +580,27 @@
   }
 
   @keyframes pop-in {
-    0% { transform: scale(0); }
-    80% { transform: scale(1.15); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(0);
+    }
+    80% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   @keyframes pop-merge {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.18); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .btn-group {
@@ -563,7 +615,7 @@
     flex: 1 1 130px;
     padding: 10px;
     font-size: 1.3rem;
-    background: #6f4aff;
+    background: var(--activeColour);
     color: white;
     border: none;
     border-radius: 6px;
@@ -574,7 +626,7 @@
   }
 
   .reset:hover {
-    background: #8a6cff;
+    background: var(--activeColour);
     transform: scale(1.03);
   }
 

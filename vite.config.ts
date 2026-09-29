@@ -36,7 +36,7 @@ Object.values(input).forEach((panelEntry) => {
 
 const runtimeAssets = [
   [path.resolve(root, "main/bin/win/ffmpeg.exe"), "ffmpeg.exe"],
-  [path.resolve(root, "main/bin/mac/ffmpeg"), "ffmpeg"],
+  [path.resolve(root, "main/bin/mac/ffmpeg.bin"), "ffmpeg"],
 ] as const;
 const runtimeAssetDir = path.resolve(outDir, "assets");
 fs.mkdirSync(runtimeAssetDir, { recursive: true });

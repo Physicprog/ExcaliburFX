@@ -199,13 +199,16 @@
             <div class="row-gap">
               <button
                 class="secondary-btn"
-                on:click={() => runAction(() => sequenceLayers())}>MBO</button
+                on:click={() => runAction(() => sequenceLayers())}
               >
+                EMB
+              </button>
               <button
                 class="secondary-btn"
                 on:click={() => runAction(() => sequenceLayersFromBottom())}
-                >MBF</button
               >
+                EMB
+              </button>
             </div>
           </div>
         </div>

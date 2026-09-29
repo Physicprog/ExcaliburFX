@@ -7,11 +7,12 @@
     "dev": "vite",
     "watch": "tsc && vite build --watch true",
     "build": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && vite build --watch false",
-    "zxp": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZXP_PACKAGE=true vite build --watch false",
+    "zxp": "node -e \"const fs=require('fs'); fs.mkdirSync('dist/zxp',{recursive:true}); fs.mkdirSync('node_modules/vite-cep-plugin/lib/.tmp',{recursive:true});\" && tsc -p \"tsconfig-build.json\" && cross-env ZXP_PACKAGE=true vite build --watch false",
     "zip": "rimraf dist/* && tsc -p \"tsconfig-build.json\" && cross-env ZIP_PACKAGE=true vite build --watch false",
     "serve": "cross-env SERVE_PANEL=true vite preview",
     "symlink": "cross-env BOLT_ACTION=symlink vite",
-    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite"
+    "delsymlink": "cross-env BOLT_ACTION=delsymlink vite",
+    "sign": "powershell -NoProfile -Command \"$z='node_modules\\vite-cep-plugin\\lib\\bin\\ZXPSignCmd.exe'; & $z -sign 'dist\\cep' 'dist\\zxp\\com.excaliburfx.cep.zxp' 'certs\\cert.p12' password -tsa http://timestamp.digicert.com/\""
   },
   "devDependencies": {
     "@babel/core": "^7.19.0",

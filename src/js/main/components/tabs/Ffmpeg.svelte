@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import FFMPEGWindows from "../../bin/win/ffmpeg.exe?url";
-  import FFMPEGMac from "../../bin/mac/ffmpeg?url";
+  import FFMPEGMac from "../../bin/mac/ffmpeg.bin?url";
   import FFMPEGFont from "../../../assets/fonts/museosans.ttf?url";
   import { evalES } from "../../../lib/utils/bolt";
   import { getPreference, setPreference } from "../../../lib/utils/main.js";
@@ -1614,6 +1614,9 @@
       const outExt = ext || path.extname(inputPath).replace(".", "") || "mp4";
       const outputPath = getAvailableOutputPath(dir, baseName, outExt);
       const executablePath = getLocalFfmpegPath(ffmpegPath);
+      if (isMac) {
+          try { fs.chmodSync(executablePath, 0o755); } catch (e) {}
+}
       const cropOffset = chainBlocks.reduce(
         (offset, block) => {
           if (block.type === "crop") {
