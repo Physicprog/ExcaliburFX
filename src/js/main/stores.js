@@ -21,7 +21,7 @@ import ffmpegPng from '../assets/sidebar/FFMPEG.png';
 import settingsGif from '../assets/sidebar/Settings.gif';
 import settingsPng from '../assets/sidebar/Settings.png';
 
-const LASTEST_VERSION = '1.0.0';
+const LASTEST_VERSION = '1.0.1';
 
 export const order = [
   'curves',

@@ -171,7 +171,7 @@
             <button
               class="secondary-btn"
               on:click={() => runAction(() => scaleCompToOneToOne(0.5))}
-              >Scale to 2:1</button
+              >Scale to 1:2</button
             >
             <button
               class="secondary-btn"

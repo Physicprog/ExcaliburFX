@@ -19,8 +19,11 @@
 
     <div id="udLogs">
       <p class="logClassChild">
-        <span>01/10/2027</span><br /><br />
-        Global release 🍾<br />
+        <span>29/09/2026</span><br /><br />
+        Global release 🍾<br /><br />
+        Fixed a bug where the button for scale was not working properly.<br />
+        Fixed a bug where the 3D camera and Warp Stabilizer were not working properly.<br
+        />
       </p>
     </div>
   </div>

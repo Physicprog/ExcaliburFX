@@ -817,12 +817,11 @@ export async function CreateWarpStable(color, detailed, smooth, method, fast, bo
   return await executeJSXAction("CreateWarpStable", color, detailed, smooth, method, fast, border);
 }
 
-export async function CreateCameraTracker(color, c, d, p) {
+export async function CreateCameraTracker(color, detailed, trackSize) {
   if (color === undefined) color = 0;
-  if (c === undefined) c = 0;
-  if (d === undefined) d = 50;
-  if (p === undefined) p = 100;
-  return await executeJSXAction("CreateCameraTracker", color, c, d, p);
+  if (detailed === undefined) detailed = 0;
+  if (trackSize === undefined) trackSize = 100;
+  return await executeJSXAction("CreateCameraTracker", color, detailed, trackSize);
 }
 
 export async function AutoBeatMarker(sens, thresh) {

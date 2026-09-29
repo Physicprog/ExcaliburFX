@@ -896,38 +896,66 @@ export function resetRotation(): string {
 export function scaleCompToOneToOne(scaleMultiplier: number): string {
     app.beginUndoGroup("Excalibur Scale to comp (1/1 with multiplier)");
     try {
-        var comp = app.project.activeItem;
-        if (comp instanceof CompItem) {
-            var multiplier = (typeof scaleMultiplier === "number" && !isNaN(scaleMultiplier)) ? scaleMultiplier : 1;
+    var comp = resolveActiveComp();
+    if (!comp) throw new Error("Open a composition first.");
+    if (!comp.selectedLayers || comp.selectedLayers.length === 0) throw new Error("Select at least one layer.");
 
-            for (var i = 0; i < comp.selectedLayers.length; i += 1) {
-                var targetLayer = comp.selectedLayers[i];
-                
-                if (targetLayer && !targetLayer.locked && targetLayer.width !== undefined && targetLayer.height !== undefined) {
-                    var scaleProp = targetLayer.scale;
-                    var posProp = targetLayer.position;
+    var multiplier = (typeof scaleMultiplier === "number" && !isNaN(scaleMultiplier)) ? scaleMultiplier : 1;
+    var applied = 0;
+    var firstFailure = "";
 
-                    if (scaleProp && scaleProp.canSetPropertyValue && posProp && posProp.canSetPropertyValue) {
-                        var scaleX = ((comp.width / targetLayer.width) * 100) * multiplier;
-                        var scaleY = ((comp.height / targetLayer.height) * 100) * multiplier;
-                        
-                        var centerX = comp.width / 2;
-                        var centerY = comp.height / 2;
-                        
-                        scaleProp.setValue([scaleX, scaleY]);
-                        posProp.setValue([centerX, centerY]);
-                    }
-                }
-            }
-        } else {
-            alert("Please select a composition.");
+    for (var i = 0; i < comp.selectedLayers.length; i += 1) {
+      var targetLayer = comp.selectedLayers[i];
+      if (!targetLayer || targetLayer.locked) continue;
+
+      try {
+        var transform = targetLayer.property("ADBE Transform Group");
+        var scaleProp = transform ? transform.property("ADBE Scale") : null;
+        var posProp = transform ? transform.property("ADBE Position") : null;
+        var layerWidth = Number(targetLayer.width);
+        var layerHeight = Number(targetLayer.height);
+        if ((!layerWidth || !layerHeight) && targetLayer.source) {
+          layerWidth = Number(targetLayer.source.width);
+          layerHeight = Number(targetLayer.source.height);
         }
+        if (!scaleProp || !posProp || !layerWidth || !layerHeight) {
+          if (!firstFailure) firstFailure = "The selected layer has no usable Scale, Position, or source dimensions.";
+          continue;
+        }
+
+        var scaleX = ((comp.width / layerWidth) * 100) * multiplier;
+        var scaleY = ((comp.height / layerHeight) * 100) * multiplier;
+        var scaleValue = scaleProp.value;
+        var positionValue = posProp.value;
+        var nextScale = [scaleX, scaleY];
+        var nextPosition = [comp.width / 2, comp.height / 2];
+
+        if (scaleValue.length > 2) nextScale.push(scaleValue[2]);
+        if (positionValue.length > 2) nextPosition.push(positionValue[2]);
+
+        scaleProp.setValue(nextScale);
+        if (posProp.dimensionsSeparated) {
+          posProp.getSeparationFollower(0).setValue(comp.width / 2);
+          posProp.getSeparationFollower(1).setValue(comp.height / 2);
+        } else {
+          posProp.setValue(nextPosition);
+        }
+        applied += 1;
+      } catch (layerError: any) {
+        if (!firstFailure) firstFailure = layerError.toString();
+      }
+    }
+
+    if (applied === 0) {
+      throw new Error(firstFailure || "No selected unlocked layer could be scaled to the composition.");
+    }
+    return ok({ applied: applied });
     } catch (e: any) {
         alert("Error: " + e.toString());
     } finally {
         app.endUndoGroup();
     }
-    return "ok";
+  return fail("Unable to scale the selected layers to the composition.");
 }
 
 function ensureSelectionOrError(comp: any): any[] {
@@ -2212,59 +2240,76 @@ function DoAPreCompBeforeTracking(layer: any) {
   return false;
 }
 
+  function setEffectSetting(effect: any, settingNames: string[], value: any): boolean {
+    var expectedNames: string[] = [];
+    for (var n = 0; n < settingNames.length; n += 1) {
+      expectedNames.push(settingNames[n].toLowerCase().replace(/[^a-z0-9]/g, ""));
+    }
+
+    function findSetting(group: any): any {
+      for (var i = 1; i <= group.numProperties; i += 1) {
+        var property = group.property(i);
+        var propertyName = String(property.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        var nameMatches = false;
+        for (var expectedIndex = 0; expectedIndex < expectedNames.length; expectedIndex += 1) {
+          if (expectedNames[expectedIndex] === propertyName) {
+            nameMatches = true;
+            break;
+          }
+        }
+        if (nameMatches && typeof property.setValue === "function") {
+          return property;
+        }
+        if (property.numProperties > 0) {
+          var nested = findSetting(property);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    }
+
+    var property = findSetting(effect);
+    if (!property) return false;
+    try {
+      property.setValue(value);
+      return true;
+    } catch (e: any) {
+      return false;
+    }
+  }
+
 export function CreateWarpStable(color: number, detailan: number, smooth: number, method: number, fast: number, border: number) {
     app.beginUndoGroup("Excalibur Warp Stabilizer");
     try {
-        var comp = app.project.activeItem;
-        if (comp instanceof CompItem) {
-            var myLayers = comp.selectedLayers;
-            if (myLayers.length == 1) {
-                var targetLayer;
+      var comp = resolveActiveComp();
+      if (!comp) return fail("Open a composition and select one layer.");
+      var myLayers = comp.selectedLayers;
+      if (myLayers.length !== 1) return fail("Select only one layer.");
 
-                if (DoAPreCompBeforeTracking(myLayers[0])) {
-                    var newInPoint = myLayers[0].inPoint;
-                    var newOutPoint = myLayers[0].outPoint;
-                    var layerIndices = [];
-                    for (var i = 0; i < myLayers.length; i += 1) {
-                        layerIndices.push(myLayers[i].index);
-                        var inPoint = Math.min(myLayers[i].inPoint, myLayers[i].outPoint);
-                        var outPoint = Math.max(myLayers[i].inPoint, myLayers[i].outPoint);
-                        if (inPoint < newInPoint) newInPoint = inPoint;
-                        if (outPoint > newOutPoint) newOutPoint = outPoint;
-                    }
-                    var offset = newInPoint;
-                    for (var i = 0; i < myLayers.length; i += 1) {
-                        myLayers[i].startTime -= offset;
-                    }
-                    var LayerName = myLayers[0].name + " Precomposed";
-                    var newComp = comp.layers.precompose(layerIndices, LayerName, true);
-                    newComp.duration = newOutPoint - offset;
+      var targetLayer = myLayers[0];
+      if (DoAPreCompBeforeTracking(targetLayer)) {
+        var newInPoint = targetLayer.inPoint;
+        var newOutPoint = targetLayer.outPoint;
+        var offset = newInPoint;
+        targetLayer.startTime -= offset;
+        var newComp = comp.layers.precompose([targetLayer.index], targetLayer.name + " Precomposed", true);
+        newComp.duration = newOutPoint - offset;
+        targetLayer = comp.selectedLayers[0];
+        targetLayer.startTime = offset;
+      }
 
-                    targetLayer = comp.selectedLayers[0];
-                    targetLayer.startTime = offset;
-                    targetLayer.label = Number(color);
-                    targetLayer.selected = true;
-                } else {
-                    targetLayer = myLayers[0];
-                    try {
-                        var compCenter = [comp.width / 2, comp.height / 2];
-                        targetLayer.position.setValue(compCenter);
-                        targetLayer.anchorPoint.setValue(compCenter);
-                        targetLayer.rotation.setValue(0);
-                    } catch (e : any) {
-                    }
-                }
-                targetLayer.Effects.addProperty("ADBE SubspaceStabilizer");
-
-            } else {
-                alert("Please select only one Layer.");
-            }
-        } else {
-            alert("Please select a composition.");
-        }
+        targetLayer.label = Number(color);
+      var effect = targetLayer.property("ADBE Effect Parade").addProperty("ADBE SubspaceStabilizer");
+      var settingsApplied = 0;
+        if (setEffectSetting(effect, ["Method", "Méthode"], Number(method) + 1)) settingsApplied++;
+        if (setEffectSetting(effect, ["Framing", "Cadrage"], Number(border) + 1)) settingsApplied++;
+        if (setEffectSetting(effect, ["Smoothness", "Lissage"], Number(smooth))) settingsApplied++;
+        if (setEffectSetting(effect, ["Detailed Analysis", "Analyse détaillée"], Number(detailan))) settingsApplied++;
+        if (setEffectSetting(effect, ["Fast Analysis", "Analyse rapide"], Number(fast))) settingsApplied++;
+      if (settingsApplied === 0) return fail("Warp Stabilizer was added, but its settings could not be found in this After Effects version.");
+      return ok({ settingsApplied: settingsApplied });
     } catch (e : any) {
-        customErrorAlert("Excalibur ERROR", "Error while creating Warp Stabilizer: " + e.toString());
-        return;
+      return fail("Error while creating Warp Stabilizer: " + e.toString());
     } finally {
         app.endUndoGroup();
     }
@@ -2273,22 +2318,16 @@ export function CreateWarpStable(color: number, detailan: number, smooth: number
 export function CreateCameraTracker(
     color: number,
     detailed: number,
-    points: number
+    trackSize: number
 ) {
     app.beginUndoGroup("Excalibur 3D Camera Tracker");
     try {
         var comp = app.project.activeItem;
 
-        if (!(comp instanceof CompItem)) {
-            alert("Please select a composition.");
-            return;
-        }
+        if (!(comp instanceof CompItem)) return fail("Open a composition and select one layer.");
 
         var myLayers = comp.selectedLayers;
-        if (myLayers.length != 1) {
-            customErrorAlert("Excalibur ERROR", "Please select only one Layer.");
-            return;
-        }
+        if (myLayers.length != 1) return fail("Select only one layer.");
 
         var targetLayer;
 
@@ -2316,24 +2355,20 @@ export function CreateCameraTracker(
 
             targetLayer = comp.selectedLayers[0];
             targetLayer.startTime = offset;
-            targetLayer.label = Number(color);
             targetLayer.selected = true;
         } else {
             targetLayer = myLayers[0];
-            try {
-                var compCenter = [comp.width / 2, comp.height / 2];
-                targetLayer.position.setValue(compCenter);
-                targetLayer.anchorPoint.setValue(compCenter);
-                targetLayer.rotation.setValue(0);
-            } catch (e : any) {
-                alert("Excalibur ERROR", "Error while setting layer properties: " + e.toString());
-            }
         }
 
-        targetLayer.Effects.addProperty("ADBE 3D Tracker");
+        targetLayer.label = Number(color);
+        var effect = targetLayer.property("ADBE Effect Parade").addProperty("ADBE 3D Tracker");
+        var settingsApplied = 0;
+        if (setEffectSetting(effect, ["Track Point Size", "Taille des points de suivi"], Number(trackSize))) settingsApplied++;
+        if (setEffectSetting(effect, ["Detailed Analysis", "Analyse détaillée"], Number(detailed))) settingsApplied++;
+        if (settingsApplied === 0) return fail("3D Camera Tracker was added, but its settings could not be found in this After Effects version.");
+        return ok({ settingsApplied: settingsApplied });
     } catch (e : any) {
-        customErrorAlert("Excalibur ERROR", "Error while creating 3D Camera Tracker: " + e.toString());
-        return;
+        return fail("Error while creating 3D Camera Tracker: " + e.toString());
     } finally {
         app.endUndoGroup();
     }
