@@ -15,8 +15,10 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
-    steps:
+   steps:
       - uses: actions/checkout@v2
+        with:
+          lfs: true
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
