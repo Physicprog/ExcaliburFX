@@ -6,6 +6,12 @@
 <b>ExcaliburFX</b> is a CEP Adobe Extension made for After Effect and Premiere Pro. Built with Svelte and the CEP (Common Extensibility Platform) Engine, it acts as a Swiss Army knife (or a sword) for motion designers and video editors, offering everything from keyframe curving, Shakes presets, to built-in FFmpeg rendering and SFX management.
 </p>
 
+## Future ideas proposed by the users and Physic : 
+
+- Add a video downloader (Freedom Loader: https://github.com/MasterAcnolo/Freedom-Loader) instead of the Script (Expression) panel.
+- More shakes presets and a better preview of the shakes on the hover (a way to make the wanted special effects on each buttons)
+- Better theme on the  UI and Mbappe theme
+
 ## Table of Contents
 
 * [Features](#-features)
@@ -169,13 +175,13 @@ npm install
 npm run dev
 ```
 
-## ⚙️ Customization & Extras
+## Customization & Extras
 
 * **Panel Layouts:** ExcaliburFX supports both horizontal and vertical docking. Use the settings menu to switch to "Vertical mode" and choose between Row/Column layouts.
 
 * **Discord RPC:** Let your friends know what you're working on. Toggle this in the settings. (Will show "Rendering..." when AE is rendering).
 
-* **Themes:** Type `/theme-name` in the Notes tab to activate hidden seasonal themes (`/theme-cat`, `/theme-ete`, `/theme-noel`, etc.).
+* **Themes:** Type `/theme-name` in the Notes tab to activate hidden seasonal themes (`/theme-cat`, `/theme-ete`, `/theme-noel`, etc.). Currently it's only some particles but the goal would be to make draw elements on the interface.
 
 ## Easter Eggs
 
