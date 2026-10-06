@@ -1,0 +1,1335 @@
+<script>
+  import { onMount, onDestroy } from "svelte";
+  import {
+    putGifToPNG,
+    AnimationSpeed,
+    Hue,
+    Saturation,
+    EnableRGBMode,
+    RgbSpeed,
+    enableDiscordRPC,
+    isOnlineStore,
+    tabVisibility,
+    HOST,
+    HOST_TABS,
+    tabLabels,
+    layerColors,
+    LAYER_TYPE_LABELS,
+    cameraFocalLength,
+    createLayerCompOnSelected,
+    applyOnAdjustmentLayer,
+    sfxPreviewVolume,
+    isVerticalMode,
+    sidebarLayout,
+    showFPS,
+    isHowToUseOpen,
+  } from "../../stores.js";
+  import { resetPreferences } from "../../../lib/utils/main.js";
+  import { sendNotif } from "../../logic.js";
+  import { callJSX } from "../../../lib/utils/main.js";
+  import {
+    clearCacheWithVerification,
+    saveIncremental,
+    SortProjectLayers,
+    deleteUnusedItems,
+  } from "../../../lib/utils/main.js";
+  import ColorPicker from "../utils/ColorPicker.svelte";
+  import { t } from "../../../i18n.js";
+
+  import Help from "../../../assets/logos/logo.png";
+  import OpenFolder from "../../../assets/ui/OpenFolder.png";
+  import Browse from "../../../assets/ui/Browse.png";
+
+  const hostTabs = HOST_TABS[HOST];
+
+  function openPaymentPage() {
+    const paymentUrl = "https://paypal.me/KhylianGriffon";
+    if (typeof window !== "undefined" && window.cep && window.cep.util) {
+      window.cep.util.openURLInDefaultBrowser(paymentUrl);
+    } else {
+      window.open(paymentUrl, "_blank");
+    }
+  }
+  function openClicker() {
+    closeAllDropdowns();
+    isHowToUseOpen.set(true);
+  }
+
+  let showMenuDropdown = false;
+  let showColorsDropdown = false;
+
+  function toggleMenuDropdown() {
+    showMenuDropdown = !showMenuDropdown;
+    if (showMenuDropdown) showColorsDropdown = false;
+  }
+
+  function toggleColorsDropdown() {
+    showColorsDropdown = !showColorsDropdown;
+    if (showColorsDropdown) showMenuDropdown = false;
+  }
+
+  function closeAllDropdowns() {
+    showMenuDropdown = false;
+    showColorsDropdown = false;
+  }
+
+  function handleResetPreferences() {
+    resetPreferences();
+
+    setTimeout(() => {
+      if (
+        typeof window !== "undefined" &&
+        typeof window.location !== "undefined"
+      ) {
+        window.location.reload();
+      }
+    }, 400);
+  }
+
+  function handleReloadExtension() {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.location !== "undefined"
+    ) {
+      window.location.reload();
+    }
+  }
+
+  function handleClearCache() {
+    clearCacheWithVerification(sendNotif, callJSX);
+  }
+
+  function handleSaveIncremental() {
+    saveIncremental(sendNotif, callJSX);
+  }
+
+  function handleReduceProject() {
+    if (
+      !confirm(
+        "WARNING\n\nMake sure to select the main composition so you do not delete your whole project!\n\nThis will delete ALL unused compositions, footage, solids and folders from the project EXCEPT those used in the active composition.\n\nDo you want to proceed?",
+      )
+    )
+      return;
+    deleteUnusedItems();
+  }
+
+  function handleOpenExcaliburFolder() {
+    try {
+      const isWindows =
+        typeof navigator !== "undefined" &&
+        navigator.userAgent.includes("Windows");
+
+      if (
+        typeof window !== "undefined" &&
+        window.cep_node &&
+        typeof window.cep_node.require === "function"
+      ) {
+        const os = window.cep_node.require("os");
+        const path = window.cep_node.require("path");
+        const childProcess = window.cep_node.require("child_process");
+
+        const folderPath = path.join(os.homedir(), "Documents", "Excalibur");
+
+        childProcess.exec(
+          isWindows ? `explorer "${folderPath}"` : `open "${folderPath}"`,
+        );
+      }
+    } catch (error) {
+      console.warn("[Excalibur] Unable to open Excalibur folder:", error);
+    }
+  }
+
+  $: speedLabel = getSpeedLabel($AnimationSpeed);
+
+  function getSpeedLabel(value) {
+    const numValue = Number(value);
+    if (numValue === 0) return "No animation";
+    if (numValue === 300) return "Default animation";
+    if (numValue === 500) return "Max animation";
+    return numValue + "ms";
+  }
+
+  let wrapperEl;
+  let tabViewEl;
+  let scaleFactor = 1;
+
+  const REF_WIDTH = 340;
+  const REF_HEIGHT = 520;
+
+  let wrapperObserver;
+  let contentObserver;
+  let rafId = null;
+
+  function updateScale() {
+    const usableW = availW;
+    const usableH = availH;
+
+    if (!usableW || !usableH) return;
+
+    const scaleW = usableW / REF_WIDTH;
+    const scaleH = usableH / naturalHeight;
+
+    scaleFactor = Math.min(scaleW, scaleH);
+  }
+
+  function scheduleUpdate() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(updateScale);
+  }
+
+  let naturalHeight = REF_HEIGHT;
+  let availW = REF_WIDTH;
+  let availH = REF_HEIGHT;
+
+  onMount(() => {
+    if (wrapperEl) {
+      const rect = wrapperEl.getBoundingClientRect();
+      if (rect.width > 0) availW = rect.width;
+      if (rect.height > 0) availH = rect.height;
+    }
+    if (tabViewEl) {
+      const rect = tabViewEl.getBoundingClientRect();
+      if (rect.height > 0) naturalHeight = rect.height;
+    }
+    updateScale();
+
+    wrapperObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry.borderBoxSize && entry.borderBoxSize.length) {
+        availW = entry.borderBoxSize[0].inlineSize;
+        availH = entry.borderBoxSize[0].blockSize;
+      } else {
+        availW = entry.contentRect.width;
+        availH = entry.contentRect.height;
+      }
+      scheduleUpdate();
+    });
+
+    contentObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry.borderBoxSize && entry.borderBoxSize.length) {
+        naturalHeight = entry.borderBoxSize[0].blockSize || naturalHeight;
+      } else {
+        naturalHeight = entry.contentRect.height || naturalHeight;
+      }
+      scheduleUpdate();
+    });
+
+    if (wrapperEl) wrapperObserver.observe(wrapperEl, { box: "border-box" });
+    if (tabViewEl) contentObserver.observe(tabViewEl, { box: "border-box" });
+  });
+
+  onDestroy(() => {
+    if (wrapperObserver) wrapperObserver.disconnect();
+    if (contentObserver) contentObserver.disconnect();
+    if (rafId) cancelAnimationFrame(rafId);
+  });
+
+  function decreaseFocal() {
+    if ($cameraFocalLength > 1) cameraFocalLength.update((value) => value - 1);
+  }
+
+  function increaseFocal() {
+    if ($cameraFocalLength < 300)
+      cameraFocalLength.update((value) => value + 1);
+  }
+  function copyToClipboard(text) {
+    let ta = null;
+    let success = false;
+
+    try {
+      ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      success = document.execCommand("copy");
+    } catch (err) {
+      success = false;
+    } finally {
+      if (ta && ta.parentNode) {
+        ta.parentNode.removeChild(ta);
+      }
+    }
+
+    if (success) {
+      sendNotif("Link copied to clipboard!", true);
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(function () {
+          sendNotif("Link copied to clipboard!", true);
+        })
+        .catch(function () {
+          sendNotif("Copy failed", false);
+        });
+    } else {
+      sendNotif("Copy failed", false);
+    }
+  }
+</script>
+
+<div class="settings-wrapper" bind:this={wrapperEl}>
+  <div
+    class="tab-view"
+    bind:this={tabViewEl}
+    style="
+      transform: scale({scaleFactor});
+      width: {REF_WIDTH}px;
+    "
+  >
+    <div class="panels-top">
+      <section class="panel">
+        <h2 class="panel-title">{$t("uiSettings")}</h2>
+
+        <div class="ctrl" class:disabled={$EnableRGBMode}>
+          <label for="hue-slider">UI color: {$Hue}</label>
+          <input
+            id="hue-slider"
+            class="slider slider-hue"
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            bind:value={$Hue}
+            disabled={$EnableRGBMode}
+          />
+        </div>
+
+        <label class="check-row">
+          <span class="checkbox" class:checked={$EnableRGBMode}>
+            <input type="checkbox" bind:checked={$EnableRGBMode} />
+          </span>
+          <span>Enable RGB mode</span>
+        </label>
+
+        <div class="ctrl" class:disabled={!$EnableRGBMode}>
+          <label for="rgb-slider">RGB speed: {$RgbSpeed}ms</label>
+          <input
+            id="rgb-slider"
+            class="slider slider-default"
+            type="range"
+            min="10"
+            max="1000"
+            step="10"
+            bind:value={$RgbSpeed}
+            disabled={!$EnableRGBMode}
+          />
+        </div>
+
+        <div class="ctrl">
+          <label for="saturation-slider">UI saturation: {$Saturation}%</label>
+          <input
+            id="saturation-slider"
+            class="slider slider-saturation"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            bind:value={$Saturation}
+          />
+        </div>
+
+        <label class="check-row">
+          <span class="checkbox" class:checked={$putGifToPNG}>
+            <input type="checkbox" bind:checked={$putGifToPNG} />
+          </span>
+          <span>Disable all icon animations</span>
+        </label>
+
+        <div class="ctrl">
+          <label for="anim-slider">Animation Speed: {speedLabel}</label>
+          <input
+            id="anim-slider"
+            class="slider slider-default"
+            type="range"
+            min="0"
+            max="500"
+            step="25"
+            bind:value={$AnimationSpeed}
+          />
+        </div>
+
+        <label class="check-row check-row-last-child">
+          <span
+            class="checkbox"
+            class:checked={$enableDiscordRPC && $isOnlineStore}
+          >
+            <input
+              type="checkbox"
+              bind:checked={$enableDiscordRPC}
+              disabled={!$isOnlineStore}
+            />
+          </span>
+          <span
+            >Enable Discord RPC {!$isOnlineStore
+              ? "(You are offline)"
+              : ""}</span
+          >
+        </label>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Shortcuts</h2>
+
+        <div class="action-buttons-col">
+          <div class="action-buttons-row">
+            <button
+              class="mini-btn reset-btn"
+              on:click={handleResetPreferences}
+            >
+              Reset
+            </button>
+            <button
+              class="mini-btn reload-btn"
+              on:click={handleReloadExtension}
+            >
+              Restart EbFX</button
+            >
+          </div>
+          <button class="mini-btn cache-btn" on:click={handleClearCache}>
+            Clear Ae Disk Cache
+          </button>
+
+          <div class="action-buttons-col">
+            <button class="mini-btn" on:click={handleSaveIncremental}
+              >Open in a new instance</button
+            >
+            <button class="mini-btn" on:click={handleReduceProject}
+              >Delete unused items</button
+            >
+            <button
+              class="mini-btn"
+              on:click={() => SortProjectLayers(sendNotif)}>Sort Project</button
+            >
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section
+      class="panel panel-wide"
+      style="position: relative; overflow: visible; z-index: 9999;"
+    >
+      <h2 class="panel-title">Panel Options</h2>
+
+      <div class="dropdown-buttons-row">
+        <div class="menu-dropdown-container">
+          <button
+            class="mini-btn toggle-dropdown-btn"
+            on:click={toggleMenuDropdown}
+          >
+            Manage Menus
+          </button>
+
+          {#if showMenuDropdown}
+            <button
+              type="button"
+              class="dropdown-overlay"
+              aria-label="Close dropdown"
+              on:click={closeAllDropdowns}
+            ></button>
+
+            <div class="menus-popup popup-left">
+              <div class="menus-pills">
+                {#each hostTabs as tab}
+                  {#if tab !== "settings"}
+                    <button
+                      type="button"
+                      class="menu-pill"
+                      class:active={$tabVisibility[tab] !== false}
+                      on:click={() => {
+                        $tabVisibility = {
+                          ...$tabVisibility,
+                          [tab]: $tabVisibility[tab] === false ? true : false,
+                        };
+                      }}
+                    >
+                      {$tabLabels[tab].full}
+                    </button>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <div class="menu-dropdown-container">
+          <button
+            class="mini-btn toggle-dropdown-btn"
+            on:click={toggleColorsDropdown}
+          >
+            Layer Colors
+          </button>
+
+          {#if showColorsDropdown}
+            <button
+              type="button"
+              class="dropdown-overlay"
+              aria-label="Close dropdown"
+              on:click={closeAllDropdowns}
+            ></button>
+
+            <div class="menus-popup popup-right">
+              {#if $layerColors && LAYER_TYPE_LABELS}
+                <div class="layer-colors-grid">
+                  {#each Object.keys(LAYER_TYPE_LABELS) as key}
+                    {#if $layerColors[key] !== undefined}
+                      <ColorPicker
+                        bind:value={$layerColors[key]}
+                        label={LAYER_TYPE_LABELS[key]
+                          .replace(/all in one/i, "")
+                          .trim()}
+                      />
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <div class="loading-text">Loading Colors...</div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <div class="options-grid">
+        <div class="opt-row">
+          <label for="focal-input">Cam Length Val</label>
+          <div class="custom-number-picker">
+            <button
+              type="button"
+              class="picker-btn minus-btn"
+              aria-label="Decrease"
+              on:click={decreaseFocal}>-</button
+            >
+            <input
+              id="focal-input"
+              type="number"
+              class="picker-input"
+              bind:value={$cameraFocalLength}
+              min="1"
+              max="300"
+              step="1"
+            />
+            <button
+              type="button"
+              class="picker-btn plus-btn"
+              aria-label="Increase"
+              on:click={increaseFocal}>+</button
+            >
+          </div>
+        </div>
+
+        <div class="opt-row">
+          <label for="sfx-volume-slider">SFX volume</label>
+          <div class="opt-slider-ctrl">
+            <input
+              id="sfx-volume-slider"
+              class="slider slider-default"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              bind:value={$sfxPreviewVolume}
+            />
+          </div>
+        </div>
+
+        <div class="opt-divider"></div>
+
+        <label class="opt-check">
+          <span class="checkbox" class:checked={$applyOnAdjustmentLayer}>
+            <input type="checkbox" bind:checked={$applyOnAdjustmentLayer} />
+          </span>
+          <span>Apply on adjustment layer</span>
+        </label>
+
+        <label class="opt-check">
+          <span class="checkbox" class:checked={$createLayerCompOnSelected}>
+            <input type="checkbox" bind:checked={$createLayerCompOnSelected} />
+          </span>
+          <span>Create layer on each selected</span>
+        </label>
+
+        <div class="vertical-mode-row">
+          <label class="opt-check">
+            <span class="checkbox" class:checked={$isVerticalMode}>
+              <input type="checkbox" bind:checked={$isVerticalMode} />
+            </span>
+            <span>Vertical mode</span>
+          </label>
+          {#if $isVerticalMode}
+            <span class="opt-label">Sdbr Layout</span>
+
+            <div
+              class="sidebar-layout-toggle"
+              role="group"
+              aria-label="Sidebar layout"
+            >
+              <button
+                type="button"
+                class:active={$sidebarLayout === "row"}
+                aria-pressed={$sidebarLayout === "row"}
+                title="Row"
+                on:click={() => sidebarLayout.set("row")}>Row</button
+              >
+              <button
+                type="button"
+                class:active={$sidebarLayout === "column"}
+                aria-pressed={$sidebarLayout === "column"}
+                title="Column"
+                on:click={() => sidebarLayout.set("column")}>Column</button
+              >
+            </div>
+          {/if}
+        </div>
+
+        <div class="opt-inline-row">
+          <label class="opt-check opt-check-inline">
+            <span class="checkbox" class:checked={$showFPS}>
+              <input type="checkbox" bind:checked={$showFPS} />
+            </span>
+            <span>Show FPS</span>
+          </label>
+
+          <div class="open-folder-btn">
+            <button
+              class="icon-btn"
+              title="Open How to use ExcaliburFX page"
+              on:click={openClicker}
+            >
+              <img src={Help} alt="Help" />
+            </button>
+
+            <button
+              class="icon-btn"
+              title="Open Excalibur Folder"
+              on:click={handleOpenExcaliburFolder}
+            >
+              <img src={OpenFolder} alt="Open folder" />
+            </button>
+            <button
+              class="icon-btn"
+              title="Open Excalibur Website"
+              on:click={() =>
+                copyToClipboard("https://excaliburfx-website.vercel.app/")}
+            >
+              <img src={Browse} alt="Website" />
+            </button>
+            <button class="mini-btn" on:click={openPaymentPage}>
+              Support me
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<style lang="scss">
+  .settings-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .tab-view {
+    transform-origin: center center;
+    padding: 4px;
+    box-sizing: border-box;
+    font-family: "Museo Sans", sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .panels-top {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: 100%;
+    flex-shrink: 0;
+
+    .panel {
+      flex: 1 1 0;
+      width: 50%;
+      height: 155px;
+    }
+  }
+
+  .panel {
+    background-color: #1a1a1a;
+    border: 0.5px solid #5c5c5c;
+    border-radius: 6px;
+    padding: 6px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+  }
+
+  .action-buttons-col {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 0px;
+  }
+
+  .action-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 3px;
+    width: 94%;
+    margin: 0 auto;
+  }
+
+  .mini-btn {
+    width: 90%;
+    height: 19px;
+    margin: 0 auto;
+    color: white;
+    background-color: #313131;
+    border-radius: 4px;
+    outline: none;
+    font-size: 8px;
+    border: 1px solid rgba(104, 104, 104, 0.609);
+    transition: transform 0.2s ease-in-out;
+  }
+
+  :global(html.seasonal-theme) {
+    --seasonal-accent: #ff007f;
+    --seasonal-secondary: #ffffff;
+    --seasonal-particle-colour: rgba(255, 255, 255, 0.8);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme .settings-wrapper .panel),
+  :global(html.seasonal-theme .settings-wrapper .mini-btn),
+  :global(html.seasonal-theme .settings-wrapper .menu-pill),
+  :global(html.seasonal-theme .settings-wrapper .toggle-dropdown-btn),
+  :global(html.seasonal-theme .settings-wrapper .picker-btn),
+  :global(html.seasonal-theme .settings-wrapper .menu-dropdown-container) {
+    position: relative;
+  }
+
+  :global(html.seasonal-theme .settings-wrapper .panel::before),
+  :global(html.seasonal-theme .settings-wrapper .mini-btn::before),
+  :global(html.seasonal-theme .settings-wrapper .menu-pill::before),
+  :global(html.seasonal-theme .settings-wrapper .toggle-dropdown-btn::before),
+  :global(html.seasonal-theme .settings-wrapper .picker-btn::before) {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    width: 11px;
+    height: 11px;
+    pointer-events: none;
+    background-image: var(--seasonal-icon-url);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.7;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  }
+
+  :global(html.seasonal-theme--christmas) {
+    --seasonal-accent: #d62828;
+    --seasonal-secondary: #1f9d66;
+    --seasonal-particle-colour: rgba(255, 255, 255, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--spring) {
+    --seasonal-accent: #4caf50;
+    --seasonal-secondary: #ffb703;
+    --seasonal-particle-colour: rgba(255, 242, 179, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--summer) {
+    --seasonal-accent: #ff9f1c;
+    --seasonal-secondary: #2ec4b6;
+    --seasonal-particle-colour: rgba(255, 246, 178, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--autumn) {
+    --seasonal-accent: #d97706;
+    --seasonal-secondary: #b45309;
+    --seasonal-particle-colour: rgba(248, 217, 161, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--festive) {
+    --seasonal-accent: #7c3aed;
+    --seasonal-secondary: #f59e0b;
+    --seasonal-particle-colour: rgba(254, 243, 199, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(html.seasonal-theme--cat) {
+    --seasonal-accent: #f4a261;
+    --seasonal-secondary: #8ecae6;
+    --seasonal-particle-colour: rgba(255, 230, 167, 0.9);
+    --seasonal-icon-url: none;
+  }
+
+  :global(.excalibur-seasonal-particles) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  :global(.seasonal-particle) {
+    position: absolute;
+    left: var(--left, 50%);
+    top: var(--top, -10px);
+    width: var(--size, 4px);
+    height: var(--size, 4px);
+    border-radius: 50%;
+    opacity: 0.7;
+    display: block;
+    animation: seasonal-float var(--duration, 5s) linear infinite;
+    box-shadow: 0 0 4px var(--seasonal-particle-colour);
+    background-color: var(--seasonal-particle-colour);
+  }
+
+  @keyframes seasonal-float {
+    0% {
+      transform: translate3d(0, -10px, 0) scale(0.6);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate3d(var(--drift), 105vh, 0) scale(1);
+      opacity: 0;
+    }
+  }
+
+  .mini-btn:hover {
+    border-color: var(--activeColour);
+    background-color: var(--activeColour);
+    transform: scale(1.03);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  }
+
+  .mini-btn:active {
+    border-color: var(--activeColour);
+    background-color: var(--activeColour);
+    transform: scale(0.97);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  }
+
+  section.panel.panel-wide {
+    width: 100%;
+    min-height: 150px;
+    height: auto;
+    padding: 6px 8px;
+    box-sizing: border-box;
+  }
+
+  .dropdown-buttons-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .custom-number-picker {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(104, 104, 104, 0.609);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 15px;
+    background-color: #0d0d0d;
+    flex-shrink: 0;
+  }
+
+  .picker-btn {
+    background-color: #313131;
+    border: none;
+    color: white;
+    font-size: 9px;
+    width: 16px;
+    height: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color 0.2s ease,
+      transform 0.1s ease;
+  }
+
+  .picker-btn:hover {
+    background-color: var(--activeColour, #ff007f);
+  }
+  .picker-btn:active {
+    background-color: var(--activeColour, #ff007f);
+    transform: scale(0.9);
+  }
+  .picker-input {
+    width: 35px;
+    height: 100%;
+    border: none;
+    background-color: #0d0d0d;
+    color: #fff;
+    text-align: center;
+    font-size: 8px;
+    font-weight: bold;
+    outline: none;
+  }
+
+  .picker-input::-webkit-outer-spin-button,
+  .picker-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .menu-dropdown-container {
+    position: relative;
+    display: flex;
+    flex: 1;
+  }
+
+  .toggle-dropdown-btn {
+    width: 100%;
+    cursor: pointer;
+    position: relative;
+    z-index: 102;
+  }
+
+  .dropdown-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    cursor: default;
+    backdrop-filter: blur(1px);
+    border: 0;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+  }
+
+  .menus-popup {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    width: 220px;
+    background: #151515;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  }
+  .popup-left {
+    left: 0;
+    transform-origin: bottom left;
+    animation: popUpLeft var(--transition-ms, 150ms)
+      cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  }
+
+  .popup-right {
+    right: 0;
+    transform-origin: bottom right;
+    animation: popUpRight var(--transition-ms, 150ms)
+      cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  }
+
+  @keyframes popUpLeft {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes popUpRight {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 6px;
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  .opt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+
+    label {
+      font-size: 8px;
+      font-weight: bold;
+      color: #ccc;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+  }
+
+  .vertical-mode-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .sidebar-layout-toggle {
+    display: flex;
+    flex: auto 0 0;
+    overflow: hidden;
+    border: 1px solid #444;
+    border-radius: 5px;
+
+    button {
+      min-width: 42px;
+      height: 20px;
+      padding: 0 6px;
+      border: 0;
+      background: #222;
+      color: #bbb;
+      font-size: 8px;
+      cursor: pointer;
+
+      &.active {
+        background: var(--activeColour);
+        color: #fff;
+      }
+    }
+  }
+
+  .opt-label {
+    font-size: 8px;
+    font-weight: bold;
+    color: #ccc;
+    margin: 0;
+    margin-left: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .opt-slider-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    margin-left: 30px;
+    justify-content: flex-end;
+
+    .slider {
+      flex: 0 0 auto;
+      width: 90px;
+    }
+  }
+
+  .opt-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: #2b2b2b;
+    margin: 2px 0;
+  }
+
+  .opt-check {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 0;
+
+    span:last-child {
+      font-size: 8px;
+      font-weight: bold;
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .opt-inline-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .opt-check-inline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .open-folder-btn {
+    width: 50%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    min-width: 110px;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.2s ease-in-out,
+      filter 0.2s ease;
+  }
+
+  .icon-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  }
+
+  .icon-btn:hover {
+    transform: scale(1.15);
+    filter: brightness(1.2);
+  }
+
+  .icon-btn:active {
+    transform: scale(0.9);
+  }
+
+  .menus-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .menu-pill {
+    background-color: #222;
+    color: #666;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 7px;
+    font-weight: bold;
+    padding: 4px 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all var(--transition-ms, 100ms) ease;
+
+    &:hover {
+      background-color: #333;
+      color: #ccc;
+    }
+
+    &.active {
+      background-color: var(--activeColour);
+      border-color: var(--activeColour);
+      color: #fff;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+  }
+
+  .layer-colors-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .loading-text {
+    color: var(--activeColour, #ff007f);
+    font-size: 9px;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  .panel-title {
+    font-size: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: center;
+    color: #fff;
+    margin: 0 0 5px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #2b2b2b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ctrl {
+    margin-bottom: 4px;
+    transition: opacity 0.15s ease;
+
+    &:last-of-type {
+      margin-bottom: 2px;
+    }
+
+    &.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    label {
+      display: block;
+      font-size: 6.5px;
+      font-weight: bold;
+      color: #ccc;
+      margin-bottom: 2px;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .check-row-last-child {
+    margin-top: 6px;
+  }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+    cursor: pointer;
+
+    span:last-child {
+      font-size: 6.5px;
+      font-weight: bold;
+      color: #ddd;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .checkbox {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid #5c5c5c;
+    background-color: #0d0d0d;
+    flex-shrink: 0;
+    transition:
+      background-color 0.1s ease,
+      border-color 0.1s ease;
+
+    input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    &.checked {
+      background-color: var(--activeColour, #ff007f);
+      border-color: var(--activeColour, #ff007f);
+    }
+  }
+
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 95%;
+    height: 5px;
+    border-radius: 2.5px;
+    outline: none;
+    cursor: pointer;
+    border: 1px solid #000;
+    display: block;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 6px;
+      height: 9px;
+      border-radius: 2px;
+      background: #fff;
+      border: 1px solid #000;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+      margin-top: -2px;
+    }
+    &::-moz-range-thumb {
+      width: 5px;
+      height: 8px;
+      border-radius: 2px;
+      background: #fff;
+      border: 1px solid #000;
+      cursor: pointer;
+    }
+  }
+
+  .slider-default {
+    background: var(--activeColour);
+  }
+
+  .slider-hue {
+    background: linear-gradient(
+      to right,
+      hsl(0, 100%, 50%),
+      hsl(60, 100%, 50%),
+      hsl(120, 100%, 50%),
+      hsl(180, 100%, 50%),
+      hsl(240, 100%, 50%),
+      hsl(300, 100%, 50%),
+      hsl(360, 100%, 50%)
+    );
+  }
+
+  .slider-saturation {
+    background: linear-gradient(to right, #fff, var(--activeColour));
+  }
+</style>
