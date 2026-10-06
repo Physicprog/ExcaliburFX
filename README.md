@@ -1,9 +1,12 @@
-<img src="src/js/assets/logos/logo.gif" alt="ExcaliburFX Banner" width="250">
-# ⚔️ ExcaliburFX
+<p align="center">
+  <img src="src/js/assets/logos/logo.png" alt="ExcaliburFX Banner" width="50">
+</p>
 
-**ExcaliburFX** is the ultimate, all-in-one productivity extension for **Adobe After Effects** and **Premiere Pro**. Built with Svelte and the CEP (Common Extensibility Platform) Engine, it acts as a Swiss Army knife for motion designers and video editors, offering everything from advanced keyframe curving and expression building to built-in FFmpeg rendering and SFX management.
+<p align="center">
+<b>ExcaliburFX</b> is a CEP Adobe Extension made for After Effect and Premiere Pro. Built with Svelte and the CEP (Common Extensibility Platform) Engine, it acts as a Swiss Army knife (or a sword) for motion designers and video editors, offering everything from keyframe curving, Shakes presets, to built-in FFmpeg rendering and SFX management.
+</p>
 
-## 📑 Table of Contents
+## Table of Contents
 
 * [Features](#-features)
 
@@ -31,21 +34,21 @@
 
 * [License & Credits](#-license--credits)
 
-## ✨ Features
+## Features
 
-* **🚀 Massive Feature Set:** Replaces dozens of single-purpose scripts with one unified panel.
+* **Massive Feature Set:** Replaces dozens of single-purpose scripts with one unified panel.
 
-* **🎨 Highly Customizable UI:** Fully customizable interface with RGB mode, seasonal themes, and adjustable animation speeds.
+* **Highly Customizable UI:** Fully customizable interface with RGB mode, seasonal themes, and adjustable animation speeds.
 
-* **🔗 Cross-App Compatibility:** Full support for After Effects, with tailored features (SFX, FFMPEG, Colors) for Premiere Pro.
+* **Cross-App Compatibility:** Full support for After Effects, with tailored features (SFX, FFMPEG, Colors) for Premiere Pro.
 
-* **🎮 Discord RPC:** Show off your current AE project and rendering status directly on your Discord profile.
+* **Discord RPC:** Show off your current AE project and rendering status directly on your Discord profile.
 
-* **🌍 Multilingual:** Built-in localization support (English, French, Spanish, German, Hindi).
+* **Multilingual:** Built-in language (English, French, Spanish, German, Hindi).
 
-* **🕹️ Easter Eggs:** Take a break while rendering with built-in mini-games (Cookie Clicker, 2048, CatPillar).
+* **Easter Eggs:** Take a break while rendering with built-in mini-games (Cookie Clicker, 2048, CatPillar) that can be runned while rendering (only you you find them)
 
-## 🧩 Modules Overview
+## Modules Overview
 
 ### 1. Workflow
 
@@ -122,11 +125,11 @@ Generate and apply color palettes instantly:
 
 * **Direct Apply:** Click a color to instantly copy its HEX code, or toggle "Apply Direct" to automatically add a Fill effect to your selected layer.
 
-## 💾 Installation
+## Installation
 
 ### Prerequisites
 
-* Adobe After Effects CC (or Premiere Pro for limited features).
+* Adobe After Effects CC (or Premiere Pro for limited features) - 2021 + (some bugs can be found on the 2026 versions).
 
 * *For developers:* Node.js and a CEP-compatible environment (like Bolt CEP).
 
@@ -138,7 +141,7 @@ Generate and apply color palettes instantly:
 
 3. Open After Effects, go to `Window > Extensions > ExcaliburFX`.
 
-## 🛠️ Development & Tech Stack
+## Development & Tech Stack
 
 ExcaliburFX is built using modern web technologies bridged with Adobe's ExtendScript via **Bolt CEP**.
 
@@ -174,7 +177,7 @@ npm run dev
 
 * **Themes:** Type `/theme-name` in the Notes tab to activate hidden seasonal themes (`/theme-cat`, `/theme-ete`, `/theme-noel`, etc.).
 
-## 🎮 Easter Eggs
+## Easter Eggs
 
 Working late? ExcaliburFX comes with fully playable mini-games hidden in the Credits tab.
 
@@ -184,11 +187,13 @@ Working late? ExcaliburFX comes with fully playable mini-games hidden in the Cre
 
 * Click the horizontal line under `Credit` to play **Cookie Clicker**.
 
-## 📜 License & Credits
+## License & Credits
 
 **Developer:** Physic
 
-**UI/UX Inspiration & Icon Help:** [@mallaubrl\_](https://www.instagram.com/mallaubrl_/)
+**All draws on video behinds games :** [@mallaubrl\_](https://www.instagram.com/mallaubrl_/)
+
+I, (Physic), made all icons and animations using After Effect.
 
 **Framework:** Powered by Svelte and Bolt CEP.
 
